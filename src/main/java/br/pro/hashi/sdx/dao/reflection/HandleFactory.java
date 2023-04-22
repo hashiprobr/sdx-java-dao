@@ -3,10 +3,10 @@ package br.pro.hashi.sdx.dao.reflection;
 import java.util.HashMap;
 import java.util.Map;
 
-final class HandleFactory {
+public final class HandleFactory {
 	private static final HandleFactory INSTANCE = new HandleFactory();
 
-	static HandleFactory getInstance() {
+	public static HandleFactory getInstance() {
 		return INSTANCE;
 	}
 
@@ -16,7 +16,7 @@ final class HandleFactory {
 		this.cache = new HashMap<>();
 	}
 
-	synchronized Handle get(Class<?> type) {
+	public synchronized Handle get(Class<?> type) {
 		Handle handle = cache.get(type);
 		if (handle == null) {
 			handle = new Handle(type);

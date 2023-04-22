@@ -26,8 +26,10 @@ This artifacts of this project are made available under the terms of:
 
 The following dependencies are ASL2.
 
- * google.cloud.firestore
- * google.cloud.storage
+ * firebase.admin
+ * google.cloud
+ * com.google.auth
+ * com.google.common
 
 The following dependencies are MPL11.
 

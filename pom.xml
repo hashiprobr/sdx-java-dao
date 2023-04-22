@@ -42,6 +42,11 @@
   </repositories>
   <dependencies>
     <dependency>
+      <groupId>com.google.firebase</groupId>
+      <artifactId>firebase-admin</artifactId>
+      <version>9.1.1-PATCH</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-firestore</artifactId>
       <version>3.9.4-PATCH</version>
@@ -50,6 +55,11 @@
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-storage</artifactId>
       <version>2.22.0-PATCH</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-core</artifactId>
+      <version>2.15.0-PATCH</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
