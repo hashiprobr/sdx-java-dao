@@ -43,7 +43,7 @@ class ConverterFactoryTest {
 	@BeforeEach
 	void setUp() {
 		reflector = mock(Reflector.class);
-		when(reflector.getExternalCreator(any())).thenAnswer((invocation) -> {
+		when(reflector.getExternalCreator(any(), any(String.class))).thenAnswer((invocation) -> {
 			Class<? extends DaoConverter<?, ?>> type = invocation.getArgument(0);
 			Constructor<? extends DaoConverter<?, ?>> constructor = type.getDeclaredConstructor();
 			return LOOKUP.unreflectConstructor(constructor);
@@ -68,13 +68,13 @@ class ConverterFactoryTest {
 
 	@Test
 	void gets() {
-		verify(reflector, times(0)).getExternalCreator(DefaultImplementation.class);
+		verify(reflector, times(0)).getExternalCreator(any(), any());
 
 		DaoConverter<?, ?> converter = f.get(DefaultImplementation.class);
-		verify(reflector).getExternalCreator(DefaultImplementation.class);
+		verify(reflector).getExternalCreator(DefaultImplementation.class, DefaultImplementation.class.getName());
 
 		assertSame(converter, f.get(DefaultImplementation.class));
-		verify(reflector, times(1)).getExternalCreator(DefaultImplementation.class);
+		verify(reflector, times(1)).getExternalCreator(any(), any());
 	}
 
 	@Test
@@ -85,43 +85,57 @@ class ConverterFactoryTest {
 	}
 
 	@Test
-	void getsSourceTypeFromFinalImplementationWithDiamond() {
-		assertSourceTypeExists(new FinalImplementationWithDiamond());
+	void getsBothTypesFromFinalImplementationWithDiamond() {
+		FinalImplementationWithDiamond converter = new FinalImplementationWithDiamond();
+		assertBothTypesExist(converter);
 	}
 
 	@Test
-	void getsSourceTypeFromFinalImplementationWithBoth() {
-		assertSourceTypeExists(new FinalImplementationWithBoth());
+	void getsBothTypesFromFinalImplementationWithBoth() {
+		FinalImplementationWithBoth converter = new FinalImplementationWithBoth();
+		assertBothTypesExist(converter);
 	}
 
 	@Test
-	void getsSourceTypeFromFinalImplementationWithSource() {
-		assertSourceTypeExists(new FinalImplementationWithSource());
+	void getsBothTypesFromFinalImplementationWithSource() {
+		FinalImplementationWithSource converter = new FinalImplementationWithSource();
+		assertBothTypesExist(converter);
 	}
 
 	@Test
-	void getsSourceTypeFromFinalImplementationWithTarget() {
-		assertSourceTypeExists(new FinalImplementationWithTarget());
+	void getsBothTypesFromFinalImplementationWithTarget() {
+		FinalImplementationWithTarget converter = new FinalImplementationWithTarget();
+		assertBothTypesExist(converter);
 	}
 
 	@Test
-	void getsSourceTypeFromFinalImplementationWithNeither() {
-		assertSourceTypeExists(new FinalImplementationWithNeither());
+	void getsBothTypesFromFinalImplementationWithNeither() {
+		FinalImplementationWithNeither converter = new FinalImplementationWithNeither();
+		assertBothTypesExist(converter);
 	}
 
 	@Test
-	void getsSourceTypeFromImplementationWithDiamond() {
-		assertSourceTypeExists(new ImplementationWithDiamond());
+	void getsBothTypesFromImplementationWithDiamond() {
+		ImplementationWithDiamond converter = new ImplementationWithDiamond();
+		assertBothTypesExist(converter);
 	}
 
 	@Test
-	void getsSourceTypeFromImplementationWithBoth() {
-		assertSourceTypeExists(new ImplementationWithBoth());
+	void getsBothTypesFromImplementationWithBoth() {
+		ImplementationWithBoth converter = new ImplementationWithBoth();
+		assertBothTypesExist(converter);
+	}
+
+	private void assertBothTypesExist(DaoConverter<?, ?> converter) {
+		assertSourceTypeExists(converter);
+		assertTargetTypeExists(converter);
 	}
 
 	@Test
 	void getsSourceTypeFromImplementationWithSource() {
-		assertSourceTypeExists(new ImplementationWithSource<>());
+		ImplementationWithSource<Integer> converter = new ImplementationWithSource<>();
+		assertSourceTypeExists(converter);
+		assertTargetTypeNotExists(converter);
 	}
 
 	private <T, S extends T> void assertSourceTypeExists(DaoConverter<?, ?> converter) {
@@ -129,18 +143,32 @@ class ConverterFactoryTest {
 	}
 
 	@Test
-	void doesNotGetSourceTypeFromImplementationWithTarget() {
-		assertSourceTypeNotExists(new ImplementationWithTarget<>());
+	void getsTargetTypeFromImplementationWithTarget() {
+		ImplementationWithTarget<Integer> converter = new ImplementationWithTarget<>();
+		assertSourceTypeNotExists(converter);
+		assertTargetTypeExists(converter);
+	}
+
+	private <T, S extends T> void assertTargetTypeExists(DaoConverter<?, ?> converter) {
+		assertEquals(Double.class, f.getTargetType(converter));
 	}
 
 	@Test
-	void doesNotGetSourceTypeFromImplementationWithNeither() {
-		assertSourceTypeNotExists(new ImplementationWithNeither<>());
+	void getsNeitherTypeFromImplementationWithNeither() {
+		ImplementationWithNeither<Integer, Double> converter = new ImplementationWithNeither<>();
+		assertSourceTypeNotExists(converter);
+		assertTargetTypeNotExists(converter);
 	}
 
 	private <T, S extends T> void assertSourceTypeNotExists(DaoConverter<?, ?> converter) {
 		assertThrows(ReflectionException.class, () -> {
 			f.getSourceType(converter);
+		});
+	}
+
+	private <T, S extends T> void assertTargetTypeNotExists(DaoConverter<?, ?> converter) {
+		assertThrows(ReflectionException.class, () -> {
+			f.getTargetType(converter);
 		});
 	}
 }

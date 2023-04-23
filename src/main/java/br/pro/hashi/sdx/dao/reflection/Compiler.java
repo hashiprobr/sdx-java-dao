@@ -10,6 +10,7 @@ import java.util.Map;
 
 import com.google.cloud.firestore.annotation.PropertyName;
 
+import br.pro.hashi.sdx.dao.DaoConverter;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -33,57 +34,66 @@ public final class Compiler {
 	}
 
 	private final Reflector reflector;
-	private final HandleFactory factory;
-	private final Map<Class<?>, Value> cache;
-	private final MethodHandle getter;
+	private final ConverterFactory converterFactory;
+	private final HandleFactory handleFactory;
+	private final Map<Handle, Bytecode> cache;
+	private final MethodHandle instanceGetter;
 	private final String packageName;
 	private final String superTypeName;
 	private final String handleTypeName;
+	private final String propertyAnnotationName;
 
 	Compiler() {
-		this(Reflector.getInstance(), HandleFactory.getInstance());
+		this(Reflector.getInstance(), ConverterFactory.getInstance(), HandleFactory.getInstance());
 	}
 
-	Compiler(Reflector reflector, HandleFactory factory) {
+	Compiler(Reflector reflector, ConverterFactory converterFactory, HandleFactory factory) {
 		this.reflector = reflector;
-		this.factory = factory;
+		this.converterFactory = converterFactory;
+		this.handleFactory = factory;
 		this.cache = new HashMap<>();
-		this.getter = unreflectInstanceGetter(Proxy.class);
+		this.instanceGetter = unreflectInstanceGetter(Proxy.class);
 		this.packageName = getClass().getPackageName();
 		this.superTypeName = Proxy.class.getName();
 		this.handleTypeName = Handle.class.getName();
+		this.propertyAnnotationName = PropertyName.class.getName();
 	}
 
 	Reflector getReflector() {
 		return reflector;
 	}
 
-	HandleFactory getFactory() {
-		return factory;
+	ConverterFactory getConverterFactory() {
+		return converterFactory;
 	}
 
-	public Class<?> getProxyType(Class<?> type) {
-		return get(type).proxyType();
+	HandleFactory getHandleFactory() {
+		return handleFactory;
 	}
 
-	public <T> Object getProxy(Class<T> type, Handle handle, T instance) {
-		return reflector.invokeCreator(get(type).creator(), handle, instance);
+	public Class<?> getProxyType(Handle handle) {
+		return get(handle).proxyType();
+	}
+
+	public <T> Object getProxy(Handle handle, T instance) {
+		return reflector.invokeCreator(get(handle).creator(), handle, instance);
 	}
 
 	public <T> T getInstance(Object proxy) {
-		return reflector.invokeGetter(getter, proxy);
+		return reflector.invokeGetter(instanceGetter, proxy);
 	}
 
-	private synchronized Value get(Class<?> type) {
-		Value value = cache.get(type);
-		if (value == null) {
-			value = compile(type);
-			cache.put(type, value);
+	private synchronized Bytecode get(Handle handle) {
+		Bytecode bytecode = cache.get(handle);
+		if (bytecode == null) {
+			bytecode = compile(handle);
+			cache.put(handle, bytecode);
 		}
-		return value;
+		return bytecode;
 	}
 
-	private Value compile(Class<?> type) {
+	private Bytecode compile(Handle handle) {
+		Class<?> type = handle.getType();
 		String typeName = type.getName();
 		CtClass ctType = getCtClass(typeName);
 
@@ -107,13 +117,18 @@ public final class Compiler {
 					instance = $2;
 				}""");
 
-		Handle handle = factory.get(type);
-
 		for (String fieldName : handle.getFieldNames()) {
+			DaoConverter<?, ?> converter = handle.getConverter(fieldName);
 			String propertyName = handle.getPropertyName(fieldName);
 			String fieldTypeName = handle.getFieldTypeName(fieldName);
 
-			CtClass ctFieldType = getCtClass(fieldTypeName);
+			CtClass ctFieldType;
+			if (converter == null) {
+				ctFieldType = getCtClass(fieldTypeName);
+			} else {
+				Class<?> targetType = (Class<?>) converterFactory.getTargetType(converter);
+				ctFieldType = getCtClass(targetType.getName());
+			}
 
 			char prefix = Character.toUpperCase(fieldName.charAt(0));
 			String suffix = "%c%s".formatted(prefix, fieldName.substring(1));
@@ -131,7 +146,7 @@ public final class Compiler {
 
 		Class<?> proxyType = toClass(ctProxyType);
 		MethodHandle creator = reflector.getCreator(proxyType, Handle.class, type);
-		return new Value(proxyType, creator);
+		return new Bytecode(proxyType, creator);
 	}
 
 	MethodHandle unreflectInstanceGetter(Class<?> type) {
@@ -191,7 +206,7 @@ public final class Compiler {
 			MethodInfo info = ctMethod.getMethodInfo();
 			ConstPool pool = info.getConstPool();
 			AnnotationsAttribute attribute = new AnnotationsAttribute(pool, AnnotationsAttribute.visibleTag);
-			Annotation annotation = new Annotation(PropertyName.class.getName(), pool);
+			Annotation annotation = new Annotation(propertyAnnotationName, pool);
 			annotation.addMemberValue("value", new StringMemberValue(propertyName, pool));
 			attribute.addAnnotation(annotation);
 			info.addAttribute(attribute);
@@ -213,6 +228,6 @@ public final class Compiler {
 		return type;
 	}
 
-	private record Value(Class<?> proxyType, MethodHandle creator) {
+	private record Bytecode(Class<?> proxyType, MethodHandle creator) {
 	}
 }

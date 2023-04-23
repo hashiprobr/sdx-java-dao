@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
@@ -18,6 +21,7 @@ final class ConverterFactory {
 		return INSTANCE;
 	}
 
+	private final Logger logger;
 	private final Reflector reflector;
 	private final Map<Class<? extends DaoConverter<?, ?>>, DaoConverter<?, ?>> cache;
 
@@ -26,6 +30,7 @@ final class ConverterFactory {
 	}
 
 	ConverterFactory(Reflector reflector) {
+		this.logger = LoggerFactory.getLogger(ConverterFactory.class);
 		this.reflector = reflector;
 		this.cache = new HashMap<>();
 	}
@@ -37,18 +42,28 @@ final class ConverterFactory {
 	synchronized DaoConverter<?, ?> get(Class<? extends DaoConverter<?, ?>> type) {
 		DaoConverter<?, ?> converter = cache.get(type);
 		if (converter == null) {
-			MethodHandle creator = reflector.getExternalCreator(type);
+			String typeName = type.getName();
+			MethodHandle creator = reflector.getExternalCreator(type, typeName);
 			try {
 				converter = (DaoConverter<?, ?>) creator.invoke();
 			} catch (Throwable throwable) {
 				throw new ReflectionException(throwable);
 			}
 			cache.put(type, converter);
+			logger.info("Registered %s".formatted(typeName));
 		}
 		return converter;
 	}
 
 	Type getSourceType(DaoConverter<?, ?> converter) {
+		return getSpecificType(converter, 0);
+	}
+
+	Type getTargetType(DaoConverter<?, ?> converter) {
+		return getSpecificType(converter, 1);
+	}
+
+	private Type getSpecificType(DaoConverter<?, ?> converter, int rootIndex) {
 		Class<?> type = converter.getClass();
 		TypeVariable<?>[] typeVariables;
 
@@ -63,7 +78,7 @@ final class ConverterFactory {
 
 				if (superType != null) {
 					if (superType.equals(DaoConverter.class)) {
-						int index = 0;
+						int index = rootIndex;
 
 						while (node != null) {
 							ParameterizedType genericSuperType = node.getGenericSuperType();

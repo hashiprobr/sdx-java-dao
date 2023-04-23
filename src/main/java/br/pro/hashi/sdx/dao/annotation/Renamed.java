@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.FIELD })
-public @interface Named {
+public @interface Renamed {
 	/**
 	 * The name of the collection or the property.
 	 * 

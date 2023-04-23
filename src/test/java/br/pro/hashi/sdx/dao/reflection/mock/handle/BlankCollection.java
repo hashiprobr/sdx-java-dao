@@ -1,7 +1,7 @@
 package br.pro.hashi.sdx.dao.reflection.mock.handle;
 
-import br.pro.hashi.sdx.dao.annotation.Named;
+import br.pro.hashi.sdx.dao.annotation.Renamed;
 
-@Named(" \t\n")
+@Renamed(" \t\n")
 public class BlankCollection {
 }

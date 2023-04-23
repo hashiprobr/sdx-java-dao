@@ -31,8 +31,7 @@ public final class DaoClient {
 	private final FirebaseOptions options;
 	private final String projectId;
 	private FirebaseApp app;
-	private Firestore firestore;
-	private Bucket bucket;
+	private Connection connection;
 
 	DaoClient(FirebaseOptions options, String projectId) {
 		this(HandleFactory.getInstance(), options, projectId);
@@ -45,32 +44,21 @@ public final class DaoClient {
 		this.options = options;
 		this.projectId = projectId;
 		this.app = null;
-		this.firestore = null;
-		this.bucket = null;
+		this.connection = null;
 	}
 
-	public void connect() {
-		if (app != null) {
-			return;
-		}
-		logger.info("Connecting Firebase client to %s...".formatted(projectId));
-		String url = "%s.appspot.com".formatted(projectId);
-		app = FirebaseApp.initializeApp(options, projectId);
-		firestore = FirestoreClient.getFirestore(app);
-		bucket = StorageClient.getInstance(app).bucket(url);
-		logger.info("Firebase client connected to %s".formatted(projectId));
+	HandleFactory getFactory() {
+		return factory;
 	}
 
-	public void disconnect() {
-		if (app == null) {
-			return;
-		}
-		logger.info("Disconnecting Firebase client from %s...".formatted(projectId));
-		app.delete();
-		app = null;
-		firestore = null;
-		bucket = null;
-		logger.info("Firebase client disconnected from %s".formatted(projectId));
+	synchronized Firestore getFirestore() {
+		doConnect();
+		return connection.firestore();
+	}
+
+	synchronized Connection getConnection() {
+		doConnect();
+		return connection;
 	}
 
 	public synchronized <T> Dao<T> get(Class<T> type) {
@@ -82,5 +70,36 @@ public final class DaoClient {
 			cache.put(type, dao);
 		}
 		return dao;
+	}
+
+	public synchronized void connect() {
+		doConnect();
+	}
+
+	public synchronized void disconnect() {
+		if (app == null) {
+			return;
+		}
+		logger.info("Disconnecting Firebase client from project %s...".formatted(projectId));
+		app.delete();
+		app = null;
+		connection = null;
+		logger.info("Firebase client disconnected from project %s".formatted(projectId));
+	}
+
+	private void doConnect() {
+		if (app != null) {
+			return;
+		}
+		logger.info("Connecting Firebase client to project %s...".formatted(projectId));
+		app = FirebaseApp.initializeApp(options, projectId);
+		Firestore firestore = FirestoreClient.getFirestore(app);
+		String url = "%s.appspot.com".formatted(projectId);
+		Bucket bucket = StorageClient.getInstance(app).bucket(url);
+		connection = new Connection(firestore, bucket);
+		logger.info("Firebase client connected to project %s".formatted(projectId));
+	}
+
+	record Connection(Firestore firestore, Bucket bucket) {
 	}
 }

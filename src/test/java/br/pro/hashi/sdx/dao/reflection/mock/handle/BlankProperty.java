@@ -1,7 +1,7 @@
 package br.pro.hashi.sdx.dao.reflection.mock.handle;
 
-import br.pro.hashi.sdx.dao.annotation.Named;
+import br.pro.hashi.sdx.dao.annotation.Renamed;
 
 public class BlankProperty {
-	public @Named(" \t\n") boolean value;
+	public @Renamed(" \t\n") boolean value;
 }

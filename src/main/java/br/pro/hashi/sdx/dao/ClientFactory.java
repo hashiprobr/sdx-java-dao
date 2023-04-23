@@ -25,7 +25,7 @@ final class ClientFactory {
 
 	synchronized DaoClient get() {
 		if (cache.isEmpty()) {
-			throw new IllegalStateException("No Firebase client is running");
+			throw new IllegalStateException("No Firebase client exists");
 		}
 		String projectId = cache.keySet().iterator().next();
 		return cache.get(projectId);
@@ -41,7 +41,7 @@ final class ClientFactory {
 		}
 		DaoClient factory = cache.get(projectId);
 		if (factory == null) {
-			throw new IllegalArgumentException("Firebase client to %s is not running".formatted(projectId));
+			throw new IllegalArgumentException("Firebase client to project %s does not exist".formatted(projectId));
 		}
 		return factory;
 	}

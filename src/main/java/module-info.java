@@ -6,11 +6,12 @@ module br.pro.hashi.sdx.dao {
 	requires google.cloud.firestore;
 	requires google.cloud.storage;
 	requires google.cloud.core;
+	requires com.google.api.apicommon;
 	requires com.google.auth;
 	requires com.google.auth.oauth2;
 	requires com.google.common;
-	requires org.slf4j;
 	requires org.javassist;
+	requires org.slf4j;
 
 	exports br.pro.hashi.sdx.dao;
 	exports br.pro.hashi.sdx.dao.annotation;

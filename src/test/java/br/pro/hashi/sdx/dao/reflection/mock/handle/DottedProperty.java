@@ -1,7 +1,7 @@
 package br.pro.hashi.sdx.dao.reflection.mock.handle;
 
-import br.pro.hashi.sdx.dao.annotation.Named;
+import br.pro.hashi.sdx.dao.annotation.Renamed;
 
 public class DottedProperty {
-	public @Named("dotted.property") boolean value;
+	public @Renamed("dotted.property") boolean value;
 }

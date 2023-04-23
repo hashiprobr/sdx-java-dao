@@ -13,7 +13,7 @@ import br.pro.hashi.sdx.dao.annotation.Auto;
 import br.pro.hashi.sdx.dao.annotation.Converted;
 import br.pro.hashi.sdx.dao.annotation.File;
 import br.pro.hashi.sdx.dao.annotation.Key;
-import br.pro.hashi.sdx.dao.annotation.Named;
+import br.pro.hashi.sdx.dao.annotation.Renamed;
 import br.pro.hashi.sdx.dao.annotation.Web;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
@@ -25,11 +25,12 @@ public class Handle {
 
 	private final Reflector reflector;
 	private final ConverterFactory factory;
+	private final Class<?> type;
 	private final MethodHandle creator;
 	private final String collectionName;
+	private final Map<String, DaoConverter<?, ?>> converters;
 	private final Map<String, MethodHandle> getters;
 	private final Map<String, MethodHandle> setters;
-	private final Map<String, DaoConverter<?, ?>> converters;
 	private final Map<String, String> propertyNames;
 	private final Map<String, String> fieldTypeNames;
 	private final Set<String> fieldNames;
@@ -52,7 +53,7 @@ public class Handle {
 			throw new ReflectionException(throwable);
 		}
 
-		Named typeNamedAnnotation = type.getDeclaredAnnotation(Named.class);
+		Renamed typeNamedAnnotation = type.getDeclaredAnnotation(Renamed.class);
 		String collectionName;
 		if (typeNamedAnnotation == null) {
 			String typeSimpleName = type.getSimpleName();
@@ -68,13 +69,13 @@ public class Handle {
 		} else {
 			collectionName = typeNamedAnnotation.value().strip();
 			if (collectionName.isEmpty()) {
-				throw new AnnotationException(typeName, "Class @Named value cannot be blank");
+				throw new AnnotationException(typeName, "Class @Renamed value cannot be blank");
 			}
 		}
 
+		Map<String, DaoConverter<?, ?>> converters = new HashMap<>();
 		Map<String, MethodHandle> getters = new HashMap<>();
 		Map<String, MethodHandle> setters = new HashMap<>();
-		Map<String, DaoConverter<?, ?>> converters = new HashMap<>();
 		Map<String, String> propertyNames = new HashMap<>();
 		Map<String, String> fieldTypeNames = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
@@ -92,8 +93,6 @@ public class Handle {
 						if (!Modifier.isPublic(modifiers)) {
 							field.setAccessible(true);
 						}
-						getters.put(fieldName, reflector.unreflectGetter(field));
-						setters.put(fieldName, reflector.unreflectSetter(field));
 
 						Converted convertedAnnotation = field.getDeclaredAnnotation(Converted.class);
 						if (convertedAnnotation != null) {
@@ -104,14 +103,17 @@ public class Handle {
 							converters.put(fieldName, converter);
 						}
 
-						Named fieldNamedAnnotation = field.getDeclaredAnnotation(Named.class);
-						if (fieldNamedAnnotation != null) {
-							String propertyName = fieldNamedAnnotation.value().strip();
+						getters.put(fieldName, reflector.unreflectGetter(field));
+						setters.put(fieldName, reflector.unreflectSetter(field));
+
+						Renamed fieldRenamedAnnotation = field.getDeclaredAnnotation(Renamed.class);
+						if (fieldRenamedAnnotation != null) {
+							String propertyName = fieldRenamedAnnotation.value().strip();
 							if (propertyName.isEmpty()) {
-								throw new AnnotationException(superType, "Field @Named value cannot be blank");
+								throw new AnnotationException(superType, "Field @Renamed value cannot be blank");
 							}
 							if (propertyName.indexOf('.') != -1) {
-								throw new AnnotationException(superType, "Field @Named value cannot have dots");
+								throw new AnnotationException(superType, "Field @Renamed value cannot have dots");
 							}
 							propertyNames.put(fieldName, propertyName);
 						}
@@ -172,11 +174,12 @@ public class Handle {
 
 		this.reflector = reflector;
 		this.factory = factory;
+		this.type = type;
 		this.creator = creator;
 		this.collectionName = collectionName;
+		this.converters = converters;
 		this.getters = getters;
 		this.setters = setters;
-		this.converters = converters;
 		this.propertyNames = propertyNames;
 		this.fieldTypeNames = fieldTypeNames;
 		this.fieldNames = fieldNames;
@@ -192,6 +195,14 @@ public class Handle {
 
 	ConverterFactory getFactory() {
 		return factory;
+	}
+
+	Class<?> getType() {
+		return type;
+	}
+
+	DaoConverter<?, ?> getConverter(String fieldName) {
+		return converters.get(fieldName);
 	}
 
 	Set<String> getFieldNames() {
@@ -210,22 +221,13 @@ public class Handle {
 		return reflector.invokeCreator(creator);
 	}
 
-	@SuppressWarnings("unchecked")
-	<S> Object get(String fieldName, Object instance) {
+	Object get(String fieldName, Object instance) {
 		Object value = rawGet(fieldName, instance);
-		DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
-		if (converter != null) {
-			value = converter.to((S) value);
-		}
-		return value;
+		return convertTo(fieldName, value);
 	}
 
-	@SuppressWarnings("unchecked")
-	<T> void set(String fieldName, Object instance, Object value) {
-		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
-		if (converter != null) {
-			value = converter.from((T) value);
-		}
+	void set(String fieldName, Object instance, Object value) {
+		value = convertFrom(fieldName, value);
 		rawSet(fieldName, instance, value);
 	}
 
@@ -253,36 +255,12 @@ public class Handle {
 		rawSet(fieldName, instance, value);
 	}
 
-	public void setAutoKey(Object instance, String value) {
-		rawSet(keyFieldName, instance, value);
+	public String getKeyString(Object instance) {
+		return rawGet(keyFieldName, instance).toString();
 	}
 
-	@SuppressWarnings("unchecked")
-	public <S> Map<String, Object> convert(Map<String, Object> values) {
-		Map<String, Object> converted = new HashMap<>();
-		for (String fieldName : values.keySet()) {
-			Object value = values.get(fieldName);
-			fieldName = fieldName.strip();
-			int index = fieldName.indexOf('.');
-			if (index == -1) {
-				if (converters.containsKey(fieldName)) {
-					DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
-					value = converter.to((S) value);
-				}
-				if (propertyNames.containsKey(fieldName)) {
-					fieldName = propertyNames.get(fieldName);
-				}
-			} else {
-				String prefix = fieldName.substring(0, index);
-				String suffix = fieldName.substring(index);
-				if (propertyNames.containsKey(prefix)) {
-					prefix = propertyNames.get(prefix);
-				}
-				fieldName = "%s%s".formatted(prefix, suffix);
-			}
-			converted.put(fieldName, value);
-		}
-		return converted;
+	public void setAutoKey(Object instance, String value) {
+		rawSet(keyFieldName, instance, value);
 	}
 
 	private <T> T rawGet(String fieldName, Object instance) {
@@ -291,5 +269,80 @@ public class Handle {
 
 	private <T> void rawSet(String fieldName, Object instance, T value) {
 		reflector.invokeSetter(setters.get(fieldName), instance, value);
+	}
+
+	public Object toInstance(Map<String, Object> data) {
+		Object instance = create();
+		for (String fieldName : fieldNames) {
+			String propertyName = rename(fieldName);
+			Object value = data.get(propertyName);
+			if (value != null) {
+				set(fieldName, instance, value);
+			}
+		}
+		return instance;
+	}
+
+	public Map<String, Object> toData(Object instance) {
+		Map<String, Object> data = new HashMap<>();
+		for (String fieldName : fieldNames) {
+			if (!fieldName.equals(keyFieldName)) {
+				String propertyName = rename(fieldName);
+				Object value = get(fieldName, instance);
+				data.put(propertyName, value);
+			}
+		}
+		return data;
+	}
+
+	public Map<String, Object> toData(Map<String, Object> values) {
+		Map<String, Object> data = new HashMap<>();
+		for (String fieldName : values.keySet()) {
+			Object value = values.get(fieldName);
+			fieldName = fieldName.strip();
+			int index = fieldName.indexOf('.');
+			if (index == -1) {
+				if (fieldName.equals(keyFieldName)) {
+					throw new IllegalArgumentException("Key field cannot be overwritten");
+				}
+				value = convertTo(fieldName, value);
+				fieldName = rename(fieldName);
+			} else {
+				String prefix = fieldName.substring(0, index);
+				String suffix = fieldName.substring(index);
+				if (prefix.equals(keyFieldName)) {
+					throw new IllegalArgumentException("Key field cannot be modified");
+				}
+				fieldName = "%s%s".formatted(rename(prefix), suffix);
+			}
+			data.put(fieldName, value);
+		}
+		return data;
+	}
+
+	private String rename(String fieldName) {
+		String propertyName = propertyNames.get(fieldName);
+		if (propertyName == null) {
+			return fieldName;
+		}
+		return propertyName;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <S> Object convertTo(String fieldName, Object value) {
+		DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
+		if (converter == null) {
+			return value;
+		}
+		return converter.to((S) value);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Object convertFrom(String fieldName, Object value) {
+		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
+		if (converter == null) {
+			return value;
+		}
+		return converter.from((T) value);
 	}
 }

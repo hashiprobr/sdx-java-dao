@@ -21,7 +21,10 @@ final class Reflector {
 	}
 
 	<T> MethodHandle getExternalCreator(Class<T> type) {
-		String typeName = type.getName();
+		return getExternalCreator(type, type.getName());
+	}
+
+	<T> MethodHandle getExternalCreator(Class<T> type, String typeName) {
 		if (Modifier.isAbstract(type.getModifiers())) {
 			throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
 		}

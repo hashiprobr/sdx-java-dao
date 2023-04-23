@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -64,8 +65,53 @@ class ClientFactoryTest {
 
 	@Test
 	void gets() {
-		DaoClient factory = f.getFromCredentials("README.md");
+		String credentialsPath = mockCredentials();
+
+		List<DaoClient> constructed = factoryConstruction.constructed();
+		assertTrue(constructed.isEmpty());
+
+		DaoClient factory = f.getFromCredentials(credentialsPath);
+		assertEquals(1, constructed.size());
+		assertEquals(factory, constructed.get(0));
+
 		assertSame(factory, f.get());
+		assertEquals(1, constructed.size());
+	}
+
+	@Test
+	void getsFromId() {
+		String credentialsPath = mockCredentials();
+
+		List<DaoClient> constructed = factoryConstruction.constructed();
+		assertTrue(constructed.isEmpty());
+
+		DaoClient factory = f.getFromCredentials(credentialsPath);
+		assertEquals(1, constructed.size());
+		assertEquals(factory, constructed.get(0));
+
+		assertSame(factory, f.getFromId("id"));
+		assertEquals(1, constructed.size());
+	}
+
+	@Test
+	void getsFromCredentials() {
+		String credentialsPath = mockCredentials();
+
+		List<DaoClient> constructed = factoryConstruction.constructed();
+		assertTrue(constructed.isEmpty());
+
+		DaoClient factory = f.getFromCredentials(credentialsPath);
+		assertEquals(1, constructed.size());
+		assertEquals(factory, constructed.get(0));
+
+		assertSame(factory, f.getFromCredentials(credentialsPath));
+		assertEquals(1, constructed.size());
+	}
+
+	private String mockCredentials() {
+		ClassLoader loader = getClass().getClassLoader();
+		File file = new File(loader.getResource("mock.json").getFile());
+		return file.getAbsolutePath();
 	}
 
 	@Test
@@ -73,12 +119,6 @@ class ClientFactoryTest {
 		assertThrows(IllegalStateException.class, () -> {
 			f.get();
 		});
-	}
-
-	@Test
-	void getsFromId() {
-		DaoClient factory = f.getFromCredentials("README.md");
-		assertSame(factory, f.getFromId("id"));
 	}
 
 	@Test
@@ -103,19 +143,6 @@ class ClientFactoryTest {
 	}
 
 	@Test
-	void getsFromCredentials() {
-		List<DaoClient> constructed = factoryConstruction.constructed();
-		assertTrue(constructed.isEmpty());
-
-		DaoClient factory = f.getFromCredentials("README.md");
-		assertEquals(1, constructed.size());
-		assertEquals(factory, constructed.get(0));
-
-		assertSame(factory, f.getFromCredentials("README.md"));
-		assertEquals(1, constructed.size());
-	}
-
-	@Test
 	void doesNotGetFromNullCredentials() {
 		assertThrows(IllegalArgumentException.class, () -> {
 			f.getFromCredentials(null);
@@ -132,7 +159,7 @@ class ClientFactoryTest {
 	@Test
 	void doesNotGetFromMissingCredentials() {
 		assertThrows(UncheckedIOException.class, () -> {
-			f.getFromCredentials("MISSING.md");
+			f.getFromCredentials("missing.json");
 		});
 	}
 }
