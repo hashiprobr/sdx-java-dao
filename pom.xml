@@ -4,7 +4,7 @@
   <artifactId>sdx-dao</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>${project.groupId}:${project.artifactId}</name>
-  <description>Simple DAO framework based on Google Cloud Firestore and Storage.</description>
+  <description>Simple synchronous DAO framework based on Google Cloud Firestore and Storage.</description>
   <url>https://github.com/hashiprobr/sdx-java-dao</url>
   <licenses>
     <license>
@@ -59,6 +59,11 @@
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-core</artifactId>
+      <version>2.15.0-PATCH</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-core-http</artifactId>
       <version>2.15.0-PATCH</version>
     </dependency>
     <dependency>

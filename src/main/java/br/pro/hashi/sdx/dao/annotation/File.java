@@ -13,4 +13,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface File {
+	/**
+	 * Stub.
+	 * 
+	 * @return stub
+	 */
+	String value() default "application/octet-stream";
 }

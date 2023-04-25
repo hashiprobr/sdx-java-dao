@@ -1,4 +1,4 @@
 sdx-dao
 =======
 
-**Simple DAO framework based on Google Cloud Firestore and Storage.**
+**Simple synchronous DAO framework based on Google Cloud Firestore and Storage.**

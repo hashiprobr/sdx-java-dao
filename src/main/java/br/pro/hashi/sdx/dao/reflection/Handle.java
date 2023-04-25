@@ -31,10 +31,10 @@ public class Handle {
 	private final Map<String, DaoConverter<?, ?>> converters;
 	private final Map<String, MethodHandle> getters;
 	private final Map<String, MethodHandle> setters;
-	private final Map<String, String> propertyNames;
 	private final Map<String, String> fieldTypeNames;
+	private final Map<String, String> propertyNames;
+	private final Map<String, String> contentTypes;
 	private final Set<String> fieldNames;
-	private final Set<String> fileFieldNames;
 	private final Set<String> webFieldNames;
 	private final String keyFieldName;
 	private final boolean autoKey;
@@ -46,7 +46,7 @@ public class Handle {
 	Handle(Reflector reflector, ConverterFactory factory, Class<?> type) {
 		String typeName = type.getName();
 
-		MethodHandle creator = reflector.getExternalCreator(type);
+		MethodHandle creator = reflector.getExternalCreator(type, typeName);
 		try {
 			creator.invoke();
 		} catch (Throwable throwable) {
@@ -76,10 +76,10 @@ public class Handle {
 		Map<String, DaoConverter<?, ?>> converters = new HashMap<>();
 		Map<String, MethodHandle> getters = new HashMap<>();
 		Map<String, MethodHandle> setters = new HashMap<>();
-		Map<String, String> propertyNames = new HashMap<>();
 		Map<String, String> fieldTypeNames = new HashMap<>();
+		Map<String, String> propertyNames = new HashMap<>();
+		Map<String, String> contentTypes = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
-		Set<String> fileFieldNames = new HashSet<>();
 		Set<String> webFieldNames = new HashSet<>();
 		String keyFieldName = null;
 		boolean autoKey = false;
@@ -106,6 +106,10 @@ public class Handle {
 						getters.put(fieldName, reflector.unreflectGetter(field));
 						setters.put(fieldName, reflector.unreflectSetter(field));
 
+						Class<?> fieldType = field.getType();
+
+						fieldTypeNames.put(fieldName, fieldType.getName());
+
 						Renamed fieldRenamedAnnotation = field.getDeclaredAnnotation(Renamed.class);
 						if (fieldRenamedAnnotation != null) {
 							String propertyName = fieldRenamedAnnotation.value().strip();
@@ -117,9 +121,6 @@ public class Handle {
 							}
 							propertyNames.put(fieldName, propertyName);
 						}
-
-						Class<?> fieldType = field.getType();
-						fieldTypeNames.put(fieldName, fieldType.getName());
 
 						fieldNames.add(fieldName);
 
@@ -136,7 +137,7 @@ public class Handle {
 							if (!fieldType.equals(String.class)) {
 								throw new AnnotationException(superType, "@File field must be a string");
 							}
-							fileFieldNames.add(fieldName);
+							contentTypes.put(fieldName, fileAnnotation.value());
 							if (webAnnotation != null) {
 								webFieldNames.add(fieldName);
 							}
@@ -152,7 +153,7 @@ public class Handle {
 							if (convertedAnnotation != null) {
 								throw new AnnotationException(superType, "@Key field cannot be a @Converted field");
 							}
-							if (fileFieldNames.contains(fieldName)) {
+							if (contentTypes.containsKey(fieldName)) {
 								throw new AnnotationException(superType, "@Key field cannot be a @File field");
 							}
 							if (keyFieldName != null) {
@@ -160,6 +161,9 @@ public class Handle {
 							}
 							keyFieldName = fieldName;
 							if (autoAnnotation != null) {
+								if (!fieldType.equals(String.class)) {
+									throw new AnnotationException(superType, "@Auto field must be a string");
+								}
 								autoKey = true;
 							}
 						}
@@ -180,10 +184,10 @@ public class Handle {
 		this.converters = converters;
 		this.getters = getters;
 		this.setters = setters;
-		this.propertyNames = propertyNames;
 		this.fieldTypeNames = fieldTypeNames;
+		this.propertyNames = propertyNames;
+		this.contentTypes = contentTypes;
 		this.fieldNames = fieldNames;
-		this.fileFieldNames = fileFieldNames;
 		this.webFieldNames = webFieldNames;
 		this.keyFieldName = keyFieldName;
 		this.autoKey = autoKey;
@@ -201,20 +205,20 @@ public class Handle {
 		return type;
 	}
 
-	DaoConverter<?, ?> getConverter(String fieldName) {
-		return converters.get(fieldName);
-	}
-
 	Set<String> getFieldNames() {
 		return fieldNames;
 	}
 
-	String getPropertyName(String fieldName) {
-		return propertyNames.get(fieldName);
+	DaoConverter<?, ?> getConverter(String fieldName) {
+		return converters.get(fieldName);
 	}
 
 	String getFieldTypeName(String fieldName) {
 		return fieldTypeNames.get(fieldName);
+	}
+
+	String getPropertyName(String fieldName) {
+		return propertyNames.get(fieldName);
 	}
 
 	Object create() {
@@ -222,13 +226,11 @@ public class Handle {
 	}
 
 	Object get(String fieldName, Object instance) {
-		Object value = rawGet(fieldName, instance);
-		return convertTo(fieldName, value);
+		return convertTo(fieldName, rawGet(fieldName, instance));
 	}
 
 	void set(String fieldName, Object instance, Object value) {
-		value = convertFrom(fieldName, value);
-		rawSet(fieldName, instance, value);
+		rawSet(fieldName, instance, convertFrom(fieldName, value));
 	}
 
 	public String getCollectionName() {
@@ -239,12 +241,12 @@ public class Handle {
 		return autoKey;
 	}
 
-	public boolean isFile(String fieldName) {
-		return fileFieldNames.contains(fieldName);
+	public String getContentType(String fieldName) {
+		return contentTypes.get(fieldName);
 	}
 
-	public boolean isWeb(String fieldName) {
-		return webFieldNames.contains(fieldName);
+	public boolean isFieldName(String fieldName) {
+		return fieldNames.contains(fieldName);
 	}
 
 	public String getFile(String fieldName, Object instance) {
@@ -255,12 +257,24 @@ public class Handle {
 		rawSet(fieldName, instance, value);
 	}
 
-	public String getKeyString(Object instance) {
-		return rawGet(keyFieldName, instance).toString();
+	public boolean isWeb(String fieldName) {
+		return webFieldNames.contains(fieldName);
 	}
 
-	public void setAutoKey(Object instance, String value) {
+	public boolean isKey(String fieldName) {
+		return fieldName.equals(fieldName);
+	}
+
+	public Object getKey(Object instance) {
+		return rawGet(keyFieldName, instance);
+	}
+
+	public void setKey(Object instance, String value) {
 		rawSet(keyFieldName, instance, value);
+	}
+
+	public void setKey(Map<String, Object> values, String value) {
+		values.put(keyFieldName, value);
 	}
 
 	private <T> T rawGet(String fieldName, Object instance) {
@@ -272,23 +286,35 @@ public class Handle {
 	}
 
 	public Object toInstance(Map<String, Object> data) {
-		Object instance = create();
+		Object instance = reflector.invokeCreator(creator);
 		for (String fieldName : fieldNames) {
 			String propertyName = rename(fieldName);
 			Object value = data.get(propertyName);
 			if (value != null) {
-				set(fieldName, instance, value);
+				rawSet(fieldName, instance, convertFrom(fieldName, value));
 			}
 		}
 		return instance;
 	}
 
-	public Map<String, Object> toData(Object instance) {
+	public Map<String, Object> toValues(Map<String, Object> data) {
+		Map<String, Object> values = new HashMap<>();
+		for (String fieldName : fieldNames) {
+			String propertyName = rename(fieldName);
+			Object value = data.get(propertyName);
+			if (value != null) {
+				values.put(fieldName, convertFrom(fieldName, value));
+			}
+		}
+		return values;
+	}
+
+	public Map<String, Object> toData(Object instance, boolean ignoreKey) {
 		Map<String, Object> data = new HashMap<>();
 		for (String fieldName : fieldNames) {
-			if (!fieldName.equals(keyFieldName)) {
+			if (!(ignoreKey && fieldName.equals(keyFieldName)) && contentTypes.get(fieldName) == null) {
 				String propertyName = rename(fieldName);
-				Object value = get(fieldName, instance);
+				Object value = convertTo(fieldName, rawGet(fieldName, instance));
 				data.put(propertyName, value);
 			}
 		}
@@ -302,16 +328,22 @@ public class Handle {
 			fieldName = fieldName.strip();
 			int index = fieldName.indexOf('.');
 			if (index == -1) {
+				if (contentTypes.get(fieldName) != null) {
+					throw new IllegalArgumentException("@File fields can only be overwritten by uploadFile");
+				}
 				if (fieldName.equals(keyFieldName)) {
-					throw new IllegalArgumentException("Key field cannot be overwritten");
+					throw new IllegalArgumentException("@Key field cannot be overwritten");
 				}
 				value = convertTo(fieldName, value);
 				fieldName = rename(fieldName);
 			} else {
 				String prefix = fieldName.substring(0, index);
 				String suffix = fieldName.substring(index);
+				if (contentTypes.get(prefix) != null) {
+					throw new IllegalArgumentException("@File fields can only be modified by uploadFile");
+				}
 				if (prefix.equals(keyFieldName)) {
-					throw new IllegalArgumentException("Key field cannot be modified");
+					throw new IllegalArgumentException("@Key field cannot be modified");
 				}
 				fieldName = "%s%s".formatted(rename(prefix), suffix);
 			}
@@ -328,17 +360,17 @@ public class Handle {
 		return propertyName;
 	}
 
-	@SuppressWarnings("unchecked")
-	private <S> Object convertTo(String fieldName, Object value) {
+	private <S> Object convertTo(String fieldName, S value) {
+		@SuppressWarnings("unchecked")
 		DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
 		if (converter == null) {
 			return value;
 		}
-		return converter.to((S) value);
+		return converter.to(value);
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T> Object convertFrom(String fieldName, Object value) {
+	private <T> Object convertFrom(String fieldName, T value) {
+		@SuppressWarnings("unchecked")
 		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
 		if (converter == null) {
 			return value;

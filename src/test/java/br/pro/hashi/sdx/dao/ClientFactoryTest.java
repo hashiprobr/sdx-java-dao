@@ -123,7 +123,7 @@ class ClientFactoryTest {
 
 	@Test
 	void doesNotGetFromNullId() {
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(NullPointerException.class, () -> {
 			f.getFromId(null);
 		});
 	}
@@ -144,7 +144,7 @@ class ClientFactoryTest {
 
 	@Test
 	void doesNotGetFromNullCredentials() {
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(NullPointerException.class, () -> {
 			f.getFromCredentials(null);
 		});
 	}

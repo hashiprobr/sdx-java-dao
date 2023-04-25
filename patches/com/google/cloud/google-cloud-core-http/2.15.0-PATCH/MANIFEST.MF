@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Created-By: Maven JAR Plugin 3.3.0
+Build-Jdk-Spec: 11
+Specification-Title: Google Cloud Core HTTP
+Specification-Version: 2.15
+Specification-Vendor: Google LLC
+Implementation-Title: Google Cloud Core HTTP
+Implementation-Version: 2.15.0
+Implementation-Vendor: Google LLC
+artifactId: google-cloud-core-http
+groupId: com.google.cloud
+version: 2.15.0
+Automatic-Module-Name: google.cloud.core.http
+

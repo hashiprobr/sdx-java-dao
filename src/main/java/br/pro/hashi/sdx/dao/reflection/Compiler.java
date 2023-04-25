@@ -119,8 +119,8 @@ public final class Compiler {
 
 		for (String fieldName : handle.getFieldNames()) {
 			DaoConverter<?, ?> converter = handle.getConverter(fieldName);
-			String propertyName = handle.getPropertyName(fieldName);
 			String fieldTypeName = handle.getFieldTypeName(fieldName);
+			String propertyName = handle.getPropertyName(fieldName);
 
 			CtClass ctFieldType;
 			if (converter == null) {

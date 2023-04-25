@@ -7,7 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that...
+ * Indicates that a {@link File} field should be publicly available via web
+ * link.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

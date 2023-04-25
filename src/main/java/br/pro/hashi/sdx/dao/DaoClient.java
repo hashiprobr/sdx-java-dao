@@ -16,11 +16,26 @@ import com.google.firebase.cloud.StorageClient;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 import br.pro.hashi.sdx.dao.reflection.HandleFactory;
 
+/**
+ * Stub.
+ */
 public final class DaoClient {
+	/**
+	 * Stub.
+	 * 
+	 * @param projectId stub
+	 * @return stub
+	 */
 	public static DaoClient fromId(String projectId) {
 		return ClientFactory.getInstance().getFromId(projectId);
 	}
 
+	/**
+	 * Stub.
+	 * 
+	 * @param credentialsPath stub
+	 * @return stub
+	 */
 	public static DaoClient fromCredentials(String credentialsPath) {
 		return ClientFactory.getInstance().getFromCredentials(credentialsPath);
 	}
@@ -51,16 +66,28 @@ public final class DaoClient {
 		return factory;
 	}
 
-	synchronized Firestore getFirestore() {
-		doConnect();
-		return connection.firestore();
-	}
-
 	synchronized Connection getConnection() {
 		doConnect();
 		return connection;
 	}
 
+	synchronized Firestore getFirestore() {
+		doConnect();
+		return connection.firestore();
+	}
+
+	synchronized Bucket getBucket() {
+		doConnect();
+		return connection.bucket();
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param <T>  stub
+	 * @param type stub
+	 * @return stub
+	 */
 	public synchronized <T> Dao<T> get(Class<T> type) {
 		@SuppressWarnings("unchecked")
 		Dao<T> dao = (Dao<T>) cache.get(type);
@@ -72,10 +99,16 @@ public final class DaoClient {
 		return dao;
 	}
 
+	/**
+	 * Stub.
+	 */
 	public synchronized void connect() {
 		doConnect();
 	}
 
+	/**
+	 * Stub.
+	 */
 	public synchronized void disconnect() {
 		if (app == null) {
 			return;

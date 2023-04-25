@@ -33,7 +33,7 @@ final class ClientFactory {
 
 	synchronized DaoClient getFromId(String projectId) {
 		if (projectId == null) {
-			throw new IllegalArgumentException("Firebase project id cannot be null");
+			throw new NullPointerException("Firebase project id cannot be null");
 		}
 		projectId = projectId.strip();
 		if (projectId.isEmpty()) {
@@ -48,7 +48,7 @@ final class ClientFactory {
 
 	synchronized DaoClient getFromCredentials(String credentialsPath) {
 		if (credentialsPath == null) {
-			throw new IllegalArgumentException("Firebase credentials path cannot be null");
+			throw new NullPointerException("Firebase credentials path cannot be null");
 		}
 		credentialsPath = credentialsPath.strip();
 		if (credentialsPath.isEmpty()) {
