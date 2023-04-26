@@ -96,12 +96,12 @@ class Fao implements AutoCloseable {
 		return url;
 	}
 
-	Dao.File download() {
+	DaoFile download() {
 		Blob blob = bucket.get(fileName);
 		if (blob == null) {
 			return null;
 		}
-		return new Dao.File(blob.reader(), blob.getContentType(), blob.getSize());
+		return new DaoFile(blob.reader(), blob.getContentType(), blob.getSize());
 	}
 
 	void remove() {

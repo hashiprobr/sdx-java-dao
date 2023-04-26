@@ -20,15 +20,11 @@ final class Reflector {
 	Reflector() {
 	}
 
-	<T> MethodHandle getExternalCreator(Class<T> type) {
-		return getExternalCreator(type, type.getName());
-	}
-
-	<T> MethodHandle getExternalCreator(Class<T> type, String typeName) {
+	<E> MethodHandle getCreator(Class<E> type, String typeName) {
 		if (Modifier.isAbstract(type.getModifiers())) {
 			throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
 		}
-		Constructor<T> constructor;
+		Constructor<E> constructor;
 		try {
 			constructor = type.getDeclaredConstructor();
 		} catch (NoSuchMethodException exception) {
@@ -40,17 +36,7 @@ final class Reflector {
 		return unreflectConstructor(constructor);
 	}
 
-	<T> MethodHandle getCreator(Class<T> type, Class<?>... argTypes) {
-		Constructor<T> constructor;
-		try {
-			constructor = type.getDeclaredConstructor(argTypes);
-		} catch (NoSuchMethodException exception) {
-			throw new AssertionError(exception);
-		}
-		return unreflectConstructor(constructor);
-	}
-
-	MethodHandle unreflectConstructor(Constructor<?> constructor) {
+	<E> MethodHandle unreflectConstructor(Constructor<E> constructor) {
 		MethodHandle creator;
 		try {
 			creator = LOOKUP.unreflectConstructor(constructor);
@@ -60,10 +46,10 @@ final class Reflector {
 		return creator;
 	}
 
-	Object invokeCreator(MethodHandle creator, Object... args) {
-		Object instance;
+	<E> E invokeCreator(MethodHandle creator) {
+		E instance;
 		try {
-			instance = creator.invokeWithArguments(args);
+			instance = (E) creator.invoke();
 		} catch (Throwable throwable) {
 			throw new AssertionError(throwable);
 		}
@@ -90,17 +76,17 @@ final class Reflector {
 		return setter;
 	}
 
-	<T> T invokeGetter(MethodHandle getter, Object instance) {
-		T value;
+	<V> V invokeGetter(MethodHandle getter, Object instance) {
+		V value;
 		try {
-			value = (T) getter.invoke(instance);
+			value = (V) getter.invoke(instance);
 		} catch (Throwable throwable) {
 			throw new AssertionError(throwable);
 		}
 		return value;
 	}
 
-	<T> void invokeSetter(MethodHandle setter, Object instance, T value) {
+	<V> void invokeSetter(MethodHandle setter, Object instance, V value) {
 		try {
 			setter.invoke(instance, value);
 		} catch (Throwable throwable) {

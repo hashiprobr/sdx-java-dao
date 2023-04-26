@@ -43,7 +43,7 @@ final class ConverterFactory {
 		DaoConverter<?, ?> converter = cache.get(type);
 		if (converter == null) {
 			String typeName = type.getName();
-			MethodHandle creator = reflector.getExternalCreator(type, typeName);
+			MethodHandle creator = reflector.getCreator(type, typeName);
 			try {
 				converter = (DaoConverter<?, ?>) creator.invoke();
 			} catch (Throwable throwable) {

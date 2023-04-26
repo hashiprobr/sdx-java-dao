@@ -15,7 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
-import br.pro.hashi.sdx.dao.reflection.mock.reflector.Abstract;
+import br.pro.hashi.sdx.dao.reflection.mock.reflector.AbstractConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.ArgumentConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.DefaultConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.Fields;
@@ -23,7 +23,6 @@ import br.pro.hashi.sdx.dao.reflection.mock.reflector.PackageConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.PrivateConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.ProtectedConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.PublicConstructor;
-import br.pro.hashi.sdx.dao.reflection.mock.reflector.ThrowerArgumentConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.ThrowerConstructor;
 
 class ReflectorTest {
@@ -46,51 +45,22 @@ class ReflectorTest {
 			ProtectedConstructor.class,
 			PackageConstructor.class,
 			PrivateConstructor.class })
-	void getsAndInvokesExternalCreator(Class<?> type) {
-		MethodHandle creator = r.getExternalCreator(type);
-		Object instance = r.invokeCreator(creator);
-		assertInstanceOf(type, instance);
-	}
-
-	@Test
-	void getsAndInvokesNoArgsCreator() {
-		MethodHandle creator = r.getCreator(DefaultConstructor.class);
-		Object instance = r.invokeCreator(creator);
-		assertInstanceOf(DefaultConstructor.class, instance);
-	}
-
-	@Test
-	void getsAndInvokesOneArgCreator() {
-		MethodHandle creator = r.getCreator(ArgumentConstructor.class, boolean.class);
-		Object instance = r.invokeCreator(creator, true);
-		assertInstanceOf(ArgumentConstructor.class, instance);
+	<E> void getsAndInvokesCreator(Class<E> type) {
+		MethodHandle creator = getCreator(type);
+		assertInstanceOf(type, r.invokeCreator(creator));
 	}
 
 	@Test
 	void doesNotGetAbstractCreator() {
 		assertThrows(ReflectionException.class, () -> {
-			r.getExternalCreator(Abstract.class);
+			getCreator(AbstractConstructor.class);
 		});
 	}
 
 	@Test
-	void doesNotGetExternalCreator() {
+	void doesNotGetArgumentCreator() {
 		assertThrows(ReflectionException.class, () -> {
-			r.getExternalCreator(ArgumentConstructor.class);
-		});
-	}
-
-	@Test
-	void doesNotGetNoArgsCreator() {
-		assertThrows(AssertionError.class, () -> {
-			r.getCreator(ArgumentConstructor.class);
-		});
-	}
-
-	@Test
-	void doesNotGetOneArgCreator() {
-		assertThrows(AssertionError.class, () -> {
-			r.getCreator(DefaultConstructor.class, boolean.class);
+			getCreator(ArgumentConstructor.class);
 		});
 	}
 
@@ -99,8 +69,8 @@ class ReflectorTest {
 			ProtectedConstructor.class,
 			PackageConstructor.class,
 			PrivateConstructor.class })
-	<T> void doesNotUnreflectIllegalConstructor(Class<T> type) {
-		Constructor<T> constructor = assertDoesNotThrow(() -> {
+	<E> void doesNotUnreflectIllegalConstructor(Class<E> type) {
+		Constructor<E> constructor = assertDoesNotThrow(() -> {
 			return type.getDeclaredConstructor();
 		});
 		assertThrows(AssertionError.class, () -> {
@@ -110,18 +80,14 @@ class ReflectorTest {
 
 	@Test
 	void doesNotInvokeThrowerCreator() {
-		MethodHandle creator = r.getExternalCreator(ThrowerConstructor.class);
+		MethodHandle creator = getCreator(ThrowerConstructor.class);
 		assertThrows(AssertionError.class, () -> {
 			r.invokeCreator(creator);
 		});
 	}
 
-	@Test
-	void doesNotInvokeThrowerArgumentCreator() {
-		MethodHandle creator = r.getCreator(ThrowerArgumentConstructor.class, boolean.class);
-		assertThrows(AssertionError.class, () -> {
-			r.invokeCreator(creator, true);
-		});
+	private <E> MethodHandle getCreator(Class<E> type) {
+		return r.getCreator(type, type.getName());
 	}
 
 	@ParameterizedTest

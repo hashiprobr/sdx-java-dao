@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
+import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.mock.converter.DefaultImplementation;
@@ -72,7 +73,7 @@ class HandleTest {
 
 	private Reflector reflector;
 	private ConverterFactory factory;
-	private Handle h;
+	private Handle<?> h;
 
 	@BeforeEach
 	void setUp() {
@@ -85,7 +86,7 @@ class HandleTest {
 		mockCreator(Default.class);
 		h = newHandle(Default.class);
 		HandleFactory handleFactory = mock(HandleFactory.class);
-		when(handleFactory.get(Default.class)).thenReturn(h);
+		doReturn(h).when(handleFactory).get(Default.class);
 		try (MockedStatic<HandleFactory> factoryStatic = mockStatic(HandleFactory.class)) {
 			factoryStatic.when(() -> HandleFactory.getInstance()).thenReturn(handleFactory);
 			assertSame(h, Handle.of(Default.class));
@@ -93,15 +94,19 @@ class HandleTest {
 	}
 
 	@Test
+	void constructs() {
+		assertInstanceOf(Handle.class, Construction.construct(Default.class));
+	}
+
+	@Test
 	void constructsWithDefaultReflectorAndFactory() {
 		mockCreator(Default.class);
-		Handle handle;
+		Handle<?> handle;
 		try (MockedStatic<Reflector> reflectorStatic = mockStatic(Reflector.class)) {
 			reflectorStatic.when(() -> Reflector.getInstance()).thenReturn(reflector);
 			try (MockedStatic<ConverterFactory> factoryStatic = mockStatic(ConverterFactory.class)) {
 				factoryStatic.when(() -> ConverterFactory.getInstance()).thenReturn(factory);
-				handle = new Handle(Default.class);
-				assertEquals(Default.class, handle.getType());
+				handle = new Handle<>(Default.class);
 			}
 			assertSame(factory, handle.getFactory());
 		}
@@ -122,21 +127,17 @@ class HandleTest {
 
 		assertFalse(h.hasAutoKey());
 
-		assertEquals("boolean", h.getFieldTypeName("booleanValue"));
-		assertEquals("int", h.getFieldTypeName("intValue"));
-		assertEquals("java.lang.String", h.getFieldTypeName("stringValue"));
-
-		assertEquals("boolean_value", h.getPropertyName("booleanValue"));
-		assertNull(h.getPropertyName("intValue"));
-		assertEquals("string_value", h.getPropertyName("stringValue"));
-
-		assertNull(h.getContentType("booleanValue"));
-		assertNull(h.getContentType("intValue"));
-		assertEquals("application/octet-stream", h.getContentType("stringValue"));
+		assertFalse(h.isFile("booleanValue"));
+		assertFalse(h.isFile("intValue"));
+		assertTrue(h.isFile("stringValue"));
 
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
 		assertTrue(h.isWeb("stringValue"));
+
+		assertTrue(h.isKey("booleanValue"));
+		assertFalse(h.isKey("intValue"));
+		assertFalse(h.isKey("stringValue"));
 
 		assertSame(instance, h.toInstance(Map.of()));
 		assertTrue(instance.isBooleanValue());
@@ -194,25 +195,20 @@ class HandleTest {
 
 		assertFalse(h.hasAutoKey());
 
-		assertEquals("boolean", h.getFieldTypeName("booleanValue"));
-		assertEquals("int", h.getFieldTypeName("intValue"));
-		assertEquals("double", h.getFieldTypeName("doubleValue"));
-		assertEquals("java.lang.String", h.getFieldTypeName("stringValue"));
-
-		assertNull(h.getPropertyName("booleanValue"));
-		assertNull(h.getPropertyName("intValue"));
-		assertNull(h.getPropertyName("doubleValue"));
-		assertNull(h.getPropertyName("stringValue"));
-
-		assertNull(h.getContentType("booleanValue"));
-		assertNull(h.getContentType("intValue"));
-		assertNull(h.getContentType("doubleValue"));
-		assertNull(h.getContentType("stringValue"));
+		assertFalse(h.isFile("booleanValue"));
+		assertFalse(h.isFile("intValue"));
+		assertFalse(h.isFile("doubleValue"));
+		assertFalse(h.isFile("stringValue"));
 
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
 		assertFalse(h.isWeb("doubleValue"));
 		assertFalse(h.isWeb("stringValue"));
+
+		assertFalse(h.isKey("booleanValue"));
+		assertFalse(h.isKey("intValue"));
+		assertTrue(h.isKey("doubleValue"));
+		assertFalse(h.isKey("stringValue"));
 
 		assertSame(instance, h.toInstance(Map.of()));
 		assertFalse(instance.isBooleanValue());
@@ -279,25 +275,20 @@ class HandleTest {
 
 		assertFalse(h.hasAutoKey());
 
-		assertEquals("boolean", h.getFieldTypeName("booleanValue"));
-		assertEquals("int", h.getFieldTypeName("intValue"));
-		assertEquals("double", h.getFieldTypeName("doubleValue"));
-		assertEquals("java.lang.String", h.getFieldTypeName("stringValue"));
-
-		assertEquals("boolean_value", h.getPropertyName("booleanValue"));
-		assertNull(h.getPropertyName("intValue"));
-		assertNull(h.getPropertyName("doubleValue"));
-		assertEquals("string_value", h.getPropertyName("stringValue"));
-
-		assertNull(h.getContentType("booleanValue"));
-		assertNull(h.getContentType("intValue"));
-		assertNull(h.getContentType("doubleValue"));
-		assertEquals("image/png", h.getContentType("stringValue"));
+		assertFalse(h.isFile("booleanValue"));
+		assertFalse(h.isFile("intValue"));
+		assertFalse(h.isFile("doubleValue"));
+		assertTrue(h.isFile("stringValue"));
 
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
 		assertFalse(h.isWeb("doubleValue"));
 		assertTrue(h.isWeb("stringValue"));
+
+		assertTrue(h.isKey("booleanValue"));
+		assertFalse(h.isKey("intValue"));
+		assertFalse(h.isKey("doubleValue"));
+		assertFalse(h.isKey("stringValue"));
 
 		assertSame(instance, h.toInstance(Map.of()));
 		assertTrue(instance.isBooleanValue());
@@ -368,29 +359,13 @@ class HandleTest {
 
 		assertTrue(h.hasAutoKey());
 
-		assertEquals("java.lang.String", h.getFieldTypeName("key"));
-		assertEquals("java.lang.String", h.getFieldTypeName("value"));
-		assertEquals(Email.class.getName(), h.getFieldTypeName("email"));
-		assertEquals(Address.class.getName(), h.getFieldTypeName("address"));
-		assertEquals(Sheet.class.getName(), h.getFieldTypeName("sheet"));
-		assertEquals(Wrapper.class.getName(), h.getFieldTypeName("booleanWrapper"));
-		assertEquals(Wrapper.class.getName(), h.getFieldTypeName("byteWrapper"));
-
-		assertNull(h.getPropertyName("key"));
-		assertNull(h.getPropertyName("value"));
-		assertNull(h.getPropertyName("email"));
-		assertNull(h.getPropertyName("address"));
-		assertNull(h.getPropertyName("sheet"));
-		assertEquals("boolean_wrapper", h.getPropertyName("booleanWrapper"));
-		assertEquals("byte_wrapper", h.getPropertyName("byteWrapper"));
-
-		assertNull(h.getContentType("key"));
-		assertNull(h.getContentType("value"));
-		assertNull(h.getContentType("email"));
-		assertNull(h.getContentType("address"));
-		assertNull(h.getContentType("sheet"));
-		assertNull(h.getContentType("booleanWrapper"));
-		assertNull(h.getContentType("byteWrapper"));
+		assertFalse(h.isFile("key"));
+		assertFalse(h.isFile("value"));
+		assertFalse(h.isFile("email"));
+		assertFalse(h.isFile("address"));
+		assertFalse(h.isFile("sheet"));
+		assertFalse(h.isFile("booleanWrapper"));
+		assertFalse(h.isFile("byteWrapper"));
 
 		assertFalse(h.isWeb("key"));
 		assertFalse(h.isWeb("value"));
@@ -399,6 +374,14 @@ class HandleTest {
 		assertFalse(h.isWeb("sheet"));
 		assertFalse(h.isWeb("booleanWrapper"));
 		assertFalse(h.isWeb("byteWrapper"));
+
+		assertTrue(h.isKey("key"));
+		assertFalse(h.isKey("value"));
+		assertFalse(h.isKey("email"));
+		assertFalse(h.isKey("address"));
+		assertFalse(h.isKey("sheet"));
+		assertFalse(h.isKey("booleanWrapper"));
+		assertFalse(h.isKey("byteWrapper"));
 
 		h.setKey(instance, "");
 		assertSame(instance, h.toInstance(Map.of(
@@ -429,13 +412,13 @@ class HandleTest {
 		assertEquals(63, (byte) instance.getByteWrapper().getValue());
 
 		Map<String, Object> values = h.toValues(Map.of(
-				"key", "key",
 				"value", "value",
 				"email", "convertable@email.com",
 				"address", List.of("Convertable City", "0", "Convertable Street"),
 				"sheet", List.of(new Address("Street 0", 0, "City 0"), new Address("Street 1", 1, "City 1")),
 				"boolean_wrapper", "true",
 				"byte_wrapper", List.of('1', '2', '7')));
+		h.setKey(values, "key");
 		assertEquals("key", values.get("key"));
 		assertEquals("value", values.get("value"));
 		email = assertInstanceOf(Email.class, values.get("email"));
@@ -729,11 +712,11 @@ class HandleTest {
 			Constructor<T> constructor = type.getDeclaredConstructor();
 			return LOOKUP.unreflectConstructor(constructor);
 		});
-		when(reflector.getExternalCreator(type, type.getName())).thenReturn(creator);
+		when(reflector.getCreator(type, type.getName())).thenReturn(creator);
 		return creator;
 	}
 
-	private Handle newHandle(Class<?> type) {
-		return new Handle(reflector, factory, type);
+	private Handle<?> newHandle(Class<?> type) {
+		return new Handle<>(reflector, factory, type);
 	}
 }

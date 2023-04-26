@@ -18,20 +18,18 @@ import br.pro.hashi.sdx.dao.annotation.Web;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
-public class Handle {
-	public static Handle of(Class<?> type) {
+public class Handle<E> {
+	public static <E> Handle<E> of(Class<E> type) {
 		return HandleFactory.getInstance().get(type);
 	}
 
 	private final Reflector reflector;
 	private final ConverterFactory factory;
-	private final Class<?> type;
 	private final MethodHandle creator;
 	private final String collectionName;
 	private final Map<String, DaoConverter<?, ?>> converters;
 	private final Map<String, MethodHandle> getters;
 	private final Map<String, MethodHandle> setters;
-	private final Map<String, String> fieldTypeNames;
 	private final Map<String, String> propertyNames;
 	private final Map<String, String> contentTypes;
 	private final Set<String> fieldNames;
@@ -39,14 +37,14 @@ public class Handle {
 	private final String keyFieldName;
 	private final boolean autoKey;
 
-	Handle(Class<?> type) {
+	Handle(Class<E> type) {
 		this(Reflector.getInstance(), ConverterFactory.getInstance(), type);
 	}
 
-	Handle(Reflector reflector, ConverterFactory factory, Class<?> type) {
+	Handle(Reflector reflector, ConverterFactory factory, Class<E> type) {
 		String typeName = type.getName();
 
-		MethodHandle creator = reflector.getExternalCreator(type, typeName);
+		MethodHandle creator = reflector.getCreator(type, typeName);
 		try {
 			creator.invoke();
 		} catch (Throwable throwable) {
@@ -76,7 +74,6 @@ public class Handle {
 		Map<String, DaoConverter<?, ?>> converters = new HashMap<>();
 		Map<String, MethodHandle> getters = new HashMap<>();
 		Map<String, MethodHandle> setters = new HashMap<>();
-		Map<String, String> fieldTypeNames = new HashMap<>();
 		Map<String, String> propertyNames = new HashMap<>();
 		Map<String, String> contentTypes = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
@@ -106,10 +103,6 @@ public class Handle {
 						getters.put(fieldName, reflector.unreflectGetter(field));
 						setters.put(fieldName, reflector.unreflectSetter(field));
 
-						Class<?> fieldType = field.getType();
-
-						fieldTypeNames.put(fieldName, fieldType.getName());
-
 						Renamed fieldRenamedAnnotation = field.getDeclaredAnnotation(Renamed.class);
 						if (fieldRenamedAnnotation != null) {
 							String propertyName = fieldRenamedAnnotation.value().strip();
@@ -123,6 +116,8 @@ public class Handle {
 						}
 
 						fieldNames.add(fieldName);
+
+						Class<?> fieldType = field.getType();
 
 						File fileAnnotation = field.getDeclaredAnnotation(File.class);
 						Web webAnnotation = field.getDeclaredAnnotation(Web.class);
@@ -178,13 +173,11 @@ public class Handle {
 
 		this.reflector = reflector;
 		this.factory = factory;
-		this.type = type;
 		this.creator = creator;
 		this.collectionName = collectionName;
 		this.converters = converters;
 		this.getters = getters;
 		this.setters = setters;
-		this.fieldTypeNames = fieldTypeNames;
 		this.propertyNames = propertyNames;
 		this.contentTypes = contentTypes;
 		this.fieldNames = fieldNames;
@@ -201,60 +194,20 @@ public class Handle {
 		return factory;
 	}
 
-	Class<?> getType() {
-		return type;
-	}
-
-	Set<String> getFieldNames() {
-		return fieldNames;
-	}
-
-	DaoConverter<?, ?> getConverter(String fieldName) {
-		return converters.get(fieldName);
-	}
-
-	String getFieldTypeName(String fieldName) {
-		return fieldTypeNames.get(fieldName);
-	}
-
-	String getPropertyName(String fieldName) {
-		return propertyNames.get(fieldName);
-	}
-
-	Object create() {
-		return reflector.invokeCreator(creator);
-	}
-
-	Object get(String fieldName, Object instance) {
-		return convertTo(fieldName, rawGet(fieldName, instance));
-	}
-
-	void set(String fieldName, Object instance, Object value) {
-		rawSet(fieldName, instance, convertFrom(fieldName, value));
-	}
-
 	public String getCollectionName() {
 		return collectionName;
+	}
+
+	public Set<String> getFieldNames() {
+		return fieldNames;
 	}
 
 	public boolean hasAutoKey() {
 		return autoKey;
 	}
 
-	public String getContentType(String fieldName) {
-		return contentTypes.get(fieldName);
-	}
-
-	public boolean isFieldName(String fieldName) {
-		return fieldNames.contains(fieldName);
-	}
-
-	public String getFile(String fieldName, Object instance) {
-		return rawGet(fieldName, instance);
-	}
-
-	public void setFile(String fieldName, Object instance, String value) {
-		rawSet(fieldName, instance, value);
+	public boolean isFile(String fieldName) {
+		return contentTypes.containsKey(fieldName);
 	}
 
 	public boolean isWeb(String fieldName) {
@@ -262,7 +215,7 @@ public class Handle {
 	}
 
 	public boolean isKey(String fieldName) {
-		return fieldName.equals(fieldName);
+		return fieldName.equals(keyFieldName);
 	}
 
 	public Object getKey(Object instance) {
@@ -277,16 +230,16 @@ public class Handle {
 		values.put(keyFieldName, value);
 	}
 
-	private <T> T rawGet(String fieldName, Object instance) {
+	private <V> V rawGet(String fieldName, Object instance) {
 		return reflector.invokeGetter(getters.get(fieldName), instance);
 	}
 
-	private <T> void rawSet(String fieldName, Object instance, T value) {
+	private <V> void rawSet(String fieldName, Object instance, V value) {
 		reflector.invokeSetter(setters.get(fieldName), instance, value);
 	}
 
-	public Object toInstance(Map<String, Object> data) {
-		Object instance = reflector.invokeCreator(creator);
+	public E toInstance(Map<String, Object> data) {
+		E instance = reflector.invokeCreator(creator);
 		for (String fieldName : fieldNames) {
 			String propertyName = rename(fieldName);
 			Object value = data.get(propertyName);
@@ -360,21 +313,30 @@ public class Handle {
 		return propertyName;
 	}
 
-	private <S> Object convertTo(String fieldName, S value) {
+	private <S, T> Object convertTo(String fieldName, S value) {
 		@SuppressWarnings("unchecked")
-		DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
+		DaoConverter<S, T> converter = (DaoConverter<S, T>) converters.get(fieldName);
 		if (converter == null) {
 			return value;
 		}
 		return converter.to(value);
 	}
 
-	private <T> Object convertFrom(String fieldName, T value) {
+	private <S, T> Object convertFrom(String fieldName, T value) {
 		@SuppressWarnings("unchecked")
-		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
+		DaoConverter<S, T> converter = (DaoConverter<S, T>) converters.get(fieldName);
 		if (converter == null) {
 			return value;
 		}
-		return converter.from((T) value);
+		return converter.from(value);
+	}
+
+	static class Construction {
+		static <E> Handle<E> construct(Class<E> type) {
+			return new Handle<>(type);
+		}
+
+		private Construction() {
+		}
 	}
 }

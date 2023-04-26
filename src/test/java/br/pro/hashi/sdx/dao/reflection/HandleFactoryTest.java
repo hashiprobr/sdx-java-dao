@@ -1,16 +1,17 @@
 package br.pro.hashi.sdx.dao.reflection;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mockConstruction;
-
-import java.util.List;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
+
+import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
 
 class HandleFactoryTest {
 	private HandleFactory f;
@@ -27,16 +28,15 @@ class HandleFactoryTest {
 
 	@Test
 	void gets() {
-		try (MockedConstruction<Handle> handleConstruction = mockConstruction(Handle.class)) {
-			List<Handle> constructed = handleConstruction.constructed();
-			assertTrue(constructed.isEmpty());
+		try (MockedStatic<Construction> handleConstruction = mockStatic(Construction.class)) {
+			handleConstruction.when(() -> Construction.construct(Object.class)).thenReturn(mock(Handle.class));
+			handleConstruction.verify(() -> Construction.construct(any()), times(0));
 
-			Handle handle = f.get(Object.class);
-			assertEquals(1, constructed.size());
-			assertEquals(handle, constructed.get(0));
+			Handle<?> handle = f.get(Object.class);
+			handleConstruction.verify(() -> Construction.construct(Object.class));
 
 			assertSame(handle, f.get(Object.class));
-			assertEquals(1, constructed.size());
+			handleConstruction.verify(() -> Construction.construct(any()), times(1));
 		}
 	}
 }

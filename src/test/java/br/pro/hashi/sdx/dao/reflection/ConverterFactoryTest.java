@@ -43,7 +43,7 @@ class ConverterFactoryTest {
 	@BeforeEach
 	void setUp() {
 		reflector = mock(Reflector.class);
-		when(reflector.getExternalCreator(any(), any(String.class))).thenAnswer((invocation) -> {
+		when(reflector.getCreator(any(), any(String.class))).thenAnswer((invocation) -> {
 			Class<? extends DaoConverter<?, ?>> type = invocation.getArgument(0);
 			Constructor<? extends DaoConverter<?, ?>> constructor = type.getDeclaredConstructor();
 			return LOOKUP.unreflectConstructor(constructor);
@@ -68,13 +68,13 @@ class ConverterFactoryTest {
 
 	@Test
 	void gets() {
-		verify(reflector, times(0)).getExternalCreator(any(), any());
+		verify(reflector, times(0)).getCreator(any(), any());
 
 		DaoConverter<?, ?> converter = f.get(DefaultImplementation.class);
-		verify(reflector).getExternalCreator(DefaultImplementation.class, DefaultImplementation.class.getName());
+		verify(reflector).getCreator(DefaultImplementation.class, DefaultImplementation.class.getName());
 
 		assertSame(converter, f.get(DefaultImplementation.class));
-		verify(reflector, times(1)).getExternalCreator(any(), any());
+		verify(reflector, times(1)).getCreator(any(), any());
 	}
 
 	@Test
@@ -138,7 +138,7 @@ class ConverterFactoryTest {
 		assertTargetTypeNotExists(converter);
 	}
 
-	private <T, S extends T> void assertSourceTypeExists(DaoConverter<?, ?> converter) {
+	private void assertSourceTypeExists(DaoConverter<?, ?> converter) {
 		assertEquals(Integer.class, f.getSourceType(converter));
 	}
 
@@ -149,7 +149,7 @@ class ConverterFactoryTest {
 		assertTargetTypeExists(converter);
 	}
 
-	private <T, S extends T> void assertTargetTypeExists(DaoConverter<?, ?> converter) {
+	private void assertTargetTypeExists(DaoConverter<?, ?> converter) {
 		assertEquals(Double.class, f.getTargetType(converter));
 	}
 
@@ -160,13 +160,13 @@ class ConverterFactoryTest {
 		assertTargetTypeNotExists(converter);
 	}
 
-	private <T, S extends T> void assertSourceTypeNotExists(DaoConverter<?, ?> converter) {
+	private void assertSourceTypeNotExists(DaoConverter<?, ?> converter) {
 		assertThrows(ReflectionException.class, () -> {
 			f.getSourceType(converter);
 		});
 	}
 
-	private <T, S extends T> void assertTargetTypeNotExists(DaoConverter<?, ?> converter) {
+	private void assertTargetTypeNotExists(DaoConverter<?, ?> converter) {
 		assertThrows(ReflectionException.class, () -> {
 			f.getTargetType(converter);
 		});

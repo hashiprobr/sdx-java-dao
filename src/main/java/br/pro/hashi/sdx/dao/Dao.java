@@ -1,11 +1,11 @@
 package br.pro.hashi.sdx.dao;
 
 import java.io.InputStream;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -27,25 +27,25 @@ import br.pro.hashi.sdx.dao.reflection.Handle;
 /**
  * Stub.
  *
- * @param <T> stub
+ * @param <E> stub
  */
-public final class Dao<T> {
+public final class Dao<E> {
 	/**
 	 * Stub.
 	 * 
-	 * @param <T>  stub
+	 * @param <E>  stub
 	 * @param type stub
 	 * @return stub
 	 */
-	public static <T> Dao<T> of(Class<T> type) {
+	public static <E> Dao<E> of(Class<E> type) {
 		return ClientFactory.getInstance().get().get(type);
 	}
 
 	private final DaoClient client;
-	private final Handle handle;
+	private final Handle<E> handle;
 	private final String collectionName;
 
-	Dao(DaoClient client, Handle handle) {
+	Dao(DaoClient client, Handle<E> handle) {
 		this.client = client;
 		this.handle = handle;
 		this.collectionName = handle.getCollectionName();
@@ -57,7 +57,7 @@ public final class Dao<T> {
 	 * @param instance stub
 	 * @return stub
 	 */
-	public String create(T instance) {
+	public String create(E instance) {
 		check(instance);
 		String keyString;
 		DocumentReference document;
@@ -78,13 +78,13 @@ public final class Dao<T> {
 	 * @param instances stub
 	 * @return stub
 	 */
-	public List<String> create(List<T> instances) {
+	public List<String> create(List<E> instances) {
 		check(instances);
 		Firestore firestore = client.getFirestore();
 		CollectionReference collection = getCollection(firestore);
 		List<String> keyStrings = new ArrayList<>();
 		runBatch(firestore, (batch) -> {
-			for (T instance : instances) {
+			for (E instance : instances) {
 				check(instance);
 				String keyString;
 				DocumentReference document;
@@ -108,11 +108,10 @@ public final class Dao<T> {
 	 * @param key stub
 	 * @return stub
 	 */
-	public T retrieve(Object key) {
+	public E retrieve(Object key) {
 		String keyString = toString(key);
 		DocumentSnapshot document = await(getDocument(keyString).get());
-		@SuppressWarnings("unchecked")
-		T instance = (T) handle.toInstance(document.getData());
+		E instance = (E) handle.toInstance(document.getData());
 		if (handle.hasAutoKey()) {
 			handle.setKey(instance, keyString);
 		}
@@ -124,7 +123,7 @@ public final class Dao<T> {
 	 * 
 	 * @param instance stub
 	 */
-	public void update(T instance) {
+	public void update(E instance) {
 		check(instance);
 		doUpdate(handle.getKey(instance), handle.toData(instance, true));
 	}
@@ -149,10 +148,10 @@ public final class Dao<T> {
 	 * 
 	 * @param instances stub
 	 */
-	public void update(List<T> instances) {
+	public void update(List<E> instances) {
 		check(instances);
 		runBatch((batch) -> {
-			for (T instance : instances) {
+			for (E instance : instances) {
 				check(instance);
 				doUpdate(batch, handle.getKey(instance), handle.toData(instance, true));
 			}
@@ -194,11 +193,11 @@ public final class Dao<T> {
 		await(reference.delete());
 	}
 
-	private DocumentReference createDocument(T instance) {
+	private DocumentReference createDocument(E instance) {
 		return createDocument(getCollection(), instance);
 	}
 
-	private DocumentReference createDocument(CollectionReference collection, T instance) {
+	private DocumentReference createDocument(CollectionReference collection, E instance) {
 		if (handle.getKey(instance) != null) {
 			throw new IllegalArgumentException("Key must be null");
 		}
@@ -217,7 +216,7 @@ public final class Dao<T> {
 		return getCollection(client.getFirestore());
 	}
 
-	private String getKeyString(T instance) {
+	private String getKeyString(E instance) {
 		return toString(handle.getKey(instance));
 	}
 
@@ -230,7 +229,7 @@ public final class Dao<T> {
 		}
 	}
 
-	private void check(List<T> instances) {
+	private void check(List<E> instances) {
 		if (instances == null) {
 			throw new NullPointerException("Instance list cannot be null");
 		}
@@ -239,7 +238,7 @@ public final class Dao<T> {
 		}
 	}
 
-	private void check(T instance) {
+	private void check(E instance) {
 		if (instance == null) {
 			throw new NullPointerException("Instance cannot be null");
 		}
@@ -292,10 +291,10 @@ public final class Dao<T> {
 	 * @param fieldName stub
 	 * @return stub
 	 */
-	public File downloadFile(Object key, String fieldName) {
+	public DaoFile downloadFile(Object key, String fieldName) {
 		check(fieldName);
 		String fileName = getFileName(toString(key), fieldName);
-		File file;
+		DaoFile file;
 		try (Fao fao = new Fao(client.getBucket(), fileName)) {
 			file = fao.download();
 		}
@@ -387,13 +386,14 @@ public final class Dao<T> {
 	 * @return stub
 	 */
 	public Selection select(String... fieldNames) {
+		Set<String> set = handle.getFieldNames();
 		boolean includesFiles = false;
 		boolean includesKey = false;
 		for (String fieldName : fieldNames) {
-			if (!handle.isFieldName(fieldName)) {
+			if (!set.contains(fieldName)) {
 				throw new IllegalArgumentException("Field %s does not exist".formatted(fieldName));
 			}
-			if (handle.getContentType(fieldName) != null) {
+			if (handle.isFile(fieldName)) {
 				includesFiles = true;
 			}
 			if (handle.isKey(fieldName)) {
@@ -435,12 +435,11 @@ public final class Dao<T> {
 		 * 
 		 * @return stub
 		 */
-		public List<T> retrieve() {
+		public List<E> retrieve() {
 			QuerySnapshot snapshot = await(query.get());
-			List<T> instances = new ArrayList<>();
+			List<E> instances = new ArrayList<>();
 			for (DocumentSnapshot document : snapshot) {
-				@SuppressWarnings("unchecked")
-				T instance = (T) handle.toInstance(document.getData());
+				E instance = handle.toInstance(document.getData());
 				if (handle.hasAutoKey()) {
 					handle.setKey(instance, document.getId());
 				}
@@ -454,7 +453,7 @@ public final class Dao<T> {
 		 * 
 		 * @param instance stub
 		 */
-		public void update(T instance) {
+		public void update(E instance) {
 			check(instance);
 			Map<String, Object> data = handle.toData(instance, true);
 			runBatch((batch, document) -> {
@@ -557,15 +556,5 @@ public final class Dao<T> {
 			QuerySnapshot snapshots = await(query.get());
 			super.runBatch(snapshots, consumer);
 		}
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param channel       stub
-	 * @param contentType   stub
-	 * @param contentLength stub
-	 */
-	public static record File(ReadableByteChannel channel, String contentType, long contentLength) {
 	}
 }

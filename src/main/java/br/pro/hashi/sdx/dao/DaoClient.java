@@ -84,15 +84,15 @@ public final class DaoClient {
 	/**
 	 * Stub.
 	 * 
-	 * @param <T>  stub
+	 * @param <E>  stub
 	 * @param type stub
 	 * @return stub
 	 */
-	public synchronized <T> Dao<T> get(Class<T> type) {
+	public synchronized <E> Dao<E> get(Class<E> type) {
 		@SuppressWarnings("unchecked")
-		Dao<T> dao = (Dao<T>) cache.get(type);
+		Dao<E> dao = (Dao<E>) cache.get(type);
 		if (dao == null) {
-			Handle handle = factory.get(type);
+			Handle<E> handle = factory.get(type);
 			dao = new Dao<>(this, handle);
 			cache.put(type, dao);
 		}

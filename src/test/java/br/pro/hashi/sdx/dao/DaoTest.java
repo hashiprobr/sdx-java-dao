@@ -10,13 +10,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import br.pro.hashi.sdx.dao.mock.User;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 
 class DaoTest {
 	private DaoClient client;
-	private Handle handle;
-	private Dao<User> d;
+	private Handle<?> handle;
+	private Dao<?> d;
 
 	@BeforeEach
 	void setUp() {
@@ -27,12 +26,12 @@ class DaoTest {
 
 	@Test
 	void creates() {
-		doReturn(d).when(client).get(User.class);
+		doReturn(d).when(client).get(Object.class);
 		ClientFactory clientFactory = mock(ClientFactory.class);
 		when(clientFactory.get()).thenReturn(client);
 		try (MockedStatic<ClientFactory> factoryStatic = mockStatic(ClientFactory.class)) {
 			factoryStatic.when(() -> ClientFactory.getInstance()).thenReturn(clientFactory);
-			assertSame(d, Dao.of(User.class));
+			assertSame(d, Dao.of(Object.class));
 		}
 	}
 }
