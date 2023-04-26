@@ -31,7 +31,8 @@ class Fao implements AutoCloseable {
 	}
 
 	Fao(Bucket bucket, String fileName) {
-		Blob lock = bucket.get("%s.lock".formatted(fileName));
+		String lockName = "%s.lock".formatted(fileName);
+		Blob lock = bucket.get(lockName);
 		if (lock != null) {
 			Instant instant = lock.getCreateTimeOffsetDateTime().toInstant();
 			if (Instant.now().toEpochMilli() - instant.toEpochMilli() < 1800000) {
@@ -46,7 +47,7 @@ class Fao implements AutoCloseable {
 		}
 		BlobTargetOption option = BlobTargetOption.doesNotExist();
 		try {
-			lock = bucket.create(fileName, null, option);
+			lock = bucket.create(lockName, null, option);
 		} catch (StorageException exception) {
 			throw new FileException(exception);
 		}

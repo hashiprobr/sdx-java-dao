@@ -82,23 +82,6 @@ class HandleTest {
 	}
 
 	@Test
-	void creates() {
-		mockCreator(Default.class);
-		h = newHandle(Default.class);
-		HandleFactory handleFactory = mock(HandleFactory.class);
-		doReturn(h).when(handleFactory).get(Default.class);
-		try (MockedStatic<HandleFactory> factoryStatic = mockStatic(HandleFactory.class)) {
-			factoryStatic.when(() -> HandleFactory.getInstance()).thenReturn(handleFactory);
-			assertSame(h, Handle.of(Default.class));
-		}
-	}
-
-	@Test
-	void constructs() {
-		assertInstanceOf(Handle.class, Construction.construct(Default.class));
-	}
-
-	@Test
 	void constructsWithDefaultReflectorAndFactory() {
 		mockCreator(Default.class);
 		Handle<?> handle;
@@ -106,7 +89,7 @@ class HandleTest {
 			reflectorStatic.when(() -> Reflector.getInstance()).thenReturn(reflector);
 			try (MockedStatic<ConverterFactory> factoryStatic = mockStatic(ConverterFactory.class)) {
 				factoryStatic.when(() -> ConverterFactory.getInstance()).thenReturn(factory);
-				handle = new Handle<>(Default.class);
+				handle = Construction.of(Default.class);
 			}
 			assertSame(factory, handle.getFactory());
 		}

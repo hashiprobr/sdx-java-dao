@@ -19,10 +19,6 @@ import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
 public class Handle<E> {
-	public static <E> Handle<E> of(Class<E> type) {
-		return HandleFactory.getInstance().get(type);
-	}
-
 	private final Reflector reflector;
 	private final ConverterFactory factory;
 	private final MethodHandle creator;
@@ -37,8 +33,15 @@ public class Handle<E> {
 	private final String keyFieldName;
 	private final boolean autoKey;
 
-	Handle(Class<E> type) {
-		this(Reflector.getInstance(), ConverterFactory.getInstance(), type);
+	// TODO: Replace this class with a constructor if/when
+	// Mockito can mock the construction of a generic type.
+	static class Construction {
+		static <E> Handle<E> of(Class<E> type) {
+			return new Handle<>(Reflector.getInstance(), ConverterFactory.getInstance(), type);
+		}
+
+		private Construction() {
+		}
 	}
 
 	Handle(Reflector reflector, ConverterFactory factory, Class<E> type) {
@@ -206,6 +209,10 @@ public class Handle<E> {
 		return autoKey;
 	}
 
+	public String getContentType(String fieldName) {
+		return contentTypes.get(fieldName);
+	}
+
 	public boolean isFile(String fieldName) {
 		return contentTypes.containsKey(fieldName);
 	}
@@ -329,14 +336,5 @@ public class Handle<E> {
 			return value;
 		}
 		return converter.from(value);
-	}
-
-	static class Construction {
-		static <E> Handle<E> construct(Class<E> type) {
-			return new Handle<>(type);
-		}
-
-		private Construction() {
-		}
 	}
 }

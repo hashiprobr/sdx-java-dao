@@ -260,7 +260,7 @@ public final class Dao<E> {
 		String fileName = getFileName(keyString, fieldName);
 		Connection connection = client.getConnection();
 		try (Fao fao = new Fao(connection, fileName)) {
-			String url = fao.upload(stream, fileName, handle.isWeb(fieldName));
+			String url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection, keyString);
 			await(document.update(fieldName, url));
 		}
@@ -375,7 +375,7 @@ public final class Dao<E> {
 	 * 
 	 * @return stub
 	 */
-	public Collection instances() {
+	public Collection collect() {
 		return new Collection(getCollection());
 	}
 

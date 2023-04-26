@@ -29,14 +29,14 @@ class HandleFactoryTest {
 	@Test
 	void gets() {
 		try (MockedStatic<Construction> handleConstruction = mockStatic(Construction.class)) {
-			handleConstruction.when(() -> Construction.construct(Object.class)).thenReturn(mock(Handle.class));
-			handleConstruction.verify(() -> Construction.construct(any()), times(0));
+			handleConstruction.when(() -> Construction.of(Object.class)).thenReturn(mock(Handle.class));
+			handleConstruction.verify(() -> Construction.of(any()), times(0));
 
 			Handle<?> handle = f.get(Object.class);
-			handleConstruction.verify(() -> Construction.construct(Object.class));
+			handleConstruction.verify(() -> Construction.of(Object.class));
 
 			assertSame(handle, f.get(Object.class));
-			handleConstruction.verify(() -> Construction.construct(any()), times(1));
+			handleConstruction.verify(() -> Construction.of(any()), times(1));
 		}
 	}
 }

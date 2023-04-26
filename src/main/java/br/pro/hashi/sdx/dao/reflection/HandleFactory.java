@@ -22,7 +22,7 @@ public final class HandleFactory {
 		@SuppressWarnings("unchecked")
 		Handle<E> handle = (Handle<E>) cache.get(type);
 		if (handle == null) {
-			handle = Construction.construct(type);
+			handle = Construction.of(type);
 			cache.put(type, handle);
 		}
 		return handle;
