@@ -1,6 +1,5 @@
 package br.pro.hashi.sdx.dao.reflection;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -9,9 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -35,7 +32,6 @@ import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
-import br.pro.hashi.sdx.dao.reflection.mock.converter.DefaultImplementation;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankCollection;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankProperty;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.Child;
@@ -58,13 +54,8 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.SingularEntity;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ThrowerConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.TwoKeys;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Address;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.AddressConverter;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.BooleanWrapperConverter;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.ByteWrapperConverter;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Email;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.EmailConverter;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Sheet;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.SheetConverter;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Wrapper;
 
 class HandleTest {
@@ -73,18 +64,58 @@ class HandleTest {
 
 	private Reflector reflector;
 	private ConverterFactory factory;
-	private Handle<?> h;
 
 	@BeforeEach
-	void setUp() {
+	<E, F> void setUp() {
 		reflector = mock(Reflector.class);
+		when(reflector.getCreator(any(), any(String.class))).thenAnswer((invocation) -> {
+			Class<E> type = invocation.getArgument(0);
+			Constructor<E> constructor = type.getDeclaredConstructor();
+			return LOOKUP.unreflectConstructor(constructor);
+		});
+		when(reflector.invokeCreator(any(MethodHandle.class))).thenAnswer((invocation) -> {
+			MethodHandle creator = invocation.getArgument(0);
+			return creator.invoke();
+		});
+		when(reflector.unreflectGetter(any(Field.class))).thenAnswer((invocation) -> {
+			Field field = invocation.getArgument(0);
+			return LOOKUP.unreflectGetter(field);
+		});
+		when(reflector.unreflectSetter(any(Field.class))).thenAnswer((invocation) -> {
+			Field field = invocation.getArgument(0);
+			return LOOKUP.unreflectSetter(field);
+		});
+		when(reflector.invokeGetter(any(MethodHandle.class), any())).thenAnswer((invocation) -> {
+			MethodHandle getter = invocation.getArgument(0);
+			E instance = invocation.getArgument(1);
+			return getter.invoke(instance);
+		});
+		doAnswer((invocation) -> {
+			MethodHandle setter = invocation.getArgument(0);
+			E instance = invocation.getArgument(1);
+			F value = invocation.getArgument(2);
+			setter.invoke(instance, value);
+			return null;
+		}).when(reflector).invokeSetter(any(MethodHandle.class), any(), any());
 		factory = mock(ConverterFactory.class);
+		when(factory.get(any())).thenAnswer((invocation) -> {
+			Class<? extends DaoConverter<?, ?>> type = invocation.getArgument(0);
+			Constructor<? extends DaoConverter<?, ?>> constructor = type.getDeclaredConstructor();
+			return constructor.newInstance();
+		});
+		when(factory.getSourceType(any(DaoConverter.class))).thenAnswer((invocation) -> {
+			DaoConverter<?, ?> converter = invocation.getArgument(0);
+			Class<?> type = converter.getClass();
+			Type[] genericInterfaces = type.getGenericInterfaces();
+			ParameterizedType genericInterface = (ParameterizedType) genericInterfaces[0];
+			Type[] types = genericInterface.getActualTypeArguments();
+			return types[0];
+		});
 	}
 
 	@Test
 	void constructsWithDefaultReflectorAndFactory() {
-		mockCreator(Default.class);
-		Handle<?> handle;
+		Handle<Default> handle;
 		try (MockedStatic<Reflector> reflectorStatic = mockStatic(Reflector.class)) {
 			reflectorStatic.when(() -> Reflector.getInstance()).thenReturn(reflector);
 			try (MockedStatic<ConverterFactory> factoryStatic = mockStatic(ConverterFactory.class)) {
@@ -98,17 +129,14 @@ class HandleTest {
 
 	@Test
 	void constructsWithParent() {
-		Parent instance = new Parent();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-
-		h = newHandle(Parent.class);
+		Handle<Parent> h = newHandle(Parent.class);
 		assertEquals("Parents", h.getCollectionName());
 		assertEquals(Set.of("booleanValue", "intValue", "stringValue"), h.getFieldNames());
-
 		assertFalse(h.hasAutoKey());
+
+		assertNull(h.getContentType("booleanValue"));
+		assertNull(h.getContentType("intValue"));
+		assertEquals("application/octet-stream", h.getContentType("stringValue"));
 
 		assertFalse(h.isFile("booleanValue"));
 		assertFalse(h.isFile("intValue"));
@@ -122,12 +150,12 @@ class HandleTest {
 		assertFalse(h.isKey("intValue"));
 		assertFalse(h.isKey("stringValue"));
 
-		assertSame(instance, h.toInstance(Map.of()));
+		Parent instance = assertInstanceOf(Parent.class, h.toInstance(Map.of()));
 		assertTrue(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
 		assertEquals("p", instance.getStringValue());
 
-		assertSame(instance, h.toInstance(Map.of(
+		instance = assertInstanceOf(Parent.class, h.toInstance(Map.of(
 				"boolean_value", false,
 				"intValue", 0,
 				"string_value", "")));
@@ -163,20 +191,15 @@ class HandleTest {
 
 	@Test
 	void constructsWithChild() {
-		Child instance = new Child();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-		mockGetterAndSetter(Child.class, "booleanValue", instance);
-		mockGetterAndSetter(Child.class, "doubleValue", instance);
-		mockGetterAndSetter(Child.class, "stringValue", instance);
-
-		h = newHandle(Child.class);
+		Handle<Child> h = newHandle(Child.class);
 		assertEquals("Children", h.getCollectionName());
 		assertEquals(Set.of("booleanValue", "intValue", "doubleValue", "stringValue"), h.getFieldNames());
-
 		assertFalse(h.hasAutoKey());
+
+		assertNull(h.getContentType("booleanValue"));
+		assertNull(h.getContentType("intValue"));
+		assertNull(h.getContentType("doubleValue"));
+		assertNull(h.getContentType("stringValue"));
 
 		assertFalse(h.isFile("booleanValue"));
 		assertFalse(h.isFile("intValue"));
@@ -193,13 +216,13 @@ class HandleTest {
 		assertTrue(h.isKey("doubleValue"));
 		assertFalse(h.isKey("stringValue"));
 
-		assertSame(instance, h.toInstance(Map.of()));
+		Child instance = assertInstanceOf(Child.class, h.toInstance(Map.of()));
 		assertFalse(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
 		assertEquals(2, instance.getDoubleValue(), DELTA);
 		assertEquals("c", instance.getStringValue());
 
-		assertSame(instance, h.toInstance(Map.of(
+		instance = assertInstanceOf(Child.class, h.toInstance(Map.of(
 				"booleanValue", true,
 				"intValue", 0,
 				"doubleValue", 1,
@@ -240,23 +263,15 @@ class HandleTest {
 
 	@Test
 	void constructsWithGrandChild() {
-		GrandChild instance = new GrandChild();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-		mockGetterAndSetter(Child.class, "booleanValue", instance);
-		mockGetterAndSetter(Child.class, "doubleValue", instance);
-		mockGetterAndSetter(Child.class, "stringValue", instance);
-		mockGetterAndSetter(GrandChild.class, "booleanValue", instance);
-		mockGetterAndSetter(GrandChild.class, "doubleValue", instance);
-		mockGetterAndSetter(GrandChild.class, "stringValue", instance);
-
-		h = newHandle(GrandChild.class);
+		Handle<GrandChild> h = newHandle(GrandChild.class);
 		assertEquals("GrandChilds", h.getCollectionName());
 		assertEquals(Set.of("booleanValue", "intValue", "doubleValue", "stringValue"), h.getFieldNames());
-
 		assertFalse(h.hasAutoKey());
+
+		assertNull(h.getContentType("booleanValue"));
+		assertNull(h.getContentType("intValue"));
+		assertNull(h.getContentType("doubleValue"));
+		assertEquals("image/png", h.getContentType("stringValue"));
 
 		assertFalse(h.isFile("booleanValue"));
 		assertFalse(h.isFile("intValue"));
@@ -273,13 +288,13 @@ class HandleTest {
 		assertFalse(h.isKey("doubleValue"));
 		assertFalse(h.isKey("stringValue"));
 
-		assertSame(instance, h.toInstance(Map.of()));
+		GrandChild instance = assertInstanceOf(GrandChild.class, h.toInstance(Map.of()));
 		assertTrue(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
 		assertEquals(3, instance.getDoubleValue(), DELTA);
 		assertEquals("g", instance.getStringValue());
 
-		assertSame(instance, h.toInstance(Map.of(
+		instance = assertInstanceOf(GrandChild.class, h.toInstance(Map.of(
 				"boolean_value", false,
 				"intValue", 0,
 				"doubleValue", 2,
@@ -321,26 +336,18 @@ class HandleTest {
 
 	@Test
 	void constructsWithConvertableFields() {
-		ConvertableFields instance = new ConvertableFields();
-		mockCreator(instance);
-		mockGetterAndSetter(ConvertableFields.class, "key", instance);
-		mockGetterAndSetter(ConvertableFields.class, "value", instance);
-		mockGetterAndSetter(ConvertableFields.class, "email", instance);
-		mockGetterAndSetter(ConvertableFields.class, "address", instance);
-		mockGetterAndSetter(ConvertableFields.class, "sheet", instance);
-		mockGetterAndSetter(ConvertableFields.class, "booleanWrapper", instance);
-		mockGetterAndSetter(ConvertableFields.class, "byteWrapper", instance);
-		mockSourceType(EmailConverter.class);
-		mockSourceType(AddressConverter.class);
-		mockSourceType(SheetConverter.class);
-		mockSourceType(BooleanWrapperConverter.class);
-		mockSourceType(ByteWrapperConverter.class);
-
-		h = newHandle(ConvertableFields.class);
+		Handle<ConvertableFields> h = newHandle(ConvertableFields.class);
 		assertEquals("ConvertableFields", h.getCollectionName());
 		assertEquals(Set.of("key", "value", "email", "address", "sheet", "booleanWrapper", "byteWrapper"), h.getFieldNames());
-
 		assertTrue(h.hasAutoKey());
+
+		assertNull(h.getContentType("key"));
+		assertNull(h.getContentType("value"));
+		assertNull(h.getContentType("email"));
+		assertNull(h.getContentType("address"));
+		assertNull(h.getContentType("sheet"));
+		assertNull(h.getContentType("booleanWrapper"));
+		assertNull(h.getContentType("byteWrapper"));
 
 		assertFalse(h.isFile("key"));
 		assertFalse(h.isFile("value"));
@@ -366,14 +373,14 @@ class HandleTest {
 		assertFalse(h.isKey("booleanWrapper"));
 		assertFalse(h.isKey("byteWrapper"));
 
-		h.setKey(instance, "");
-		assertSame(instance, h.toInstance(Map.of(
+		ConvertableFields instance = assertInstanceOf(ConvertableFields.class, h.toInstance(Map.of(
 				"value", "",
 				"email", "email@convertable.com",
 				"address", List.of("City Convertable", "1", "Street Convertable"),
 				"sheet", List.of(new Address("1 Street", 1, "1 City"), new Address("0 Street", 0, "0 City")),
 				"boolean_wrapper", "false",
 				"byte_wrapper", List.of('6', '3'))));
+		h.setAutoKey(instance, "");
 		assertEquals("", h.getKey(instance));
 		assertEquals("", instance.getValue());
 		Email email = instance.getEmail();
@@ -401,7 +408,7 @@ class HandleTest {
 				"sheet", List.of(new Address("Street 0", 0, "City 0"), new Address("Street 1", 1, "City 1")),
 				"boolean_wrapper", "true",
 				"byte_wrapper", List.of('1', '2', '7')));
-		h.setKey(values, "key");
+		h.putAutoKey(values, "key");
 		assertEquals("key", values.get("key"));
 		assertEquals("value", values.get("value"));
 		email = assertInstanceOf(Email.class, values.get("email"));
@@ -467,118 +474,19 @@ class HandleTest {
 	}
 
 	@Test
-	void doesNotOverwriteFileField() {
-		Parent instance = new Parent();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-		h = newHandle(Parent.class);
-		assertThrows(IllegalArgumentException.class, () -> {
-			h.toData(Map.of("stringValue", ""));
-		});
-	}
-
-	@Test
-	void doesNotOverwriteKeyField() {
-		Parent instance = new Parent();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-		h = newHandle(Parent.class);
-		assertThrows(IllegalArgumentException.class, () -> {
-			h.toData(Map.of("booleanValue", false));
-		});
-	}
-
-	@Test
-	void doesNotModifyFileField() {
-		Parent instance = new Parent();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-		h = newHandle(Parent.class);
-		assertThrows(IllegalArgumentException.class, () -> {
-			h.toData(Map.of("stringValue.field", ""));
-		});
-	}
-
-	@Test
-	void doesNotModifyKeyField() {
-		Parent instance = new Parent();
-		mockCreator(instance);
-		mockGetterAndSetter(Parent.class, "booleanValue", instance);
-		mockGetterAndSetter(Parent.class, "intValue", instance);
-		mockGetterAndSetter(Parent.class, "stringValue", instance);
-		h = newHandle(Parent.class);
-		assertThrows(IllegalArgumentException.class, () -> {
-			h.toData(Map.of("booleanValue.field", false));
-		});
-	}
-
-	private void mockCreator(Object instance) {
-		Class<?> type = instance.getClass();
-		MethodHandle creator = mockCreator(type);
-		when(reflector.invokeCreator(creator)).thenReturn(instance);
-	}
-
-	private void mockGetterAndSetter(Class<?> type, String fieldName, Object instance) {
-		Field field = assertDoesNotThrow(() -> {
-			return type.getDeclaredField(fieldName);
-		});
-		field.setAccessible(true);
-		MethodHandle getter = assertDoesNotThrow(() -> {
-			return LOOKUP.unreflectGetter(field);
-		});
-		MethodHandle setter = assertDoesNotThrow(() -> {
-			return LOOKUP.unreflectSetter(field);
-		});
-		when(reflector.unreflectGetter(field)).thenReturn(getter);
-		when(reflector.unreflectSetter(field)).thenReturn(setter);
-		when(reflector.invokeGetter(getter, instance)).thenAnswer((invocation) -> {
-			MethodHandle handle = invocation.getArgument(0);
-			Object object = invocation.getArgument(1);
-			return handle.invoke(object);
-		});
-		doAnswer((invocation) -> {
-			MethodHandle handle = invocation.getArgument(0);
-			Object object = invocation.getArgument(1);
-			Object value = invocation.getArgument(2);
-			return handle.invoke(object, value);
-		}).when(reflector).invokeSetter(eq(setter), eq(instance), any());
-	}
-
-	private void mockSourceType(Class<? extends DaoConverter<?, ?>> type) {
-		DaoConverter<?, ?> converter = assertDoesNotThrow(() -> {
-			Constructor<? extends DaoConverter<?, ?>> constructor = type.getDeclaredConstructor();
-			return constructor.newInstance();
-		});
-		Type[] genericInterfaces = type.getGenericInterfaces();
-		ParameterizedType genericInterface = (ParameterizedType) genericInterfaces[0];
-		Type[] types = genericInterface.getActualTypeArguments();
-		doReturn(converter).when(factory).get(type);
-		when(factory.getSourceType(converter)).thenReturn(types[0]);
-	}
-
-	@Test
 	void constructsWithSingularEntity() {
-		mockCreator(SingularEntity.class);
-		h = newHandle(SingularEntity.class);
+		Handle<SingularEntity> h = newHandle(SingularEntity.class);
 		assertEquals("SingularEntities", h.getCollectionName());
 	}
 
 	@Test
 	void constructsWithPluralEntities() {
-		mockCreator(PluralEntities.class);
-		h = newHandle(PluralEntities.class);
+		Handle<PluralEntities> h = newHandle(PluralEntities.class);
 		assertEquals("PluralEntities", h.getCollectionName());
 	}
 
 	@Test
 	void doesNotConstructWithThrowerConstructor() {
-		mockCreator(ThrowerConstructor.class);
 		assertThrows(ReflectionException.class, () -> {
 			newHandle(ThrowerConstructor.class);
 		});
@@ -586,7 +494,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithBlankCollection() {
-		mockCreator(BlankCollection.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(BlankCollection.class);
 		});
@@ -594,7 +501,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithNonConvertableField() {
-		mockCreator(NonConvertableField.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NonConvertableField.class);
 		});
@@ -602,7 +508,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithBlankProperty() {
-		mockCreator(BlankProperty.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(BlankProperty.class);
 		});
@@ -610,7 +515,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithDottedProperty() {
-		mockCreator(DottedProperty.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(DottedProperty.class);
 		});
@@ -618,7 +522,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithNonFileWebField() {
-		mockCreator(NonFileWebField.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NonFileWebField.class);
 		});
@@ -626,8 +529,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithConvertedFileField() {
-		mockCreator(ConvertedFileField.class);
-		mockSourceType(DefaultImplementation.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(ConvertedFileField.class);
 		});
@@ -635,7 +536,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithNonStringFileField() {
-		mockCreator(NonStringFileField.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NonStringFileField.class);
 		});
@@ -643,7 +543,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithNonKeyAutoField() {
-		mockCreator(NonKeyAutoField.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NonKeyAutoField.class);
 		});
@@ -651,8 +550,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithConvertedKeyField() {
-		mockCreator(ConvertedKeyField.class);
-		mockSourceType(DefaultImplementation.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(ConvertedKeyField.class);
 		});
@@ -660,7 +557,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithFileKeyField() {
-		mockCreator(FileKeyField.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(FileKeyField.class);
 		});
@@ -668,7 +564,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithTwoKeys() {
-		mockCreator(TwoKeys.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(TwoKeys.class);
 		});
@@ -676,7 +571,6 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithNonStringAutoField() {
-		mockCreator(NonStringAutoField.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NonStringAutoField.class);
 		});
@@ -684,22 +578,44 @@ class HandleTest {
 
 	@Test
 	void doesNotConstructWithNoKeys() {
-		mockCreator(NoKeys.class);
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NoKeys.class);
 		});
 	}
 
-	private <T> MethodHandle mockCreator(Class<T> type) {
-		MethodHandle creator = assertDoesNotThrow(() -> {
-			Constructor<T> constructor = type.getDeclaredConstructor();
-			return LOOKUP.unreflectConstructor(constructor);
+	@Test
+	void doesNotOverwriteFileField() {
+		Handle<Default> h = newHandle(Default.class);
+		assertThrows(IllegalArgumentException.class, () -> {
+			h.toData(Map.of("stringValue", ""));
 		});
-		when(reflector.getCreator(type, type.getName())).thenReturn(creator);
-		return creator;
 	}
 
-	private Handle<?> newHandle(Class<?> type) {
+	@Test
+	void doesNotOverwriteKeyField() {
+		Handle<Default> h = newHandle(Default.class);
+		assertThrows(IllegalArgumentException.class, () -> {
+			h.toData(Map.of("booleanValue", false));
+		});
+	}
+
+	@Test
+	void doesNotModifyFileField() {
+		Handle<Default> h = newHandle(Default.class);
+		assertThrows(IllegalArgumentException.class, () -> {
+			h.toData(Map.of("stringValue.field", ""));
+		});
+	}
+
+	@Test
+	void doesNotModifyKeyField() {
+		Handle<Default> h = newHandle(Default.class);
+		assertThrows(IllegalArgumentException.class, () -> {
+			h.toData(Map.of("booleanValue.field", false));
+		});
+	}
+
+	private <E> Handle<E> newHandle(Class<E> type) {
 		return new Handle<>(reflector, factory, type);
 	}
 }

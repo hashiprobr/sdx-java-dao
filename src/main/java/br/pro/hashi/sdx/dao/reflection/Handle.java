@@ -225,24 +225,16 @@ public class Handle<E> {
 		return fieldName.equals(keyFieldName);
 	}
 
-	public Object getKey(Object instance) {
+	public <F> F getKey(E instance) {
 		return rawGet(keyFieldName, instance);
 	}
 
-	public void setKey(Object instance, String value) {
+	public void setAutoKey(E instance, String value) {
 		rawSet(keyFieldName, instance, value);
 	}
 
-	public void setKey(Map<String, Object> values, String value) {
+	public void putAutoKey(Map<String, Object> values, String value) {
 		values.put(keyFieldName, value);
-	}
-
-	private <V> V rawGet(String fieldName, Object instance) {
-		return reflector.invokeGetter(getters.get(fieldName), instance);
-	}
-
-	private <V> void rawSet(String fieldName, Object instance, V value) {
-		reflector.invokeSetter(setters.get(fieldName), instance, value);
 	}
 
 	public E toInstance(Map<String, Object> data) {
@@ -269,7 +261,7 @@ public class Handle<E> {
 		return values;
 	}
 
-	public Map<String, Object> toData(Object instance, boolean ignoreKey) {
+	public Map<String, Object> toData(E instance, boolean ignoreKey) {
 		Map<String, Object> data = new HashMap<>();
 		for (String fieldName : fieldNames) {
 			if (!(ignoreKey && fieldName.equals(keyFieldName)) && contentTypes.get(fieldName) == null) {
@@ -320,21 +312,29 @@ public class Handle<E> {
 		return propertyName;
 	}
 
-	private <S, T> Object convertTo(String fieldName, S value) {
+	private <S> Object convertTo(String fieldName, S value) {
 		@SuppressWarnings("unchecked")
-		DaoConverter<S, T> converter = (DaoConverter<S, T>) converters.get(fieldName);
+		DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
 		if (converter == null) {
 			return value;
 		}
 		return converter.to(value);
 	}
 
-	private <S, T> Object convertFrom(String fieldName, T value) {
+	private <T> Object convertFrom(String fieldName, T value) {
 		@SuppressWarnings("unchecked")
-		DaoConverter<S, T> converter = (DaoConverter<S, T>) converters.get(fieldName);
+		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
 		if (converter == null) {
 			return value;
 		}
 		return converter.from(value);
+	}
+
+	private <F> F rawGet(String fieldName, E instance) {
+		return reflector.invokeGetter(getters.get(fieldName), instance);
+	}
+
+	private <F> void rawSet(String fieldName, E instance, F value) {
+		reflector.invokeSetter(setters.get(fieldName), instance, value);
 	}
 }

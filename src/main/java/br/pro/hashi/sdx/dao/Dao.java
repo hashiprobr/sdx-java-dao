@@ -113,7 +113,7 @@ public final class Dao<E> {
 		DocumentSnapshot document = await(getDocument(keyString).get());
 		E instance = (E) handle.toInstance(document.getData());
 		if (handle.hasAutoKey()) {
-			handle.setKey(instance, keyString);
+			handle.setAutoKey(instance, keyString);
 		}
 		return instance;
 	}
@@ -441,7 +441,7 @@ public final class Dao<E> {
 			for (DocumentSnapshot document : snapshot) {
 				E instance = handle.toInstance(document.getData());
 				if (handle.hasAutoKey()) {
-					handle.setKey(instance, document.getId());
+					handle.setAutoKey(instance, document.getId());
 				}
 				instances.add(instance);
 			}
@@ -502,7 +502,7 @@ public final class Dao<E> {
 			for (DocumentSnapshot document : snapshot) {
 				Map<String, Object> values = handle.toValues(document.getData());
 				if (handle.hasAutoKey()) {
-					handle.setKey(values, document.getId());
+					handle.putAutoKey(values, document.getId());
 				}
 				valuesList.add(values);
 			}
