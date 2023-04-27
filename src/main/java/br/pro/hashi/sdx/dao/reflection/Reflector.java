@@ -76,17 +76,17 @@ final class Reflector {
 		return setter;
 	}
 
-	<V> V invokeGetter(MethodHandle getter, Object instance) {
-		V value;
+	<E, F> F invokeGetter(MethodHandle getter, E instance) {
+		F value;
 		try {
-			value = (V) getter.invoke(instance);
+			value = (F) getter.invoke(instance);
 		} catch (Throwable throwable) {
 			throw new AssertionError(throwable);
 		}
 		return value;
 	}
 
-	<V> void invokeSetter(MethodHandle setter, Object instance, V value) {
+	<E, F> void invokeSetter(MethodHandle setter, E instance, F value) {
 		try {
 			setter.invoke(instance, value);
 		} catch (Throwable throwable) {

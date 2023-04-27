@@ -39,7 +39,7 @@ final class ConverterFactory {
 		return reflector;
 	}
 
-	synchronized DaoConverter<?, ?> get(Class<? extends DaoConverter<?, ?>> type) {
+	DaoConverter<?, ?> get(Class<? extends DaoConverter<?, ?>> type) {
 		DaoConverter<?, ?> converter = cache.get(type);
 		if (converter == null) {
 			String typeName = type.getName();

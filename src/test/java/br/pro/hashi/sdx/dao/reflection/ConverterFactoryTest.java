@@ -78,7 +78,7 @@ class ConverterFactoryTest {
 	}
 
 	@Test
-	void doesNotGet() {
+	void doesNotGetThrower() {
 		assertThrows(ReflectionException.class, () -> {
 			f.get(ThrowerImplementation.class);
 		});

@@ -18,7 +18,7 @@ public final class HandleFactory {
 		this.cache = new HashMap<>();
 	}
 
-	public synchronized <E> Handle<E> get(Class<E> type) {
+	public <E> Handle<E> get(Class<E> type) {
 		@SuppressWarnings("unchecked")
 		Handle<E> handle = (Handle<E>) cache.get(type);
 		if (handle == null) {

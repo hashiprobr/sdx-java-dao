@@ -32,7 +32,7 @@ class HandleFactoryTest {
 			handleConstruction.when(() -> Construction.of(Object.class)).thenReturn(mock(Handle.class));
 			handleConstruction.verify(() -> Construction.of(any()), times(0));
 
-			Handle<?> handle = f.get(Object.class);
+			Handle<Object> handle = f.get(Object.class);
 			handleConstruction.verify(() -> Construction.of(Object.class));
 
 			assertSame(handle, f.get(Object.class));

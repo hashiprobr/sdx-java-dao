@@ -1,13 +1,15 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,11 +99,11 @@ class ReflectorTest {
 			"packageValue",
 			"privateValue" })
 	void unreflectsAndInvokesGetter(String fieldName) {
-		Field field = getDeclaredField(fieldName);
-		field.setAccessible(true);
+		Field field = getDeclaredFieldAndSetAccessible(fieldName);
 		MethodHandle getter = r.unreflectGetter(field);
 		Fields instance = new Fields();
-		assertEquals(true, r.invokeGetter(getter, instance));
+		boolean value = r.invokeGetter(getter, instance);
+		assertTrue(value);
 	}
 
 	@ParameterizedTest
@@ -111,15 +113,22 @@ class ReflectorTest {
 			"packageValue",
 			"privateValue" })
 	void unreflectsAndInvokesSetter(String fieldName) {
-		Field field = getDeclaredField(fieldName);
-		field.setAccessible(true);
+		Field field = getDeclaredFieldAndSetAccessible(fieldName);
 		MethodHandle setter = r.unreflectSetter(field);
 		Fields instance = new Fields();
 		r.invokeSetter(setter, instance, false);
-		Object value = assertDoesNotThrow(() -> {
+		boolean value = (boolean) assertDoesNotThrow(() -> {
 			return field.get(instance);
 		});
-		assertEquals(false, value);
+		assertFalse(value);
+	}
+
+	private Field getDeclaredFieldAndSetAccessible(String fieldName) {
+		Field field = getDeclaredField(fieldName);
+		if (!Modifier.isPublic(field.getModifiers())) {
+			field.setAccessible(true);
+		}
+		return field;
 	}
 
 	@ParameterizedTest
@@ -147,7 +156,7 @@ class ReflectorTest {
 	}
 
 	@Test
-	void doesNotInvokeThrowerGetter() {
+	void doesNotInvokeNullGetter() {
 		Field field = getDeclaredField("publicValue");
 		MethodHandle getter = r.unreflectGetter(field);
 		assertThrows(AssertionError.class, () -> {
@@ -156,7 +165,7 @@ class ReflectorTest {
 	}
 
 	@Test
-	void doesNotInvokeThrowerSetter() {
+	void doesNotInvokeNullSetter() {
 		Field field = getDeclaredField("publicValue");
 		MethodHandle setter = r.unreflectSetter(field);
 		assertThrows(AssertionError.class, () -> {
