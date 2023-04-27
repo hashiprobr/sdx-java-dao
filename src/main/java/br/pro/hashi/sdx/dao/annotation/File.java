@@ -7,16 +7,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that...
+ * Indicates that the field should represent a file.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface File {
 	/**
-	 * Stub.
+	 * The content type of the file.
 	 * 
-	 * @return stub
+	 * @return a string representing the content type
 	 */
 	String value() default "application/octet-stream";
 }

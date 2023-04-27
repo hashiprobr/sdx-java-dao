@@ -28,8 +28,8 @@ The following dependencies are ASL2.
 
  * firebase.admin
  * google.cloud
- * com.google.api
  * com.google.auth
+ * com.google.api
  * com.google.common
 
 The following dependencies are MIT.

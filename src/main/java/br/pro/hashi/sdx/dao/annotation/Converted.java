@@ -9,16 +9,16 @@ import java.lang.annotation.Target;
 import br.pro.hashi.sdx.dao.DaoConverter;
 
 /**
- * Indicates that...
+ * Indicates that the field should be converted.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Converted {
 	/**
-	 * Stub.
+	 * The type of the converter.
 	 * 
-	 * @return stub
+	 * @return a subtype of {@link DaoConverter}
 	 */
 	Class<? extends DaoConverter<?, ?>> value();
 }
