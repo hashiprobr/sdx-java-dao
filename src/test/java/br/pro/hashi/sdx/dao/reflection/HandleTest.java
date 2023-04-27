@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import com.google.cloud.firestore.FieldValue;
+
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
@@ -114,15 +116,11 @@ class HandleTest {
 	}
 
 	@Test
-	void constructsWithDefaultReflectorAndFactory() {
+	void constructsWithDefaultReflector() {
 		Handle<Default> handle;
 		try (MockedStatic<Reflector> reflectorStatic = mockStatic(Reflector.class)) {
 			reflectorStatic.when(() -> Reflector.getInstance()).thenReturn(reflector);
-			try (MockedStatic<ConverterFactory> factoryStatic = mockStatic(ConverterFactory.class)) {
-				factoryStatic.when(() -> ConverterFactory.getInstance()).thenReturn(factory);
-				handle = Construction.of(Default.class);
-			}
-			assertSame(factory, handle.getFactory());
+			handle = Construction.of(factory, Default.class);
 		}
 		assertSame(reflector, handle.getReflector());
 	}
@@ -138,17 +136,9 @@ class HandleTest {
 		assertNull(h.getContentType("intValue"));
 		assertEquals("application/octet-stream", h.getContentType("stringValue"));
 
-		assertFalse(h.isFile("booleanValue"));
-		assertFalse(h.isFile("intValue"));
-		assertTrue(h.isFile("stringValue"));
-
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
 		assertTrue(h.isWeb("stringValue"));
-
-		assertTrue(h.isKey("booleanValue"));
-		assertFalse(h.isKey("intValue"));
-		assertFalse(h.isKey("stringValue"));
 
 		Parent instance = assertInstanceOf(Parent.class, h.toInstance(Map.of()));
 		assertTrue(instance.isBooleanValue());
@@ -201,20 +191,10 @@ class HandleTest {
 		assertNull(h.getContentType("doubleValue"));
 		assertNull(h.getContentType("stringValue"));
 
-		assertFalse(h.isFile("booleanValue"));
-		assertFalse(h.isFile("intValue"));
-		assertFalse(h.isFile("doubleValue"));
-		assertFalse(h.isFile("stringValue"));
-
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
 		assertFalse(h.isWeb("doubleValue"));
 		assertFalse(h.isWeb("stringValue"));
-
-		assertFalse(h.isKey("booleanValue"));
-		assertFalse(h.isKey("intValue"));
-		assertTrue(h.isKey("doubleValue"));
-		assertFalse(h.isKey("stringValue"));
 
 		Child instance = assertInstanceOf(Child.class, h.toInstance(Map.of()));
 		assertFalse(instance.isBooleanValue());
@@ -273,20 +253,10 @@ class HandleTest {
 		assertNull(h.getContentType("doubleValue"));
 		assertEquals("image/png", h.getContentType("stringValue"));
 
-		assertFalse(h.isFile("booleanValue"));
-		assertFalse(h.isFile("intValue"));
-		assertFalse(h.isFile("doubleValue"));
-		assertTrue(h.isFile("stringValue"));
-
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
 		assertFalse(h.isWeb("doubleValue"));
 		assertTrue(h.isWeb("stringValue"));
-
-		assertTrue(h.isKey("booleanValue"));
-		assertFalse(h.isKey("intValue"));
-		assertFalse(h.isKey("doubleValue"));
-		assertFalse(h.isKey("stringValue"));
 
 		GrandChild instance = assertInstanceOf(GrandChild.class, h.toInstance(Map.of()));
 		assertTrue(instance.isBooleanValue());
@@ -349,14 +319,6 @@ class HandleTest {
 		assertNull(h.getContentType("booleanWrapper"));
 		assertNull(h.getContentType("byteWrapper"));
 
-		assertFalse(h.isFile("key"));
-		assertFalse(h.isFile("value"));
-		assertFalse(h.isFile("email"));
-		assertFalse(h.isFile("address"));
-		assertFalse(h.isFile("sheet"));
-		assertFalse(h.isFile("booleanWrapper"));
-		assertFalse(h.isFile("byteWrapper"));
-
 		assertFalse(h.isWeb("key"));
 		assertFalse(h.isWeb("value"));
 		assertFalse(h.isWeb("email"));
@@ -364,14 +326,6 @@ class HandleTest {
 		assertFalse(h.isWeb("sheet"));
 		assertFalse(h.isWeb("booleanWrapper"));
 		assertFalse(h.isWeb("byteWrapper"));
-
-		assertTrue(h.isKey("key"));
-		assertFalse(h.isKey("value"));
-		assertFalse(h.isKey("email"));
-		assertFalse(h.isKey("address"));
-		assertFalse(h.isKey("sheet"));
-		assertFalse(h.isKey("booleanWrapper"));
-		assertFalse(h.isKey("byteWrapper"));
 
 		ConvertableFields instance = assertInstanceOf(ConvertableFields.class, h.toInstance(Map.of(
 				"value", "",
@@ -463,6 +417,7 @@ class HandleTest {
 		assertEquals(List.of('1', '2', '7'), data.get("byte_wrapper"));
 
 		data = h.toData(Map.of(
+				"value", FieldValue.delete(),
 				"email", instance.getEmail(),
 				"address.field", instance.getAddress(),
 				"booleanWrapper", instance.getBooleanWrapper(),

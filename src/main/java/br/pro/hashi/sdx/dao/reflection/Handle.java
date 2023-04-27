@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.cloud.firestore.FieldValue;
+
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.annotation.Auto;
 import br.pro.hashi.sdx.dao.annotation.Converted;
@@ -20,7 +22,6 @@ import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
 public class Handle<E> {
 	private final Reflector reflector;
-	private final ConverterFactory factory;
 	private final MethodHandle creator;
 	private final String collectionName;
 	private final Map<String, DaoConverter<?, ?>> converters;
@@ -36,8 +37,8 @@ public class Handle<E> {
 	// TODO: Replace this class with a constructor if/when
 	// Mockito can mock the construction of a generic type.
 	static class Construction {
-		static <E> Handle<E> of(Class<E> type) {
-			return new Handle<>(Reflector.getInstance(), ConverterFactory.getInstance(), type);
+		static <E> Handle<E> of(ConverterFactory factory, Class<E> type) {
+			return new Handle<>(Reflector.getInstance(), factory, type);
 		}
 
 		private Construction() {
@@ -175,7 +176,6 @@ public class Handle<E> {
 		}
 
 		this.reflector = reflector;
-		this.factory = factory;
 		this.creator = creator;
 		this.collectionName = collectionName;
 		this.converters = converters;
@@ -191,10 +191,6 @@ public class Handle<E> {
 
 	Reflector getReflector() {
 		return reflector;
-	}
-
-	ConverterFactory getFactory() {
-		return factory;
 	}
 
 	public String getCollectionName() {
@@ -213,16 +209,8 @@ public class Handle<E> {
 		return contentTypes.get(fieldName);
 	}
 
-	public boolean isFile(String fieldName) {
-		return contentTypes.containsKey(fieldName);
-	}
-
 	public boolean isWeb(String fieldName) {
 		return webFieldNames.contains(fieldName);
-	}
-
-	public boolean isKey(String fieldName) {
-		return fieldName.equals(keyFieldName);
 	}
 
 	public <F> F getKey(E instance) {
@@ -286,7 +274,9 @@ public class Handle<E> {
 				if (fieldName.equals(keyFieldName)) {
 					throw new IllegalArgumentException("@Key field cannot be overwritten");
 				}
-				value = convertTo(fieldName, value);
+				if (!(value instanceof FieldValue)) {
+					value = convertTo(fieldName, value);
+				}
 				fieldName = rename(fieldName);
 			} else {
 				String prefix = fieldName.substring(0, index);

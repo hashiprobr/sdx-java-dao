@@ -7,8 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that the type should have a specified collection name or the field
- * should have a specified property name.
+ * Indicates that the type should use a specified collection name or the field
+ * should use a specified property name.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

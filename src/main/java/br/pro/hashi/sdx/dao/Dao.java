@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -386,21 +385,7 @@ public final class Dao<E> {
 	 * @return stub
 	 */
 	public Selection select(String... fieldNames) {
-		Set<String> set = handle.getFieldNames();
-		boolean includesFiles = false;
-		boolean includesKey = false;
-		for (String fieldName : fieldNames) {
-			if (!set.contains(fieldName)) {
-				throw new IllegalArgumentException("Field %s does not exist".formatted(fieldName));
-			}
-			if (handle.isFile(fieldName)) {
-				includesFiles = true;
-			}
-			if (handle.isKey(fieldName)) {
-				includesKey = true;
-			}
-		}
-		return new Selection(getCollection().select(fieldNames), fieldNames, includesFiles, includesKey);
+		return new Selection(getCollection().select(fieldNames), fieldNames);
 	}
 
 	/**
@@ -481,14 +466,10 @@ public final class Dao<E> {
 	 */
 	public final class Selection extends Filter {
 		private final String[] fieldNames;
-		private final boolean includesFiles;
-		private final boolean includesKey;
 
-		private Selection(Query query, String[] fieldNames, boolean includesFiles, boolean includesKey) {
+		private Selection(Query query, String[] fieldNames) {
 			super(query);
 			this.fieldNames = fieldNames;
-			this.includesFiles = includesFiles;
-			this.includesKey = includesKey;
 		}
 
 		/**
@@ -512,24 +493,19 @@ public final class Dao<E> {
 		/**
 		 * Stub.
 		 * 
-		 * @param values stub
+		 * @param fieldValues stub
 		 */
-		public void update(Object... values) {
-			if (includesFiles) {
-				throw new IllegalArgumentException("@File fields can only be updated by uploadFile");
+		public void update(Object... fieldValues) {
+			if (fieldNames.length != fieldValues.length) {
+				throw new IllegalArgumentException("Cannot update %d fields with %d values".formatted(fieldNames.length, fieldValues.length));
 			}
-			if (includesKey) {
-				throw new IllegalArgumentException("@Key field cannot be updated");
-			}
-			if (fieldNames.length != values.length) {
-				throw new IllegalArgumentException("Cannot update %d fields with %d values".formatted(fieldNames.length, values.length));
-			}
-			Map<String, Object> map = new HashMap<>();
+			Map<String, Object> values = new HashMap<>();
 			for (int i = 0; i < fieldNames.length; i++) {
-				map.put(fieldNames[i], values[i]);
+				values.put(fieldNames[i], fieldValues[i]);
 			}
+			Map<String, Object> data = handle.toData(values);
 			runBatch((batch, document) -> {
-				document.update(map);
+				batch.update(document, data);
 			});
 		}
 
@@ -537,18 +513,13 @@ public final class Dao<E> {
 		 * Stub.
 		 */
 		public void delete() {
-			if (includesFiles) {
-				throw new IllegalArgumentException("@File fields can only be deleted by removeFile");
-			}
-			if (includesKey) {
-				throw new IllegalArgumentException("@Key field cannot be deleted");
-			}
-			Map<String, Object> map = new HashMap<>();
+			Map<String, Object> values = new HashMap<>();
 			for (int i = 0; i < fieldNames.length; i++) {
-				map.put(fieldNames[i], FieldValue.delete());
+				values.put(fieldNames[i], FieldValue.delete());
 			}
+			Map<String, Object> data = handle.toData(values);
 			runBatch((batch, document) -> {
-				document.update(map);
+				batch.update(document, data);
 			});
 		}
 
