@@ -3,7 +3,7 @@ package br.pro.hashi.sdx.dao.reflection.mock.handle;
 import br.pro.hashi.sdx.dao.annotation.Key;
 import br.pro.hashi.sdx.dao.annotation.Renamed;
 
-@Renamed("Children")
+@Renamed(" \t\nChildren \t\n")
 public class Child extends Parent {
 	public static Object childStaticValue = new Object();
 

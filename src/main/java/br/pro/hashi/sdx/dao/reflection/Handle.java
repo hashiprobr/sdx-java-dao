@@ -3,8 +3,10 @@ package br.pro.hashi.sdx.dao.reflection;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -71,7 +73,7 @@ public class Handle<E> {
 		} else {
 			collectionName = typeNamedAnnotation.value().strip();
 			if (collectionName.isEmpty()) {
-				throw new AnnotationException(typeName, "Class @Renamed value cannot be blank");
+				throw new AnnotationException(typeName, "Type @Renamed value cannot be blank");
 			}
 		}
 
@@ -136,7 +138,7 @@ public class Handle<E> {
 							if (!fieldType.equals(String.class)) {
 								throw new AnnotationException(superType, "@File field must be a string");
 							}
-							contentTypes.put(fieldName, fileAnnotation.value());
+							contentTypes.put(fieldName, fileAnnotation.value().strip());
 							if (webAnnotation != null) {
 								webFieldNames.add(fieldName);
 							}
@@ -152,7 +154,7 @@ public class Handle<E> {
 							if (convertedAnnotation != null) {
 								throw new AnnotationException(superType, "@Key field cannot be a @Converted field");
 							}
-							if (contentTypes.containsKey(fieldName)) {
+							if (fileAnnotation != null) {
 								throw new AnnotationException(superType, "@Key field cannot be a @File field");
 							}
 							if (keyFieldName != null) {
@@ -214,11 +216,11 @@ public class Handle<E> {
 	}
 
 	public <F> F getKey(E instance) {
-		return rawGet(keyFieldName, instance);
+		return get(keyFieldName, instance);
 	}
 
 	public void setAutoKey(E instance, String value) {
-		rawSet(keyFieldName, instance, value);
+		set(keyFieldName, instance, value);
 	}
 
 	public void putAutoKey(Map<String, Object> values, String value) {
@@ -231,19 +233,39 @@ public class Handle<E> {
 			String propertyName = rename(fieldName);
 			Object value = data.get(propertyName);
 			if (value != null) {
-				rawSet(fieldName, instance, convertFrom(fieldName, value));
+				set(fieldName, instance, convertFrom(fieldName, value));
 			}
 		}
 		return instance;
 	}
 
 	public Map<String, Object> toValues(Map<String, Object> data) {
+		Map<String, List<String>> suffixMap = new HashMap<>();
+		for (String name : data.keySet()) {
+			int index = name.indexOf('.');
+			if (index != -1 && data.get(name) != null) {
+				String propertyName = name.substring(0, index);
+				List<String> suffixList = suffixMap.get(propertyName);
+				if (suffixList == null) {
+					suffixList = new ArrayList<>();
+					suffixMap.put(propertyName, suffixList);
+				}
+				suffixList.add(name.substring(index));
+			}
+		}
 		Map<String, Object> values = new HashMap<>();
 		for (String fieldName : fieldNames) {
 			String propertyName = rename(fieldName);
 			Object value = data.get(propertyName);
 			if (value != null) {
 				values.put(fieldName, convertFrom(fieldName, value));
+			}
+			List<String> suffixList = suffixMap.get(propertyName);
+			if (suffixList != null) {
+				for (String suffix : suffixList) {
+					value = data.get("%s%s".formatted(propertyName, suffix));
+					values.put("%s%s".formatted(fieldName, suffix), value);
+				}
 			}
 		}
 		return values;
@@ -252,10 +274,12 @@ public class Handle<E> {
 	public Map<String, Object> toData(E instance, boolean ignoreKey) {
 		Map<String, Object> data = new HashMap<>();
 		for (String fieldName : fieldNames) {
-			if (!(ignoreKey && fieldName.equals(keyFieldName)) && contentTypes.get(fieldName) == null) {
-				String propertyName = rename(fieldName);
-				Object value = convertTo(fieldName, rawGet(fieldName, instance));
-				data.put(propertyName, value);
+			if (!(contentTypes.containsKey(fieldName) || (ignoreKey && fieldName.equals(keyFieldName)))) {
+				Object value = get(fieldName, instance);
+				if (value != null) {
+					String propertyName = rename(fieldName);
+					data.put(propertyName, convertTo(fieldName, value));
+				}
 			}
 		}
 		return data;
@@ -263,43 +287,42 @@ public class Handle<E> {
 
 	public Map<String, Object> toData(Map<String, Object> values) {
 		Map<String, Object> data = new HashMap<>();
-		for (String fieldName : values.keySet()) {
-			Object value = values.get(fieldName);
-			fieldName = fieldName.strip();
-			int index = fieldName.indexOf('.');
-			if (index == -1) {
-				if (contentTypes.get(fieldName) != null) {
-					throw new IllegalArgumentException("@File fields can only be overwritten by uploadFile");
+		for (String name : values.keySet()) {
+			if (name != null) {
+				Object value = values.get(name);
+				if (value != null) {
+					name = name.strip();
+					int index = name.indexOf('.');
+					if (index == -1) {
+						if (fieldNames.contains(name)) {
+							if (contentTypes.containsKey(name)) {
+								throw new IllegalArgumentException("@File fields cannot be overwritten");
+							}
+							if (name.equals(keyFieldName)) {
+								throw new IllegalArgumentException("@Key field cannot be overwritten");
+							}
+							if (!(value instanceof FieldValue)) {
+								value = convertTo(name, value);
+							}
+							data.put(rename(name), value);
+						}
+					} else {
+						String prefix = name.substring(0, index);
+						if (fieldNames.contains(prefix)) {
+							if (contentTypes.containsKey(prefix)) {
+								throw new IllegalArgumentException("@File fields cannot be modified");
+							}
+							if (prefix.equals(keyFieldName)) {
+								throw new IllegalArgumentException("@Key field cannot be modified");
+							}
+							String suffix = name.substring(index);
+							data.put("%s%s".formatted(rename(prefix), suffix), value);
+						}
+					}
 				}
-				if (fieldName.equals(keyFieldName)) {
-					throw new IllegalArgumentException("@Key field cannot be overwritten");
-				}
-				if (!(value instanceof FieldValue)) {
-					value = convertTo(fieldName, value);
-				}
-				fieldName = rename(fieldName);
-			} else {
-				String prefix = fieldName.substring(0, index);
-				String suffix = fieldName.substring(index);
-				if (contentTypes.get(prefix) != null) {
-					throw new IllegalArgumentException("@File fields can only be modified by uploadFile");
-				}
-				if (prefix.equals(keyFieldName)) {
-					throw new IllegalArgumentException("@Key field cannot be modified");
-				}
-				fieldName = "%s%s".formatted(rename(prefix), suffix);
 			}
-			data.put(fieldName, value);
 		}
 		return data;
-	}
-
-	private String rename(String fieldName) {
-		String propertyName = propertyNames.get(fieldName);
-		if (propertyName == null) {
-			return fieldName;
-		}
-		return propertyName;
 	}
 
 	private <S> Object convertTo(String fieldName, S value) {
@@ -320,11 +343,19 @@ public class Handle<E> {
 		return converter.from(value);
 	}
 
-	private <F> F rawGet(String fieldName, E instance) {
+	private <F> F get(String fieldName, E instance) {
 		return reflector.invokeGetter(getters.get(fieldName), instance);
 	}
 
-	private <F> void rawSet(String fieldName, E instance, F value) {
+	private <F> void set(String fieldName, E instance, F value) {
 		reflector.invokeSetter(setters.get(fieldName), instance, value);
+	}
+
+	private String rename(String fieldName) {
+		String propertyName = propertyNames.get(fieldName);
+		if (propertyName == null) {
+			return fieldName;
+		}
+		return propertyName;
 	}
 }

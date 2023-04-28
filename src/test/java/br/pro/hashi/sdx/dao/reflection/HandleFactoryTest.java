@@ -43,6 +43,7 @@ class HandleFactoryTest {
 	void gets() {
 		try (MockedStatic<Construction> handleConstruction = mockStatic(Construction.class)) {
 			handleConstruction.when(() -> Construction.of(converterFactory, Object.class)).thenReturn(mock(Handle.class));
+
 			handleConstruction.verify(() -> Construction.of(eq(converterFactory), any()), times(0));
 
 			Handle<Object> handle = f.get(Object.class);

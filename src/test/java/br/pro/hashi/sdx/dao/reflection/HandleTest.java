@@ -34,17 +34,17 @@ import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankCollection;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankProperty;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankCollectionName;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.Child;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertableFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedFileField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.Default;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedProperty;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FileKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.GrandChild;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.NoKeys;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.NoKeyFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonConvertableField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonFileWebField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonKeyAutoField;
@@ -54,7 +54,7 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.Parent;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.PluralEntities;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.SingularEntity;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ThrowerConstructor;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.TwoKeys;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.TwoKeyFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Address;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Email;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Sheet;
@@ -328,7 +328,6 @@ class HandleTest {
 		assertFalse(h.isWeb("byteWrapper"));
 
 		ConvertableFields instance = assertInstanceOf(ConvertableFields.class, h.toInstance(Map.of(
-				"value", "",
 				"email", "email@convertable.com",
 				"address", List.of("City Convertable", "1", "Street Convertable"),
 				"sheet", List.of(new Address("1 Street", 1, "1 City"), new Address("0 Street", 0, "0 City")),
@@ -336,7 +335,7 @@ class HandleTest {
 				"byte_wrapper", List.of('6', '3'))));
 		h.setAutoKey(instance, "");
 		assertEquals("", h.getKey(instance));
-		assertEquals("", instance.getValue());
+		assertEquals("value", instance.getValue());
 		Email email = instance.getEmail();
 		assertEquals("email", email.getLogin());
 		assertEquals("convertable.com", email.getDomain());
@@ -387,7 +386,7 @@ class HandleTest {
 
 		data = h.toData(instance, true);
 		assertNull(data.get("key"));
-		assertEquals("", data.get("value"));
+		assertEquals("value", data.get("value"));
 		assertEquals("email@convertable.com", data.get("email"));
 		assertEquals(List.of("City Convertable", "1", "Street Convertable"), data.get("address"));
 		List<?> addresses = assertInstanceOf(List.class, data.get("sheet"));
@@ -448,9 +447,9 @@ class HandleTest {
 	}
 
 	@Test
-	void doesNotConstructWithBlankCollection() {
+	void doesNotConstructWithBlankCollectionName() {
 		assertThrows(AnnotationException.class, () -> {
-			newHandle(BlankCollection.class);
+			newHandle(BlankCollectionName.class);
 		});
 	}
 
@@ -462,16 +461,16 @@ class HandleTest {
 	}
 
 	@Test
-	void doesNotConstructWithBlankProperty() {
+	void doesNotConstructWithBlankPropertyName() {
 		assertThrows(AnnotationException.class, () -> {
-			newHandle(BlankProperty.class);
+			newHandle(BlankPropertyName.class);
 		});
 	}
 
 	@Test
-	void doesNotConstructWithDottedProperty() {
+	void doesNotConstructWithDottedPropertyName() {
 		assertThrows(AnnotationException.class, () -> {
-			newHandle(DottedProperty.class);
+			newHandle(DottedPropertyName.class);
 		});
 	}
 
@@ -518,9 +517,9 @@ class HandleTest {
 	}
 
 	@Test
-	void doesNotConstructWithTwoKeys() {
+	void doesNotConstructWithTwoKeyFields() {
 		assertThrows(AnnotationException.class, () -> {
-			newHandle(TwoKeys.class);
+			newHandle(TwoKeyFields.class);
 		});
 	}
 
@@ -532,9 +531,9 @@ class HandleTest {
 	}
 
 	@Test
-	void doesNotConstructWithNoKeys() {
+	void doesNotConstructWithNoKeyFields() {
 		assertThrows(AnnotationException.class, () -> {
-			newHandle(NoKeys.class);
+			newHandle(NoKeyFields.class);
 		});
 	}
 

@@ -42,12 +42,10 @@ public final class Dao<E> {
 
 	private final DaoClient client;
 	private final Handle<E> handle;
-	private final String collectionName;
 
 	Dao(DaoClient client, Handle<E> handle) {
 		this.client = client;
 		this.handle = handle;
-		this.collectionName = handle.getCollectionName();
 	}
 
 	/**
@@ -349,11 +347,11 @@ public final class Dao<E> {
 	}
 
 	private CollectionReference getCollection(Firestore firestore) {
-		return firestore.collection(collectionName);
+		return firestore.collection(handle.getCollectionName());
 	}
 
 	private String getFileName(String keyString, String fieldName) {
-		return "%s/%s/%s".formatted(collectionName, keyString, fieldName);
+		return "%s/%s/%s".formatted(handle.getCollectionName(), keyString, fieldName);
 	}
 
 	private String toString(Object key) {
