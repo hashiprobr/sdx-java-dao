@@ -207,6 +207,10 @@ public class Handle<E> {
 		return autoKey;
 	}
 
+	public Set<String> getFileFieldNames() {
+		return contentTypes.keySet();
+	}
+
 	public String getContentType(String fieldName) {
 		return contentTypes.get(fieldName);
 	}
@@ -271,14 +275,20 @@ public class Handle<E> {
 		return values;
 	}
 
-	public Map<String, Object> toData(E instance, boolean ignoreKey) {
+	public Map<String, Object> toData(E instance, boolean withFiles, boolean withKey) {
 		Map<String, Object> data = new HashMap<>();
 		for (String fieldName : fieldNames) {
-			if (!(contentTypes.containsKey(fieldName) || (ignoreKey && fieldName.equals(keyFieldName)))) {
-				Object value = get(fieldName, instance);
-				if (value != null) {
-					String propertyName = rename(fieldName);
-					data.put(propertyName, convertTo(fieldName, value));
+			String propertyName = rename(fieldName);
+			if (contentTypes.containsKey(fieldName)) {
+				if (withFiles) {
+					data.put(propertyName, null);
+				}
+			} else {
+				if (!fieldName.equals(keyFieldName) || withKey) {
+					Object value = get(fieldName, instance);
+					if (value != null) {
+						data.put(propertyName, convertTo(fieldName, value));
+					}
 				}
 			}
 		}

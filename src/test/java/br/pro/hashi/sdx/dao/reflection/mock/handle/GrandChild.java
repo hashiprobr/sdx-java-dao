@@ -8,7 +8,7 @@ import br.pro.hashi.sdx.dao.annotation.Web;
 public class GrandChild extends Child {
 	private @Key @Renamed("boolean_value") boolean booleanValue;
 	public double doubleValue;
-	private @Web @File("image/png") @Renamed("string_value") String stringValue;
+	private @Web @File(" \t\nimage/png \t\n") @Renamed("string_value") String stringValue;
 
 	public GrandChild() {
 		this.booleanValue = true;

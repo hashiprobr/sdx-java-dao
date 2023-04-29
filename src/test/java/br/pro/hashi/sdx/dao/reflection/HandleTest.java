@@ -131,6 +131,7 @@ class HandleTest {
 		assertEquals("Parents", h.getCollectionName());
 		assertEquals(Set.of("booleanValue", "intValue", "stringValue"), h.getFieldNames());
 		assertFalse(h.hasAutoKey());
+		assertEquals(Set.of("stringValue"), h.getFileFieldNames());
 
 		assertNull(h.getContentType("booleanValue"));
 		assertNull(h.getContentType("intValue"));
@@ -140,15 +141,17 @@ class HandleTest {
 		assertFalse(h.isWeb("intValue"));
 		assertTrue(h.isWeb("stringValue"));
 
-		Parent instance = assertInstanceOf(Parent.class, h.toInstance(Map.of()));
+		Parent instance;
+
+		instance = h.toInstance(Map.of());
 		assertTrue(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
 		assertEquals("p", instance.getStringValue());
 
-		instance = assertInstanceOf(Parent.class, h.toInstance(Map.of(
+		instance = h.toInstance(Map.of(
 				"boolean_value", false,
 				"intValue", 0,
-				"string_value", "")));
+				"string_value", ""));
 		assertFalse(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
 		assertEquals("", instance.getStringValue());
@@ -165,18 +168,35 @@ class HandleTest {
 
 		Map<String, Object> data;
 
-		data = h.toData(instance, false);
+		data = h.toData(instance, false, false);
+		assertFalse(data.containsKey("boolean_value"));
+		assertEquals(0, data.get("intValue"));
+		assertFalse(data.containsKey("string_value"));
+
+		data = h.toData(instance, false, true);
 		assertFalse((boolean) data.get("boolean_value"));
 		assertEquals(0, data.get("intValue"));
+		assertFalse(data.containsKey("string_value"));
+
+		data = h.toData(instance, true, false);
+		assertFalse(data.containsKey("boolean_value"));
+		assertEquals(0, data.get("intValue"));
+		assertTrue(data.containsKey("string_value"));
+		assertNull(data.get("string_value"));
+
+		data = h.toData(instance, true, true);
+		assertFalse((boolean) data.get("boolean_value"));
+		assertEquals(0, data.get("intValue"));
+		assertTrue(data.containsKey("string_value"));
 		assertNull(data.get("string_value"));
 
 		values.remove("booleanValue");
 		values.remove("stringValue");
 
 		data = h.toData(values);
-		assertNull(data.get("boolean_value"));
+		assertFalse(data.containsKey("boolean_value"));
 		assertEquals(1, data.get("intValue"));
-		assertNull(data.get("string_value"));
+		assertFalse(data.containsKey("string_value"));
 	}
 
 	@Test
@@ -185,6 +205,7 @@ class HandleTest {
 		assertEquals("Children", h.getCollectionName());
 		assertEquals(Set.of("booleanValue", "intValue", "doubleValue", "stringValue"), h.getFieldNames());
 		assertFalse(h.hasAutoKey());
+		assertEquals(Set.of(), h.getFileFieldNames());
 
 		assertNull(h.getContentType("booleanValue"));
 		assertNull(h.getContentType("intValue"));
@@ -196,17 +217,19 @@ class HandleTest {
 		assertFalse(h.isWeb("doubleValue"));
 		assertFalse(h.isWeb("stringValue"));
 
-		Child instance = assertInstanceOf(Child.class, h.toInstance(Map.of()));
+		Child instance;
+
+		instance = h.toInstance(Map.of());
 		assertFalse(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
 		assertEquals(2, instance.getDoubleValue(), DELTA);
 		assertEquals("c", instance.getStringValue());
 
-		instance = assertInstanceOf(Child.class, h.toInstance(Map.of(
+		instance = h.toInstance(Map.of(
 				"booleanValue", true,
 				"intValue", 0,
 				"doubleValue", 1,
-				"stringValue", "")));
+				"stringValue", ""));
 		assertTrue(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
 		assertEquals(1, instance.getDoubleValue(), DELTA);
@@ -226,7 +249,25 @@ class HandleTest {
 
 		Map<String, Object> data;
 
-		data = h.toData(instance, false);
+		data = h.toData(instance, false, false);
+		assertTrue((boolean) data.get("booleanValue"));
+		assertEquals(0, data.get("intValue"));
+		assertFalse(data.containsKey("doubleValue"));
+		assertEquals("", data.get("stringValue"));
+
+		data = h.toData(instance, false, true);
+		assertTrue((boolean) data.get("booleanValue"));
+		assertEquals(0, data.get("intValue"));
+		assertEquals(1, (double) data.get("doubleValue"), DELTA);
+		assertEquals("", data.get("stringValue"));
+
+		data = h.toData(instance, true, false);
+		assertTrue((boolean) data.get("booleanValue"));
+		assertEquals(0, data.get("intValue"));
+		assertFalse(data.containsKey("doubleValue"));
+		assertEquals("", data.get("stringValue"));
+
+		data = h.toData(instance, true, true);
 		assertTrue((boolean) data.get("booleanValue"));
 		assertEquals(0, data.get("intValue"));
 		assertEquals(1, (double) data.get("doubleValue"), DELTA);
@@ -237,7 +278,7 @@ class HandleTest {
 		data = h.toData(values);
 		assertFalse((boolean) data.get("booleanValue"));
 		assertEquals(1, data.get("intValue"));
-		assertNull(data.get("doubleValue"));
+		assertFalse(data.containsKey("doubleValue"));
 		assertEquals("c", data.get("stringValue"));
 	}
 
@@ -247,6 +288,7 @@ class HandleTest {
 		assertEquals("GrandChilds", h.getCollectionName());
 		assertEquals(Set.of("booleanValue", "intValue", "doubleValue", "stringValue"), h.getFieldNames());
 		assertFalse(h.hasAutoKey());
+		assertEquals(Set.of("stringValue"), h.getFileFieldNames());
 
 		assertNull(h.getContentType("booleanValue"));
 		assertNull(h.getContentType("intValue"));
@@ -258,17 +300,19 @@ class HandleTest {
 		assertFalse(h.isWeb("doubleValue"));
 		assertTrue(h.isWeb("stringValue"));
 
-		GrandChild instance = assertInstanceOf(GrandChild.class, h.toInstance(Map.of()));
+		GrandChild instance;
+
+		instance = h.toInstance(Map.of());
 		assertTrue(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
 		assertEquals(3, instance.getDoubleValue(), DELTA);
 		assertEquals("g", instance.getStringValue());
 
-		instance = assertInstanceOf(GrandChild.class, h.toInstance(Map.of(
+		instance = h.toInstance(Map.of(
 				"boolean_value", false,
 				"intValue", 0,
 				"doubleValue", 2,
-				"string_value", "")));
+				"string_value", ""));
 		assertFalse(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
 		assertEquals(2, instance.getDoubleValue(), DELTA);
@@ -288,20 +332,40 @@ class HandleTest {
 
 		Map<String, Object> data;
 
-		data = h.toData(instance, false);
+		data = h.toData(instance, false, false);
+		assertFalse(data.containsKey("boolean_value"));
+		assertEquals(0, data.get("intValue"));
+		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertFalse(data.containsKey("string_value"));
+
+		data = h.toData(instance, false, true);
 		assertFalse((boolean) data.get("boolean_value"));
 		assertEquals(0, data.get("intValue"));
 		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertFalse(data.containsKey("string_value"));
+
+		data = h.toData(instance, true, false);
+		assertFalse(data.containsKey("boolean_value"));
+		assertEquals(0, data.get("intValue"));
+		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertTrue(data.containsKey("string_value"));
+		assertNull(data.get("string_value"));
+
+		data = h.toData(instance, true, true);
+		assertFalse((boolean) data.get("boolean_value"));
+		assertEquals(0, data.get("intValue"));
+		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertTrue(data.containsKey("string_value"));
 		assertNull(data.get("string_value"));
 
 		values.remove("booleanValue");
 		values.remove("stringValue");
 
 		data = h.toData(values);
-		assertNull(data.get("boolean_value"));
+		assertFalse(data.containsKey("boolean_value"));
 		assertEquals(1, data.get("intValue"));
 		assertEquals(3, (double) data.get("doubleValue"), DELTA);
-		assertNull(data.get("string_value"));
+		assertFalse(data.containsKey("string_value"));
 	}
 
 	@Test
@@ -310,6 +374,7 @@ class HandleTest {
 		assertEquals("ConvertableFields", h.getCollectionName());
 		assertEquals(Set.of("key", "value", "email", "address", "sheet", "booleanWrapper", "byteWrapper"), h.getFieldNames());
 		assertTrue(h.hasAutoKey());
+		assertEquals(Set.of(), h.getFileFieldNames());
 
 		assertNull(h.getContentType("key"));
 		assertNull(h.getContentType("value"));
@@ -327,23 +392,28 @@ class HandleTest {
 		assertFalse(h.isWeb("booleanWrapper"));
 		assertFalse(h.isWeb("byteWrapper"));
 
-		ConvertableFields instance = assertInstanceOf(ConvertableFields.class, h.toInstance(Map.of(
+		Email email;
+		Address address;
+		Sheet sheet;
+
+		ConvertableFields instance = h.toInstance(Map.of(
+				"value", "",
 				"email", "email@convertable.com",
 				"address", List.of("City Convertable", "1", "Street Convertable"),
 				"sheet", List.of(new Address("1 Street", 1, "1 City"), new Address("0 Street", 0, "0 City")),
 				"boolean_wrapper", "false",
-				"byte_wrapper", List.of('6', '3'))));
+				"byte_wrapper", List.of('6', '3')));
 		h.setAutoKey(instance, "");
 		assertEquals("", h.getKey(instance));
-		assertEquals("value", instance.getValue());
-		Email email = instance.getEmail();
+		assertEquals("", instance.getValue());
+		email = instance.getEmail();
 		assertEquals("email", email.getLogin());
 		assertEquals("convertable.com", email.getDomain());
-		Address address = instance.getAddress();
+		address = instance.getAddress();
 		assertEquals("Street Convertable", address.getStreet());
 		assertEquals(1, address.getNumber());
 		assertEquals("City Convertable", address.getCity());
-		Sheet sheet = instance.getSheet();
+		sheet = instance.getSheet();
 		int i = 1;
 		for (List<String> row : sheet.getRows()) {
 			assertEquals("%d Street".formatted(i), row.get(0));
@@ -383,30 +453,37 @@ class HandleTest {
 		assertEquals(127, (byte) assertInstanceOf(Wrapper.class, values.get("byteWrapper")).getValue());
 
 		Map<String, Object> data;
+		List<?> addresses;
 
-		data = h.toData(instance, true);
-		assertNull(data.get("key"));
-		assertEquals("value", data.get("value"));
+		instance.setValue(null);
+
+		data = h.toData(instance, false, false);
+		assertFalse(data.containsKey("key"));
+		assertFalse(data.containsKey("value"));
 		assertEquals("email@convertable.com", data.get("email"));
 		assertEquals(List.of("City Convertable", "1", "Street Convertable"), data.get("address"));
-		List<?> addresses = assertInstanceOf(List.class, data.get("sheet"));
-		for (i = 0; i < 2; i++) {
-			address = assertInstanceOf(Address.class, addresses.get(i));
-			assertEquals("%d Street".formatted(1 - i), address.getStreet());
-			assertEquals(1 - i, address.getNumber());
-			assertEquals("%d City".formatted(1 - i), address.getCity());
+		addresses = assertInstanceOf(List.class, data.get("sheet"));
+		for (i = 1; i >= 0; i--) {
+			address = assertInstanceOf(Address.class, addresses.get(1 - i));
+			assertEquals("%d Street".formatted(i), address.getStreet());
+			assertEquals(i, address.getNumber());
+			assertEquals("%d City".formatted(i), address.getCity());
 		}
 		assertEquals("false", data.get("boolean_wrapper"));
 		assertEquals(List.of('6', '3'), data.get("byte_wrapper"));
 
 		values.remove("key");
+		values.put("value", null);
+		values.put("", "");
+		values.put(null, null);
 
 		data = h.toData(values);
-		assertEquals("value", data.get("value"));
+		assertFalse(data.containsKey("key"));
+		assertFalse(data.containsKey("value"));
 		assertEquals("convertable@email.com", data.get("email"));
 		assertEquals(List.of("Convertable City", "0", "Convertable Street"), data.get("address"));
 		addresses = assertInstanceOf(List.class, data.get("sheet"));
-		for (i = 0; i < 2; i++) {
+		for (i = 0; i <= 1; i++) {
 			address = assertInstanceOf(Address.class, addresses.get(i));
 			assertEquals("Street %d".formatted(i), address.getStreet());
 			assertEquals(i, address.getNumber());
@@ -416,15 +493,31 @@ class HandleTest {
 		assertEquals(List.of('1', '2', '7'), data.get("byte_wrapper"));
 
 		data = h.toData(Map.of(
+				".", "",
 				"value", FieldValue.delete(),
 				"email", instance.getEmail(),
+				"address.", instance.getAddress(),
 				"address.field", instance.getAddress(),
 				"booleanWrapper", instance.getBooleanWrapper(),
 				"byteWrapper.field", instance.getByteWrapper()));
+		assertSame(FieldValue.delete(), data.get("value"));
 		assertEquals("email@convertable.com", data.get("email"));
+		assertSame(instance.getAddress(), data.get("address."));
 		assertSame(instance.getAddress(), data.get("address.field"));
 		assertEquals("false", data.get("boolean_wrapper"));
-		assertEquals(instance.getByteWrapper(), data.get("byte_wrapper.field"));
+		assertSame(instance.getByteWrapper(), data.get("byte_wrapper.field"));
+
+		data.put(".", null);
+
+		values = h.toValues(data);
+		assertSame(FieldValue.delete(), values.get("value"));
+		email = assertInstanceOf(Email.class, values.get("email"));
+		assertEquals("email", email.getLogin());
+		assertEquals("convertable.com", email.getDomain());
+		assertSame(instance.getAddress(), values.get("address."));
+		assertSame(instance.getAddress(), values.get("address.field"));
+		assertFalse((boolean) assertInstanceOf(Wrapper.class, values.get("booleanWrapper")).getValue());
+		assertSame(instance.getByteWrapper(), values.get("byteWrapper.field"));
 	}
 
 	@Test

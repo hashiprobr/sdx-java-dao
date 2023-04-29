@@ -47,6 +47,10 @@ public class ConvertableFields {
 		return value;
 	}
 
+	public void setValue(String value) {
+		this.value = value;
+	}
+
 	public Email getEmail() {
 		return email;
 	}

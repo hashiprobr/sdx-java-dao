@@ -66,14 +66,14 @@ class Fao implements AutoCloseable {
 		}
 	}
 
-	String upload(InputStream stream, String contentType, boolean publishLink) {
+	String upload(InputStream stream, String contentType, boolean withLink) {
 		Blob blob = bucket.create(fileName, stream)
 				.toBuilder()
 				.setContentType(contentType)
 				.build()
 				.update();
 		String url;
-		if (publishLink) {
+		if (withLink) {
 			blob.createAcl(ACL);
 			url = blob.getMediaLink();
 		} else {
@@ -83,13 +83,13 @@ class Fao implements AutoCloseable {
 		return url;
 	}
 
-	String refresh(boolean publishLink) {
+	String refresh(boolean withLink) {
 		Blob blob = bucket.get(fileName);
 		if (blob == null) {
 			return null;
 		}
 		String url;
-		if (publishLink) {
+		if (withLink) {
 			url = blob.getMediaLink();
 		} else {
 			url = "";

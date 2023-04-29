@@ -65,7 +65,7 @@ public final class Dao<E> {
 			keyString = getKeyString(instance);
 			document = getDocument(keyString);
 		}
-		await(document.create(handle.toData(instance, handle.hasAutoKey())));
+		await(document.create(handle.toData(instance, false, handle.hasAutoKey())));
 		return keyString;
 	}
 
@@ -92,7 +92,7 @@ public final class Dao<E> {
 					keyString = getKeyString(instance);
 					document = getDocument(collection, keyString);
 				}
-				batch.create(document, handle.toData(instance, handle.hasAutoKey()));
+				batch.create(document, handle.toData(instance, false, handle.hasAutoKey()));
 				keyStrings.add(keyString);
 			}
 		});
@@ -122,7 +122,7 @@ public final class Dao<E> {
 	 */
 	public void update(E instance) {
 		check(instance);
-		doUpdate(handle.getKey(instance), handle.toData(instance, true));
+		doUpdate(handle.getKey(instance), handle.toData(instance, false, true));
 	}
 
 	/**
@@ -150,7 +150,7 @@ public final class Dao<E> {
 		runBatch((batch) -> {
 			for (E instance : instances) {
 				check(instance);
-				doUpdate(batch, handle.getKey(instance), handle.toData(instance, true));
+				doUpdate(batch, handle.getKey(instance), handle.toData(instance, false, true));
 			}
 		});
 	}
@@ -438,7 +438,7 @@ public final class Dao<E> {
 		 */
 		public void update(E instance) {
 			check(instance);
-			Map<String, Object> data = handle.toData(instance, true);
+			Map<String, Object> data = handle.toData(instance, false, true);
 			runBatch((batch, document) -> {
 				batch.update(document, data);
 			});
