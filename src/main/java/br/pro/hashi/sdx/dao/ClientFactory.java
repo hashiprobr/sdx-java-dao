@@ -27,8 +27,7 @@ final class ClientFactory {
 		if (cache.isEmpty()) {
 			throw new IllegalStateException("No Firebase client exists");
 		}
-		String projectId = cache.keySet().iterator().next();
-		return cache.get(projectId);
+		return cache.values().iterator().next();
 	}
 
 	synchronized DaoClient getFromId(String projectId) {
@@ -39,11 +38,11 @@ final class ClientFactory {
 		if (projectId.isEmpty()) {
 			throw new IllegalArgumentException("Firebase project id cannot be blank");
 		}
-		DaoClient factory = cache.get(projectId);
-		if (factory == null) {
+		DaoClient client = cache.get(projectId);
+		if (client == null) {
 			throw new IllegalArgumentException("Firebase client to project %s does not exist".formatted(projectId));
 		}
-		return factory;
+		return client;
 	}
 
 	synchronized DaoClient getFromCredentials(String credentialsPath) {

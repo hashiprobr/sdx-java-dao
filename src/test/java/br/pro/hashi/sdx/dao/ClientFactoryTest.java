@@ -11,7 +11,6 @@ import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -65,99 +64,95 @@ class ClientFactoryTest {
 
 	@Test
 	void gets() {
-		String credentialsPath = mockCredentials();
-
+		String credentialsPath = getCredentialsPath();
 		List<DaoClient> constructed = factoryConstruction.constructed();
+
 		assertTrue(constructed.isEmpty());
 
 		DaoClient factory = f.getFromCredentials(credentialsPath);
-		assertEquals(1, constructed.size());
-		assertEquals(factory, constructed.get(0));
+		assertEquals(List.of(factory), constructed);
 
 		assertSame(factory, f.get());
-		assertEquals(1, constructed.size());
+		assertEquals(List.of(factory), constructed);
 	}
 
 	@Test
 	void getsFromId() {
-		String credentialsPath = mockCredentials();
-
+		String credentialsPath = getCredentialsPath();
 		List<DaoClient> constructed = factoryConstruction.constructed();
+
 		assertTrue(constructed.isEmpty());
 
 		DaoClient factory = f.getFromCredentials(credentialsPath);
-		assertEquals(1, constructed.size());
-		assertEquals(factory, constructed.get(0));
+		assertEquals(List.of(factory), constructed);
 
 		assertSame(factory, f.getFromId("id"));
-		assertEquals(1, constructed.size());
+		assertEquals(List.of(factory), constructed);
 	}
 
 	@Test
 	void getsFromCredentials() {
-		String credentialsPath = mockCredentials();
-
+		String credentialsPath = getCredentialsPath();
 		List<DaoClient> constructed = factoryConstruction.constructed();
+
 		assertTrue(constructed.isEmpty());
 
 		DaoClient factory = f.getFromCredentials(credentialsPath);
-		assertEquals(1, constructed.size());
-		assertEquals(factory, constructed.get(0));
+		assertEquals(List.of(factory), constructed);
 
 		assertSame(factory, f.getFromCredentials(credentialsPath));
-		assertEquals(1, constructed.size());
+		assertEquals(List.of(factory), constructed);
 	}
 
-	private String mockCredentials() {
+	private String getCredentialsPath() {
 		ClassLoader loader = getClass().getClassLoader();
-		File file = new File(loader.getResource("mock.json").getFile());
-		return file.getAbsolutePath();
+		return loader.getResource("mock.json").getFile();
 	}
 
 	@Test
-	void doesNotGet() {
+	void doesNotGetFromEmptyCache() {
 		assertThrows(IllegalStateException.class, () -> {
 			f.get();
 		});
 	}
 
 	@Test
-	void doesNotGetFromNullId() {
+	void doesNotGetFromNullProjectId() {
 		assertThrows(NullPointerException.class, () -> {
 			f.getFromId(null);
 		});
 	}
 
 	@Test
-	void doesNotGetFromBlankId() {
+	void doesNotGetFromBlankProjectId() {
 		assertThrows(IllegalArgumentException.class, () -> {
 			f.getFromId(" \t\n");
 		});
 	}
 
 	@Test
-	void doesNotGetFromMissingId() {
+	void doesNotGetFromMissingProjectId() {
 		assertThrows(IllegalArgumentException.class, () -> {
 			f.getFromId("missing");
 		});
 	}
 
 	@Test
-	void doesNotGetFromNullCredentials() {
+	void doesNotGetFromNullCredentialsPath() {
 		assertThrows(NullPointerException.class, () -> {
 			f.getFromCredentials(null);
 		});
 	}
 
 	@Test
-	void doesNotGetFromBlankCredentials() {
+	void doesNotGetFromBlankCredentialsPath() {
 		assertThrows(IllegalArgumentException.class, () -> {
 			f.getFromCredentials(" \t\n");
 		});
 	}
 
 	@Test
-	void doesNotGetFromMissingCredentials() {
+	void doesNotGetFromMissingCredentialsPath() {
 		assertThrows(UncheckedIOException.class, () -> {
 			f.getFromCredentials("missing.json");
 		});
