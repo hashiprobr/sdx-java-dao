@@ -3,7 +3,6 @@ package br.pro.hashi.sdx.dao.reflection;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -44,13 +43,13 @@ class HandleFactoryTest {
 		try (MockedStatic<Construction> handleConstruction = mockStatic(Construction.class)) {
 			handleConstruction.when(() -> Construction.of(converterFactory, Object.class)).thenReturn(mock(Handle.class));
 
-			handleConstruction.verify(() -> Construction.of(eq(converterFactory), any()), times(0));
+			handleConstruction.verify(() -> Construction.of(any(), any()), times(0));
 
 			Handle<Object> handle = f.get(Object.class);
 			handleConstruction.verify(() -> Construction.of(converterFactory, Object.class));
 
 			assertSame(handle, f.get(Object.class));
-			handleConstruction.verify(() -> Construction.of(eq(converterFactory), any()), times(1));
+			handleConstruction.verify(() -> Construction.of(any(), any()), times(1));
 		}
 	}
 }

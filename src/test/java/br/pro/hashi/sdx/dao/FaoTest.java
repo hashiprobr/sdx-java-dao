@@ -1,4 +1,4 @@
 package br.pro.hashi.sdx.dao;
 
-class FileManagerTest {
+class FaoTest {
 }

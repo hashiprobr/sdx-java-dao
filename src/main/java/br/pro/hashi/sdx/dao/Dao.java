@@ -24,24 +24,48 @@ import br.pro.hashi.sdx.dao.exception.DataException;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 
 /**
- * Stub.
+ * Represents the data access object of an entity.
  *
- * @param <E> stub
+ * @param <E> the entity type
  */
 public final class Dao<E> {
 	/**
-	 * Stub.
+	 * Creates a new data access object of the specified entity type.
 	 * 
-	 * @param <E>  stub
-	 * @param type stub
-	 * @return stub
+	 * @param <E>  the type
+	 * @param type a {@link Class} representing {@code E}
+	 * @return the object
 	 */
 	public static <E> Dao<E> of(Class<E> type) {
 		return ClientFactory.getInstance().get().get(type);
 	}
 
+	/**
+	 * Creates a new data access object of the specified entity type from the
+	 * specified project id.
+	 * 
+	 * @param <E>       the type
+	 * @param type      a {@link Class} representing {@code E}
+	 * @param projectId the id
+	 * @return the object
+	 */
+	public static <E> Dao<E> of(Class<E> type, String projectId) {
+		return ClientFactory.getInstance().getFromId(projectId).get(type);
+	}
+
 	private final DaoClient client;
 	private final Handle<E> handle;
+
+	// TODO: Replace this class with a constructor if/when
+	// Mockito can mock the construction of a generic type.
+	static class Construction {
+		static <E> Dao<E> of(DaoClient factory, Handle<E> handle) {
+			return new Dao<>(factory, handle);
+		}
+
+		private Construction() {
+		}
+	}
 
 	Dao(DaoClient client, Handle<E> handle) {
 		this.client = client;

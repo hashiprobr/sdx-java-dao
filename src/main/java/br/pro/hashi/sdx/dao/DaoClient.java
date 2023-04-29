@@ -13,39 +13,39 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.cloud.StorageClient;
 
+import br.pro.hashi.sdx.dao.Dao.Construction;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 import br.pro.hashi.sdx.dao.reflection.HandleFactory;
 
 /**
- * Stub.
+ * Creates data access objects from a Firebase project.
  */
 public final class DaoClient {
 	/**
-	 * Stub.
+	 * Creates a new client from the specified project id.
 	 * 
-	 * @param projectId stub
-	 * @return stub
+	 * @param projectId the id
+	 * @return the client
 	 */
 	public static DaoClient fromId(String projectId) {
 		return ClientFactory.getInstance().getFromId(projectId);
 	}
 
 	/**
-	 * Stub.
+	 * Creates a new client from the specified credentials path.
 	 * 
-	 * @param credentialsPath stub
-	 * @return stub
+	 * @param credentialsPath the path
+	 * @return the client
 	 */
 	public static DaoClient fromCredentials(String credentialsPath) {
 		return ClientFactory.getInstance().getFromCredentials(credentialsPath);
 	}
 
 	private final Logger logger;
-	private final HandleFactory factory;
+	private final HandleFactory handleFactory;
 	private final Map<Class<?>, Dao<?>> cache;
 	private final FirebaseOptions options;
 	private final String projectId;
-	private FirebaseApp app;
 	private Connection connection;
 
 	DaoClient(FirebaseOptions options, String projectId) {
@@ -54,85 +54,81 @@ public final class DaoClient {
 
 	DaoClient(HandleFactory factory, FirebaseOptions options, String projectId) {
 		this.logger = LoggerFactory.getLogger(DaoClient.class);
-		this.factory = factory;
+		this.handleFactory = factory;
 		this.cache = new HashMap<>();
 		this.options = options;
 		this.projectId = projectId;
-		this.app = null;
 		this.connection = null;
 	}
 
-	HandleFactory getFactory() {
-		return factory;
-	}
-
-	synchronized Connection getConnection() {
-		doConnect();
-		return connection;
+	HandleFactory getHandleFactory() {
+		return handleFactory;
 	}
 
 	synchronized Firestore getFirestore() {
-		doConnect();
-		return connection.firestore();
+		return getConnection().firestore();
 	}
 
 	synchronized Bucket getBucket() {
-		doConnect();
-		return connection.bucket();
+		return getConnection().bucket();
 	}
 
-	/**
-	 * Stub.
-	 * 
-	 * @param <E>  stub
-	 * @param type stub
-	 * @return stub
-	 */
-	public synchronized <E> Dao<E> get(Class<E> type) {
-		@SuppressWarnings("unchecked")
-		Dao<E> dao = (Dao<E>) cache.get(type);
-		if (dao == null) {
-			Handle<E> handle = factory.get(type);
-			dao = new Dao<>(this, handle);
-			cache.put(type, dao);
+	synchronized Connection getConnection() {
+		if (connection == null) {
+			throw new IllegalStateException("Client is not connected");
 		}
-		return dao;
+		return connection;
 	}
 
 	/**
-	 * Stub.
+	 * Connects to the project.
 	 */
 	public synchronized void connect() {
-		doConnect();
+		if (connection != null) {
+			return;
+		}
+		logger.info("Connecting client to project %s...".formatted(projectId));
+		String url = "%s.appspot.com".formatted(projectId);
+		FirebaseApp firebase = FirebaseApp.initializeApp(options, projectId);
+		Firestore firestore = FirestoreClient.getFirestore(firebase);
+		Bucket bucket = StorageClient.getInstance(firebase).bucket(url);
+		connection = new Connection(firebase, firestore, bucket);
+		logger.info("Client connected to project %s".formatted(projectId));
 	}
 
 	/**
-	 * Stub.
+	 * Disconnects from the project.
 	 */
 	public synchronized void disconnect() {
-		if (app == null) {
+		if (connection == null) {
 			return;
 		}
-		logger.info("Disconnecting Firebase client from project %s...".formatted(projectId));
-		app.delete();
-		app = null;
+		logger.info("Disconnecting client from project %s...".formatted(projectId));
+		connection.firebase().delete();
 		connection = null;
-		logger.info("Firebase client disconnected from project %s".formatted(projectId));
+		logger.info("Client disconnected from project %s".formatted(projectId));
 	}
 
-	private void doConnect() {
-		if (app != null) {
-			return;
+	/**
+	 * Obtains the data access object of an entity.
+	 * 
+	 * @param <E>  the entity type
+	 * @param type a {@link Class} representing {@code E}
+	 * @return the object
+	 */
+	public <E> Dao<E> get(Class<E> type) {
+		synchronized (cache) {
+			@SuppressWarnings("unchecked")
+			Dao<E> dao = (Dao<E>) cache.get(type);
+			if (dao == null) {
+				Handle<E> handle = handleFactory.get(type);
+				dao = Construction.of(this, handle);
+				cache.put(type, dao);
+			}
+			return dao;
 		}
-		logger.info("Connecting Firebase client to project %s...".formatted(projectId));
-		app = FirebaseApp.initializeApp(options, projectId);
-		Firestore firestore = FirestoreClient.getFirestore(app);
-		String url = "%s.appspot.com".formatted(projectId);
-		Bucket bucket = StorageClient.getInstance(app).bucket(url);
-		connection = new Connection(firestore, bucket);
-		logger.info("Firebase client connected to project %s".formatted(projectId));
 	}
 
-	record Connection(Firestore firestore, Bucket bucket) {
+	record Connection(FirebaseApp firebase, Firestore firestore, Bucket bucket) {
 	}
 }

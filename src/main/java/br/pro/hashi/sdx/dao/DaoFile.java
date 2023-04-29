@@ -2,8 +2,10 @@ package br.pro.hashi.sdx.dao;
 
 import java.nio.channels.ReadableByteChannel;
 
+import br.pro.hashi.sdx.dao.annotation.File;
+
 /**
- * Stub.
+ * Represents the content of a {@link File} field.
  */
 public final class DaoFile {
 	private final ReadableByteChannel channel;
@@ -17,27 +19,27 @@ public final class DaoFile {
 	}
 
 	/**
-	 * Stub.
+	 * Obtains a channel to read this file.
 	 * 
-	 * @return stub
+	 * @return the channel
 	 */
 	public ReadableByteChannel getChannel() {
 		return channel;
 	}
 
 	/**
-	 * Stub.
+	 * Obtains the content type of this file.
 	 * 
-	 * @return stub
+	 * @return the type
 	 */
 	public String getContentType() {
 		return contentType;
 	}
 
 	/**
-	 * Stub.
+	 * Obtains the content length of this file.
 	 * 
-	 * @return stub
+	 * @return the length
 	 */
 	public long getContentLength() {
 		return contentLength;

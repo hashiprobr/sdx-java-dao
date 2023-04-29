@@ -25,33 +25,33 @@ final class ClientFactory {
 
 	synchronized DaoClient get() {
 		if (cache.isEmpty()) {
-			throw new IllegalStateException("No Firebase client exists");
+			throw new IllegalStateException("No client exists");
 		}
 		return cache.values().iterator().next();
 	}
 
 	synchronized DaoClient getFromId(String projectId) {
 		if (projectId == null) {
-			throw new NullPointerException("Firebase project id cannot be null");
+			throw new NullPointerException("Project id cannot be null");
 		}
 		projectId = projectId.strip();
 		if (projectId.isEmpty()) {
-			throw new IllegalArgumentException("Firebase project id cannot be blank");
+			throw new IllegalArgumentException("Project id cannot be blank");
 		}
 		DaoClient client = cache.get(projectId);
 		if (client == null) {
-			throw new IllegalArgumentException("Firebase client to project %s does not exist".formatted(projectId));
+			throw new IllegalArgumentException("Client for project %s does not exist".formatted(projectId));
 		}
 		return client;
 	}
 
 	synchronized DaoClient getFromCredentials(String credentialsPath) {
 		if (credentialsPath == null) {
-			throw new NullPointerException("Firebase credentials path cannot be null");
+			throw new NullPointerException("Credentials path cannot be null");
 		}
 		credentialsPath = credentialsPath.strip();
 		if (credentialsPath.isEmpty()) {
-			throw new IllegalArgumentException("Firebase credentials path cannot be blank");
+			throw new IllegalArgumentException("Credentials path cannot be blank");
 		}
 		ServiceAccountCredentials credentials;
 		try {

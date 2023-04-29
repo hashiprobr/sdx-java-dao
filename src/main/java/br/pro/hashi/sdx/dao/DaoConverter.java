@@ -2,7 +2,7 @@ package br.pro.hashi.sdx.dao;
 
 /**
  * <p>
- * A converter can convert objects of a source type to and from objects of a
+ * Implemented to convert objects of a source type to and from objects of a
  * target type.
  * </p>
  * <p>
