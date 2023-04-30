@@ -88,10 +88,10 @@ public final class DaoClient {
 			return;
 		}
 		logger.info("Connecting client to project %s...".formatted(projectId));
-		String url = "%s.appspot.com".formatted(projectId);
+		String bucketName = "%s.appspot.com".formatted(projectId);
 		FirebaseApp firebase = FirebaseApp.initializeApp(options, projectId);
 		Firestore firestore = FirestoreClient.getFirestore(firebase);
-		Bucket bucket = StorageClient.getInstance(firebase).bucket(url);
+		Bucket bucket = StorageClient.getInstance(firebase).bucket(bucketName);
 		connection = new Connection(firebase, firestore, bucket);
 		logger.info("Client connected to project %s".formatted(projectId));
 	}

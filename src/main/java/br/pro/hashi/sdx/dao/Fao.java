@@ -14,6 +14,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Blob.BlobSourceOption;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Bucket.BlobTargetOption;
+import com.google.cloud.storage.StorageBatch;
 import com.google.cloud.storage.StorageException;
 
 import br.pro.hashi.sdx.dao.exception.FileException;
@@ -36,7 +37,12 @@ class Fao implements AutoCloseable {
 		try {
 			for (String fileName : fileNames) {
 				String lockName = "%s.lock".formatted(fileName);
-				Blob lock = bucket.get(lockName);
+				Blob lock;
+				try {
+					lock = bucket.get(lockName);
+				} catch (StorageException exception) {
+					throw new FileException(exception);
+				}
 				if (lock != null) {
 					Instant instant = lock.getCreateTimeOffsetDateTime().toInstant();
 					if (Instant.now().toEpochMilli() - instant.toEpochMilli() < 1800000) {
@@ -83,24 +89,38 @@ class Fao implements AutoCloseable {
 	}
 
 	String upload(InputStream stream, String contentType, boolean withLink) {
-		Blob blob = bucket.create(fileNames.get(0), stream)
-				.toBuilder()
-				.setContentType(contentType)
-				.build()
-				.update();
+		String fileName = fileNames.get(0);
+		Blob blob;
+		try {
+			blob = bucket.create(fileName, stream)
+					.toBuilder()
+					.setContentType(contentType)
+					.build()
+					.update();
+		} catch (StorageException exception) {
+			throw new FileException(exception);
+		}
 		String url;
 		if (withLink) {
-			blob.createAcl(ACL);
+			try {
+				blob.createAcl(ACL);
+			} catch (StorageException exception) {
+				throw new FileException(exception);
+			}
 			url = blob.getMediaLink();
 		} else {
-			blob.deleteAcl(ENTITY);
+			try {
+				blob.deleteAcl(ENTITY);
+			} catch (StorageException exception) {
+				throw new FileException(exception);
+			}
 			url = "";
 		}
 		return url;
 	}
 
 	String refresh(boolean withLink) {
-		Blob blob = bucket.get(fileNames.get(0));
+		Blob blob = get();
 		if (blob == null) {
 			return null;
 		}
@@ -114,29 +134,34 @@ class Fao implements AutoCloseable {
 	}
 
 	DaoFile download() {
-		Blob blob = bucket.get(fileNames.get(0));
+		Blob blob = get();
 		if (blob == null) {
 			return null;
 		}
 		return new DaoFile(blob.reader(), blob.getContentType(), blob.getSize());
 	}
 
-	void remove() {
-		remove(fileNames.get(0));
-	}
-
-	void clear() {
-		for (String fileName : fileNames) {
-			remove(fileName);
-		}
-	}
-
-	private void remove(String fileName) {
-		Blob blob = bucket.get(fileName);
+	Blob get() {
+		String fileName = fileNames.get(0);
+		Blob blob;
 		try {
-			blob.delete();
+			blob = bucket.get(fileName);
 		} catch (StorageException exception) {
-			logger.warn("Could not remove %s".formatted(fileName), exception);
+			throw new FileException(exception);
+		}
+		return blob;
+	}
+
+	void remove() {
+		StorageBatch batch = bucket.getStorage().batch();
+		String bucketName = bucket.getName();
+		for (String fileName : fileNames) {
+			batch.delete(bucketName, fileName);
+		}
+		try {
+			batch.submit();
+		} catch (StorageException exception) {
+			throw new FileException(exception);
 		}
 	}
 }
