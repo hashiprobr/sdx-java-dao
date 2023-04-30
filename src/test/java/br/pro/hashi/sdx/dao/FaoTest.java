@@ -1,12 +1,15 @@
 package br.pro.hashi.sdx.dao;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -15,8 +18,10 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.cloud.storage.Acl;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Blob.BlobSourceOption;
+import com.google.cloud.storage.Blob.Builder;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Bucket.BlobTargetOption;
 import com.google.cloud.storage.StorageException;
@@ -176,12 +181,56 @@ class FaoTest {
 		verify(bucket).create("file1.lock", null, option);
 	}
 
+	private Fao newFao(List<String> fileNames) {
+		return new Fao(bucket, fileNames);
+	}
+
 	private Blob mockOldLock(String fileName, long timestamp) {
 		OffsetDateTime datetime = OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
 		Blob lock = mock(Blob.class);
 		when(lock.getCreateTimeOffsetDateTime()).thenReturn(datetime);
 		when(bucket.get(getLockName(fileName))).thenReturn(lock);
 		return lock;
+	}
+
+	@Test
+	void uploads() {
+		f = newFao();
+		Blob blob = mockUploadedBlob();
+		assertEquals("", f.upload(InputStream.nullInputStream(), "application/octet-stream", false));
+		verify(blob).deleteAcl(Acl.User.ofAllUsers());
+	}
+
+	@Test
+	void uploadsWithLink() {
+		f = newFao();
+		Blob blob = mockUploadedBlob();
+		when(blob.getMediaLink()).thenReturn("url");
+		assertEquals("url", f.upload(InputStream.nullInputStream(), "application/octet-stream", true));
+		verify(blob).createAcl(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
+	}
+
+	private Blob mockUploadedBlob() {
+		Blob blob = mock(Blob.class);
+		Builder builder = mock(Builder.class);
+		when(builder.setContentType("application/octet-stream")).thenReturn(builder);
+		when(builder.build()).thenReturn(blob);
+		when(blob.toBuilder()).thenReturn(builder);
+		when(blob.update()).thenReturn(blob);
+		when(bucket.create(eq("file"), any(InputStream.class))).thenReturn(blob);
+		return blob;
+	}
+
+	private Fao newFao() {
+		when(bucket.get("file.lock")).thenReturn(null);
+		Blob lock = mockNewLock("file");
+		when(lock.delete()).thenReturn(true);
+		Fao fao = newFao("file");
+		return fao;
+	}
+
+	private Fao newFao(String fileName) {
+		return new Fao(bucket, fileName);
 	}
 
 	private Blob mockNewLock(String fileName) {
@@ -192,13 +241,5 @@ class FaoTest {
 
 	private String getLockName(String fileName) {
 		return "%s.lock".formatted(fileName);
-	}
-
-	private Fao newFao(String fileName) {
-		return new Fao(bucket, fileName);
-	}
-
-	private Fao newFao(List<String> fileNames) {
-		return new Fao(bucket, fileNames);
 	}
 }
