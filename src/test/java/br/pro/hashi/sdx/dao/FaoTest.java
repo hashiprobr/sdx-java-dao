@@ -2,6 +2,7 @@ package br.pro.hashi.sdx.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,6 +20,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Acl;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Blob.BlobSourceOption;
@@ -244,8 +246,30 @@ class FaoTest {
 		assertEquals("url", f.refresh(true));
 	}
 
+	@Test
+	void ignoresDownload() {
+		f = newFao();
+		when(bucket.get("file")).thenReturn(null);
+		assertNull(f.download());
+	}
+
+	@Test
+	void downloads() {
+		f = newFao();
+		ReadChannel channel = mock(ReadChannel.class);
+		Blob blob = mockOldBlob();
+		when(blob.reader()).thenReturn(channel);
+		when(blob.getContentType()).thenReturn("application/octet-stream");
+		when(blob.getSize()).thenReturn(1L);
+		DaoFile file = f.download();
+		assertSame(channel, file.getChannel());
+		assertEquals("application/octet-stream", file.getContentType());
+		assertEquals(1, file.getContentLength());
+	}
+
 	private Blob mockOldBlob() {
 		Blob blob = mock(Blob.class);
+		when(blob.getName()).thenReturn("file");
 		when(bucket.get("file")).thenReturn(blob);
 		return blob;
 	}
@@ -264,6 +288,7 @@ class FaoTest {
 
 	private Blob mockNewLock(String fileName) {
 		Blob lock = mock(Blob.class);
+		when(lock.getName()).thenReturn(fileName);
 		when(bucket.create(getLockName(fileName), null, BlobTargetOption.doesNotExist())).thenReturn(lock);
 		return lock;
 	}
