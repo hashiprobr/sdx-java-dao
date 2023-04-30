@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -210,8 +211,13 @@ public final class Dao<E> {
 	 * @param key stub
 	 */
 	public void delete(Object key) {
-		DocumentReference reference = getDocument(key);
-		await(reference.delete());
+		Set<String> fileFieldNames = handle.getFileFieldNames();
+		Connection connection = client.getConnection();
+		if (fileFieldNames.isEmpty()) {
+			delete(connection, toString(key));
+		} else {
+			delete(connection, key, fileFieldNames);
+		}
 	}
 
 	private DocumentReference createDocument(E instance) {
@@ -280,7 +286,7 @@ public final class Dao<E> {
 		String keyString = toString(key);
 		String fileName = getFileName(keyString, fieldName);
 		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection, fileName)) {
+		try (Fao fao = new Fao(connection.bucket(), fileName)) {
 			String url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection, keyString);
 			await(document.update(fieldName, url));
@@ -298,7 +304,7 @@ public final class Dao<E> {
 		String keyString = toString(key);
 		String fileName = getFileName(keyString, fieldName);
 		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection, fileName)) {
+		try (Fao fao = new Fao(connection.bucket(), fileName)) {
 			String url = fao.refresh(handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection, keyString);
 			await(document.update(fieldName, url));
@@ -333,11 +339,28 @@ public final class Dao<E> {
 		String keyString = toString(key);
 		String fileName = getFileName(keyString, fieldName);
 		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection, fileName)) {
+		try (Fao fao = new Fao(connection.bucket(), fileName)) {
 			fao.remove();
 			DocumentReference document = getDocument(connection, keyString);
 			await(document.update(fieldName, null));
 		}
+	}
+
+	private void delete(Connection connection, Object key, Set<String> fieldNames) {
+		String keyString = toString(key);
+		List<String> fileNames = fieldNames
+				.stream()
+				.map((fieldName) -> getFileName(keyString, fieldName))
+				.toList();
+		try (Fao fao = new Fao(connection.bucket(), fileNames)) {
+			fao.remove();
+			delete(connection, keyString);
+		}
+	}
+
+	private void delete(Connection connection, String keyString) {
+		DocumentReference document = getDocument(connection, keyString);
+		await(document.delete());
 	}
 
 	private void runBatch(Consumer<WriteBatch> consumer) {
