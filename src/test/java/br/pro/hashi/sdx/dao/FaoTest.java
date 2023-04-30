@@ -1,6 +1,7 @@
 package br.pro.hashi.sdx.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -196,7 +197,7 @@ class FaoTest {
 	@Test
 	void uploads() {
 		f = newFao();
-		Blob blob = mockUploadedBlob();
+		Blob blob = mockNewBlob();
 		assertEquals("", f.upload(InputStream.nullInputStream(), "application/octet-stream", false));
 		verify(blob).deleteAcl(Acl.User.ofAllUsers());
 	}
@@ -204,13 +205,13 @@ class FaoTest {
 	@Test
 	void uploadsWithLink() {
 		f = newFao();
-		Blob blob = mockUploadedBlob();
+		Blob blob = mockNewBlob();
 		when(blob.getMediaLink()).thenReturn("url");
 		assertEquals("url", f.upload(InputStream.nullInputStream(), "application/octet-stream", true));
 		verify(blob).createAcl(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER));
 	}
 
-	private Blob mockUploadedBlob() {
+	private Blob mockNewBlob() {
 		Blob blob = mock(Blob.class);
 		Builder builder = mock(Builder.class);
 		when(builder.setContentType("application/octet-stream")).thenReturn(builder);
@@ -218,6 +219,34 @@ class FaoTest {
 		when(blob.toBuilder()).thenReturn(builder);
 		when(blob.update()).thenReturn(blob);
 		when(bucket.create(eq("file"), any(InputStream.class))).thenReturn(blob);
+		return blob;
+	}
+
+	@Test
+	void ignoresRefresh() {
+		f = newFao();
+		when(bucket.get("file")).thenReturn(null);
+		assertNull(f.refresh(false));
+	}
+
+	@Test
+	void refreshes() {
+		f = newFao();
+		mockOldBlob();
+		assertEquals("", f.refresh(false));
+	}
+
+	@Test
+	void refreshesWithLink() {
+		f = newFao();
+		Blob blob = mockOldBlob();
+		when(blob.getMediaLink()).thenReturn("url");
+		assertEquals("url", f.refresh(true));
+	}
+
+	private Blob mockOldBlob() {
+		Blob blob = mock(Blob.class);
+		when(bucket.get("file")).thenReturn(blob);
 		return blob;
 	}
 
