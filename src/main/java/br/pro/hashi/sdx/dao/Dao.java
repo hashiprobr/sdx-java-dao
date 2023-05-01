@@ -120,7 +120,7 @@ public final class Dao<E> {
 			document = collection.document(keyString);
 		}
 		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
-			await(document.create(handle.toData(instance, true, !handle.hasAutoKey())));
+			run(document.create(handle.toData(instance, true, !handle.hasAutoKey())));
 		}
 		return keyString;
 	}
@@ -215,7 +215,7 @@ public final class Dao<E> {
 	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
 		WriteBatch batch = firestore.batch();
 		consumer.accept(batch);
-		await(batch.commit());
+		run(batch.commit());
 	}
 
 	/**
@@ -229,9 +229,9 @@ public final class Dao<E> {
 	 */
 	public E retrieve(Object key) {
 		String keyString = toString(key);
-		CollectionReference collection = getCollection(client.getFirestore());
-		DocumentSnapshot document = await(collection.document(keyString).get());
-		E instance = handle.toInstance(document.getData());
+		DocumentReference document = getDocument(client.getFirestore(), keyString);
+		DocumentSnapshot snapshot = run(document.get());
+		E instance = handle.toInstance(snapshot.getData());
 		if (handle.hasAutoKey()) {
 			handle.setAutoKey(instance, keyString);
 		}
@@ -276,7 +276,7 @@ public final class Dao<E> {
 		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection.firestore(), keyString);
-			await(document.update(fieldName, url));
+			run(document.update(fieldName, url));
 		}
 		return url;
 	}
@@ -314,7 +314,7 @@ public final class Dao<E> {
 		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			url = fao.refresh(handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection.firestore(), keyString);
-			await(document.update(fieldName, url));
+			run(document.update(fieldName, url));
 		}
 		return url;
 	}
@@ -369,7 +369,7 @@ public final class Dao<E> {
 		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			fao.remove();
 			DocumentReference document = getDocument(connection.firestore(), keyString);
-			await(document.update(fieldName, null));
+			run(document.update(fieldName, null));
 		}
 	}
 
@@ -401,7 +401,7 @@ public final class Dao<E> {
 		return firestore.collection(handle.getCollectionName());
 	}
 
-	private <V> V await(ApiFuture<V> future) {
+	private <V> V run(ApiFuture<V> future) {
 		V result;
 		try {
 			result = future.get();
@@ -435,7 +435,7 @@ public final class Dao<E> {
 	}
 
 	private void doUpdate(Object key, Map<String, Object> data) {
-		await(getDocument(key).update(data));
+		run(getDocument(key).update(data));
 	}
 
 	/**
@@ -528,7 +528,7 @@ public final class Dao<E> {
 
 	private void delete(Connection connection, String keyString) {
 		DocumentReference document = getDocument(connection.firestore(), keyString);
-		await(document.delete());
+		run(document.delete());
 	}
 
 	private void runBatch(Consumer<WriteBatch> consumer) {
@@ -587,7 +587,7 @@ public final class Dao<E> {
 		 * @return stub
 		 */
 		public List<E> retrieve() {
-			QuerySnapshot snapshot = await(query.get());
+			QuerySnapshot snapshot = run(query.get());
 			List<E> instances = new ArrayList<>();
 			for (DocumentSnapshot document : snapshot) {
 				E instance = handle.toInstance(document.getData());
@@ -622,7 +622,7 @@ public final class Dao<E> {
 		}
 
 		private void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			QuerySnapshot snapshots = await(query.select(new String[] {}).get());
+			QuerySnapshot snapshots = run(query.select(new String[] {}).get());
 			super.runBatch(snapshots, consumer);
 		}
 	}
@@ -644,7 +644,7 @@ public final class Dao<E> {
 		 * @return stub
 		 */
 		public List<Map<String, Object>> retrieve() {
-			QuerySnapshot snapshot = await(query.get());
+			QuerySnapshot snapshot = run(query.get());
 			List<Map<String, Object>> valuesList = new ArrayList<>();
 			for (DocumentSnapshot document : snapshot) {
 				Map<String, Object> values = handle.toValues(document.getData());
@@ -690,7 +690,7 @@ public final class Dao<E> {
 		}
 
 		private void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			QuerySnapshot snapshots = await(query.get());
+			QuerySnapshot snapshots = run(query.get());
 			super.runBatch(snapshots, consumer);
 		}
 	}

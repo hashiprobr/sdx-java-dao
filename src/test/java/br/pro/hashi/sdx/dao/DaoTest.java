@@ -28,6 +28,7 @@ import org.mockito.MockedStatic;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
@@ -42,6 +43,7 @@ import br.pro.hashi.sdx.dao.reflection.Handle;
 class DaoTest {
 	private List<String> keyStrings;
 	private ApiFuture<WriteResult> future;
+	private ApiFuture<DocumentSnapshot> snapshotFuture;
 	private DocumentReference document;
 	private CollectionReference collection;
 	private ApiFuture<List<WriteResult>> batchFuture;
@@ -61,9 +63,11 @@ class DaoTest {
 		keyStrings.add("0");
 		keyStrings.add("1");
 		future = mock(ApiFuture.class);
+		snapshotFuture = mock(ApiFuture.class);
 		document = mock(DocumentReference.class);
 		when(document.getId()).thenAnswer((invocation) -> keyStrings.remove(0));
 		when(document.create(any(Map.class))).thenReturn(future);
+		when(document.get()).thenReturn(snapshotFuture);
 		collection = mock(CollectionReference.class);
 		when(collection.document()).thenReturn(document);
 		when(collection.document(any(String.class))).thenReturn(document);
@@ -81,6 +85,10 @@ class DaoTest {
 		when(client.getConnection()).thenReturn(connection);
 		handle = mock(Handle.class);
 		when(handle.getCollectionName()).thenReturn("collection");
+		when(handle.toInstance(any(Map.class))).thenAnswer((invocation) -> {
+			Map<String, Object> data = invocation.getArgument(0);
+			return new Entity((int) data.get("value"));
+		});
 		when(handle.toData(any(Entity.class), any(boolean.class), any(boolean.class))).thenAnswer((invocation) -> {
 			Entity instance = invocation.getArgument(0);
 			boolean withFiles = invocation.getArgument(1);
@@ -259,20 +267,71 @@ class DaoTest {
 		assertSame(cause, exception.getCause());
 	}
 
-	private void mockAutoKey() {
-		mockAutoKey(false);
-	}
-
-	private void mockAutoKey(boolean autoKey) {
-		when(handle.hasAutoKey()).thenReturn(autoKey);
-	}
-
 	private void mockFileFieldNames() {
 		mockFileFieldNames(Set.of());
 	}
 
 	private void mockFileFieldNames(Set<String> fileFieldNames) {
 		when(handle.getFileFieldNames()).thenReturn(fileFieldNames);
+	}
+
+	@Test
+	void retrieves() {
+		mockAutoKey();
+		mockSnapshotFutureReturn(1);
+		Entity instance = d.retrieve(false);
+		assertEquals(1, instance.getValue());
+	}
+
+	@Test
+	void retrievesWithAutoKey() {
+		mockAutoKey(true);
+		mockSnapshotFutureReturn(1);
+		Entity instance = d.retrieve(false);
+		assertEquals(1, instance.getValue());
+		verify(handle).setAutoKey(instance, "false");
+	}
+
+	@Test
+	void doesNotRetrieveIfKeyIsNull() {
+		assertThrows(NullPointerException.class, () -> {
+			d.retrieve(null);
+		});
+	}
+
+	@Test
+	void doesNotRetrieveIfSnapshotFutureThrows() {
+		mockAutoKey();
+		Throwable cause = mockSnapshotFutureThrow();
+		Exception exception = assertThrows(DataException.class, () -> {
+			d.retrieve(false);
+		});
+		assertSame(cause, exception.getCause());
+	}
+
+	private void mockSnapshotFutureReturn(int value) {
+		DocumentSnapshot snapshot = mock(DocumentSnapshot.class);
+		when(snapshot.getData()).thenReturn(Map.of("value", value));
+		assertDoesNotThrow(() -> {
+			when(snapshotFuture.get()).thenReturn(snapshot);
+		});
+	}
+
+	private Throwable mockSnapshotFutureThrow() {
+		Throwable cause = new Throwable();
+		ExecutionException exception = new ExecutionException(cause);
+		assertDoesNotThrow(() -> {
+			when(snapshotFuture.get()).thenThrow(exception);
+		});
+		return cause;
+	}
+
+	private void mockAutoKey() {
+		mockAutoKey(false);
+	}
+
+	private void mockAutoKey(boolean autoKey) {
+		when(handle.hasAutoKey()).thenReturn(autoKey);
 	}
 
 	private void mockFutureReturn() {
