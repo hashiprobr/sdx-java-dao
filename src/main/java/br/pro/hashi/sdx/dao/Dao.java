@@ -19,12 +19,15 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
+import com.google.cloud.storage.Bucket;
 
 import br.pro.hashi.sdx.dao.DaoClient.Connection;
 import br.pro.hashi.sdx.dao.annotation.Auto;
 import br.pro.hashi.sdx.dao.annotation.File;
 import br.pro.hashi.sdx.dao.annotation.Key;
+import br.pro.hashi.sdx.dao.annotation.Web;
 import br.pro.hashi.sdx.dao.exception.DataException;
+import br.pro.hashi.sdx.dao.exception.FileException;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 
 /**
@@ -202,10 +205,6 @@ public final class Dao<E> {
 				.toList();
 	}
 
-	private CollectionReference getCollection(Firestore firestore) {
-		return firestore.collection(handle.getCollectionName());
-	}
-
 	private DocumentReference createDocument(CollectionReference collection, E instance) {
 		if (handle.getKey(instance) != null) {
 			throw new IllegalArgumentException("Key must be null");
@@ -220,12 +219,31 @@ public final class Dao<E> {
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * Uploads the content of the specified {@link File} field of the specified
+	 * entity and updates the field with the file link.
+	 * </p>
+	 * <p>
+	 * If the field is a {@link Web} field, returns the automatically generated
+	 * link. Otherwise, returns {@code ""}.
+	 * </p>
+	 * <p>
+	 * A successful operation is guaranteed to be atomic, but a
+	 * {@link DataException} can leave the entity in an inconsistent state that must
+	 * be fixed {@link #refreshFile(Object, String)}.
+	 * </p>
 	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 * @param stream    stub
-	 * @return stub
+	 * @param key       the entity key
+	 * @param fieldName the field name
+	 * @param stream    the file content
+	 * @return the link
+	 * @throws NullPointerException     if the key is null, the field name is null,
+	 *                                  or the stream is null
+	 * @throws IllegalArgumentException if the file field does not exist
+	 * @throws FileException            if the Storage operation could not be
+	 *                                  performed
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public String uploadFile(Object key, String fieldName, InputStream stream) {
 		if (stream == null) {
@@ -234,68 +252,103 @@ public final class Dao<E> {
 		check(fieldName);
 		String keyString = toString(key);
 		Connection connection = client.getConnection();
-		String fileName = getFileName(keyString, fieldName);
 		String url;
-		try (Fao fao = new Fao(connection.bucket(), fileName)) {
+		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
-			DocumentReference document = getDocument(connection, keyString);
+			DocumentReference document = getDocument(connection.firestore(), keyString);
 			await(document.update(fieldName, url));
 		}
 		return url;
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * Updates the specified {@link File} field of the specified entity with the
+	 * file link.
+	 * </p>
+	 * <p>
+	 * If the file exists and the field is a {@link Web} field, returns the
+	 * automatically generated link. If the file exists and the field is not a
+	 * {@link Web} field, returns {@code ""}. If the file does not exist, returns
+	 * {@code null}.
+	 * </p>
+	 * <p>
+	 * The operation is guaranteed to be atomic.
+	 * </p>
 	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 * @return
+	 * @param key       the entity key
+	 * @param fieldName the field name
+	 * @return the link
+	 * @throws NullPointerException     if the key is null or the field name is null
+	 * @throws IllegalArgumentException if the file field does not exist
+	 * @throws FileException            if the Storage operation could not be
+	 *                                  performed
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public String refreshFile(Object key, String fieldName) {
 		check(fieldName);
 		String keyString = toString(key);
 		Connection connection = client.getConnection();
-		String fileName = getFileName(keyString, fieldName);
 		String url;
-		try (Fao fao = new Fao(connection.bucket(), fileName)) {
+		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			url = fao.refresh(handle.isWeb(fieldName));
-			DocumentReference document = getDocument(connection, keyString);
+			DocumentReference document = getDocument(connection.firestore(), keyString);
 			await(document.update(fieldName, url));
 		}
 		return url;
 	}
 
 	/**
-	 * Stub.
+	 * Obtains the content of the specified {@link File} field of the specified
+	 * entity.
 	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 * @return stub
+	 * @param key       the entity key
+	 * @param fieldName the field name
+	 * @return the file content
+	 * @throws NullPointerException     if the key is null or the field name is null
+	 * @throws IllegalArgumentException if the file field does not exist
+	 * @throws FileException            if the Storage operation could not be
+	 *                                  performed
 	 */
 	public DaoFile downloadFile(Object key, String fieldName) {
 		check(fieldName);
-		String fileName = getFileName(toString(key), fieldName);
+		String keyString = toString(key);
+		Bucket bucket = client.getBucket();
 		DaoFile file;
-		try (Fao fao = new Fao(client.getBucket(), fileName)) {
+		try (Fao fao = new Fao(bucket, getFileName(keyString, fieldName))) {
 			file = fao.download();
 		}
 		return file;
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * Removes the content of the specified {@link File} field of the specified
+	 * entity and updates the field with {@code null}.
+	 * </p>
+	 * <p>
+	 * A successful operation is guaranteed to be atomic, but a
+	 * {@link DataException} can leave the entity in an inconsistent state that must
+	 * be fixed {@link #refreshFile(Object, String)}.
+	 * </p>
 	 * 
-	 * @param key       stub
-	 * @param fieldName stub
+	 * @param key       the entity key
+	 * @param fieldName the field name
+	 * @throws NullPointerException     if the key is null or the field name is null
+	 * @throws IllegalArgumentException if the file field does not exist
+	 * @throws FileException            if the Storage operation could not be
+	 *                                  performed
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public void removeFile(Object key, String fieldName) {
 		check(fieldName);
 		String keyString = toString(key);
 		Connection connection = client.getConnection();
-		String fileName = getFileName(keyString, fieldName);
-		try (Fao fao = new Fao(connection.bucket(), fileName)) {
+		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			fao.remove();
-			DocumentReference document = getDocument(connection, keyString);
+			DocumentReference document = getDocument(connection.firestore(), keyString);
 			await(document.update(fieldName, null));
 		}
 	}
@@ -303,6 +356,9 @@ public final class Dao<E> {
 	private void check(String fieldName) {
 		if (fieldName == null) {
 			throw new NullPointerException("Field name cannot be null");
+		}
+		if (!handle.getFileFieldNames().contains(fieldName)) {
+			throw new IllegalArgumentException("@File field %s does not exist".formatted(fieldName));
 		}
 	}
 
@@ -317,8 +373,12 @@ public final class Dao<E> {
 		return "%s/%s/%s".formatted(handle.getCollectionName(), keyString, fieldName);
 	}
 
-	private DocumentReference getDocument(Connection connection, String keyString) {
-		return getCollection(connection.firestore()).document(keyString);
+	private DocumentReference getDocument(Firestore firestore, String keyString) {
+		return getCollection(firestore).document(keyString);
+	}
+
+	private CollectionReference getCollection(Firestore firestore) {
+		return firestore.collection(handle.getCollectionName());
 	}
 
 	private <V> V await(ApiFuture<V> future) {
@@ -463,7 +523,7 @@ public final class Dao<E> {
 	}
 
 	private void delete(Connection connection, String keyString) {
-		DocumentReference document = getDocument(connection, keyString);
+		DocumentReference document = getDocument(connection.firestore(), keyString);
 		await(document.delete());
 	}
 
