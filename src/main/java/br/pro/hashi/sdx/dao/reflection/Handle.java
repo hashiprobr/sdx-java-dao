@@ -32,6 +32,8 @@ public class Handle<E> {
 	private final Map<String, String> propertyNames;
 	private final Map<String, String> contentTypes;
 	private final Set<String> fieldNames;
+	private final Set<String> intFieldNames;
+	private final Set<String> floatFieldNames;
 	private final Set<String> webFieldNames;
 	private final String keyFieldName;
 	private final boolean autoKey;
@@ -83,6 +85,8 @@ public class Handle<E> {
 		Map<String, String> propertyNames = new HashMap<>();
 		Map<String, String> contentTypes = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
+		Set<String> intFieldNames = new HashSet<>();
+		Set<String> floatFieldNames = new HashSet<>();
 		Set<String> webFieldNames = new HashSet<>();
 		String keyFieldName = null;
 		boolean autoKey = false;
@@ -124,6 +128,11 @@ public class Handle<E> {
 						fieldNames.add(fieldName);
 
 						Class<?> fieldType = field.getType();
+						if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+							intFieldNames.add(fieldName);
+						} else if (fieldType.equals(float.class) || fieldType.equals(Float.class)) {
+							floatFieldNames.add(fieldName);
+						}
 
 						File fileAnnotation = field.getDeclaredAnnotation(File.class);
 						Web webAnnotation = field.getDeclaredAnnotation(Web.class);
@@ -186,6 +195,8 @@ public class Handle<E> {
 		this.propertyNames = propertyNames;
 		this.contentTypes = contentTypes;
 		this.fieldNames = fieldNames;
+		this.intFieldNames = intFieldNames;
+		this.floatFieldNames = floatFieldNames;
 		this.webFieldNames = webFieldNames;
 		this.keyFieldName = keyFieldName;
 		this.autoKey = autoKey;
@@ -348,6 +359,14 @@ public class Handle<E> {
 		@SuppressWarnings("unchecked")
 		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
 		if (converter == null) {
+			if (intFieldNames.contains(fieldName) && value instanceof Long) {
+				Long longValue = (Long) value;
+				return longValue.intValue();
+			}
+			if (floatFieldNames.contains(fieldName) && value instanceof Double) {
+				Double doubleValue = (Double) value;
+				return doubleValue.floatValue();
+			}
 			return value;
 		}
 		return converter.from(value);

@@ -7,12 +7,12 @@ import br.pro.hashi.sdx.dao.annotation.Web;
 
 public class GrandChild extends Child {
 	private @Key @Renamed("boolean_value") boolean booleanValue;
-	public double doubleValue;
+	public float floatValue;
 	private @Web @File(" \t\nimage/png \t\n") @Renamed("string_value") String stringValue;
 
 	public GrandChild() {
 		this.booleanValue = true;
-		this.doubleValue = 3;
+		this.floatValue = 3;
 		this.stringValue = "g";
 	}
 
@@ -20,8 +20,8 @@ public class GrandChild extends Child {
 		return booleanValue;
 	}
 
-	public double getDoubleValue() {
-		return doubleValue;
+	public float getFloatValue() {
+		return floatValue;
 	}
 
 	public String getStringValue() {

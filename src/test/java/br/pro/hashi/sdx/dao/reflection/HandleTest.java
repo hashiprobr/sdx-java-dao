@@ -36,6 +36,7 @@ import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankCollectionName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankPropertyName;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.BoxedFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.Child;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertableFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedFileField;
@@ -160,7 +161,7 @@ class HandleTest {
 
 		Map<String, Object> values = h.toValues(Map.of(
 				"boolean_value", true,
-				"intValue", 1,
+				"intValue", 1L,
 				"string_value", "p"));
 		assertTrue((boolean) values.get("booleanValue"));
 		assertEquals(1, values.get("intValue"));
@@ -203,18 +204,18 @@ class HandleTest {
 	void constructsWithChild() {
 		Handle<Child> h = newHandle(Child.class);
 		assertEquals("Children", h.getCollectionName());
-		assertEquals(Set.of("booleanValue", "intValue", "doubleValue", "stringValue"), h.getFieldNames());
+		assertEquals(Set.of("booleanValue", "intValue", "floatValue", "stringValue"), h.getFieldNames());
 		assertFalse(h.hasAutoKey());
 		assertEquals(Set.of(), h.getFileFieldNames());
 
 		assertNull(h.getContentType("booleanValue"));
 		assertNull(h.getContentType("intValue"));
-		assertNull(h.getContentType("doubleValue"));
+		assertNull(h.getContentType("floatValue"));
 		assertNull(h.getContentType("stringValue"));
 
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
-		assertFalse(h.isWeb("doubleValue"));
+		assertFalse(h.isWeb("floatValue"));
 		assertFalse(h.isWeb("stringValue"));
 
 		Child instance;
@@ -222,29 +223,29 @@ class HandleTest {
 		instance = h.toInstance(Map.of());
 		assertFalse(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
-		assertEquals(2, instance.getDoubleValue(), DELTA);
+		assertEquals(2, instance.getFloatValue(), DELTA);
 		assertEquals("c", instance.getStringValue());
 
 		instance = h.toInstance(Map.of(
 				"booleanValue", true,
 				"intValue", 0,
-				"doubleValue", 1,
+				"floatValue", 1F,
 				"stringValue", ""));
 		assertTrue(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
-		assertEquals(1, instance.getDoubleValue(), DELTA);
+		assertEquals(1, instance.getFloatValue(), DELTA);
 		assertEquals("", instance.getStringValue());
 
 		assertTrue(h.toValues(Map.of()).isEmpty());
 
 		Map<String, Object> values = h.toValues(Map.of(
 				"booleanValue", false,
-				"intValue", 1,
-				"doubleValue", 2.0,
+				"intValue", 1L,
+				"floatValue", 2.0,
 				"stringValue", "c"));
 		assertFalse((boolean) values.get("booleanValue"));
 		assertEquals(1, values.get("intValue"));
-		assertEquals(2, (double) values.get("doubleValue"), DELTA);
+		assertEquals(2, (float) values.get("floatValue"), DELTA);
 		assertEquals("c", values.get("stringValue"));
 
 		Map<String, Object> data;
@@ -252,33 +253,33 @@ class HandleTest {
 		data = h.toData(instance, false, false);
 		assertTrue((boolean) data.get("booleanValue"));
 		assertEquals(0, data.get("intValue"));
-		assertFalse(data.containsKey("doubleValue"));
+		assertFalse(data.containsKey("floatValue"));
 		assertEquals("", data.get("stringValue"));
 
 		data = h.toData(instance, false, true);
 		assertTrue((boolean) data.get("booleanValue"));
 		assertEquals(0, data.get("intValue"));
-		assertEquals(1, (double) data.get("doubleValue"), DELTA);
+		assertEquals(1, (float) data.get("floatValue"), DELTA);
 		assertEquals("", data.get("stringValue"));
 
 		data = h.toData(instance, true, false);
 		assertTrue((boolean) data.get("booleanValue"));
 		assertEquals(0, data.get("intValue"));
-		assertFalse(data.containsKey("doubleValue"));
+		assertFalse(data.containsKey("floatValue"));
 		assertEquals("", data.get("stringValue"));
 
 		data = h.toData(instance, true, true);
 		assertTrue((boolean) data.get("booleanValue"));
 		assertEquals(0, data.get("intValue"));
-		assertEquals(1, (double) data.get("doubleValue"), DELTA);
+		assertEquals(1, (float) data.get("floatValue"), DELTA);
 		assertEquals("", data.get("stringValue"));
 
-		values.remove("doubleValue");
+		values.remove("floatValue");
 
 		data = h.toData(values);
 		assertFalse((boolean) data.get("booleanValue"));
 		assertEquals(1, data.get("intValue"));
-		assertFalse(data.containsKey("doubleValue"));
+		assertFalse(data.containsKey("floatValue"));
 		assertEquals("c", data.get("stringValue"));
 	}
 
@@ -286,18 +287,18 @@ class HandleTest {
 	void constructsWithGrandChild() {
 		Handle<GrandChild> h = newHandle(GrandChild.class);
 		assertEquals("GrandChilds", h.getCollectionName());
-		assertEquals(Set.of("booleanValue", "intValue", "doubleValue", "stringValue"), h.getFieldNames());
+		assertEquals(Set.of("booleanValue", "intValue", "floatValue", "stringValue"), h.getFieldNames());
 		assertFalse(h.hasAutoKey());
 		assertEquals(Set.of("stringValue"), h.getFileFieldNames());
 
 		assertNull(h.getContentType("booleanValue"));
 		assertNull(h.getContentType("intValue"));
-		assertNull(h.getContentType("doubleValue"));
+		assertNull(h.getContentType("floatValue"));
 		assertEquals("image/png", h.getContentType("stringValue"));
 
 		assertFalse(h.isWeb("booleanValue"));
 		assertFalse(h.isWeb("intValue"));
-		assertFalse(h.isWeb("doubleValue"));
+		assertFalse(h.isWeb("floatValue"));
 		assertTrue(h.isWeb("stringValue"));
 
 		GrandChild instance;
@@ -305,29 +306,29 @@ class HandleTest {
 		instance = h.toInstance(Map.of());
 		assertTrue(instance.isBooleanValue());
 		assertEquals(1, instance.getIntValue());
-		assertEquals(3, instance.getDoubleValue(), DELTA);
+		assertEquals(3, instance.getFloatValue(), DELTA);
 		assertEquals("g", instance.getStringValue());
 
 		instance = h.toInstance(Map.of(
 				"boolean_value", false,
 				"intValue", 0,
-				"doubleValue", 2,
+				"floatValue", 2F,
 				"string_value", ""));
 		assertFalse(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
-		assertEquals(2, instance.getDoubleValue(), DELTA);
+		assertEquals(2, instance.getFloatValue(), DELTA);
 		assertEquals("", instance.getStringValue());
 
 		assertTrue(h.toValues(Map.of()).isEmpty());
 
 		Map<String, Object> values = h.toValues(Map.of(
 				"boolean_value", true,
-				"intValue", 1,
-				"doubleValue", 3.0,
+				"intValue", 1L,
+				"floatValue", 3.0,
 				"string_value", "g"));
 		assertTrue((boolean) values.get("booleanValue"));
 		assertEquals(1, values.get("intValue"));
-		assertEquals(3, (double) values.get("doubleValue"), DELTA);
+		assertEquals(3, (float) values.get("floatValue"), DELTA);
 		assertEquals("g", values.get("stringValue"));
 
 		Map<String, Object> data;
@@ -335,26 +336,26 @@ class HandleTest {
 		data = h.toData(instance, false, false);
 		assertFalse(data.containsKey("boolean_value"));
 		assertEquals(0, data.get("intValue"));
-		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertEquals(2, (float) data.get("floatValue"), DELTA);
 		assertFalse(data.containsKey("string_value"));
 
 		data = h.toData(instance, false, true);
 		assertFalse((boolean) data.get("boolean_value"));
 		assertEquals(0, data.get("intValue"));
-		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertEquals(2, (float) data.get("floatValue"), DELTA);
 		assertFalse(data.containsKey("string_value"));
 
 		data = h.toData(instance, true, false);
 		assertFalse(data.containsKey("boolean_value"));
 		assertEquals(0, data.get("intValue"));
-		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertEquals(2, (float) data.get("floatValue"), DELTA);
 		assertTrue(data.containsKey("string_value"));
 		assertNull(data.get("string_value"));
 
 		data = h.toData(instance, true, true);
 		assertFalse((boolean) data.get("boolean_value"));
 		assertEquals(0, data.get("intValue"));
-		assertEquals(2, (double) data.get("doubleValue"), DELTA);
+		assertEquals(2, (float) data.get("floatValue"), DELTA);
 		assertTrue(data.containsKey("string_value"));
 		assertNull(data.get("string_value"));
 
@@ -364,7 +365,7 @@ class HandleTest {
 		data = h.toData(values);
 		assertFalse(data.containsKey("boolean_value"));
 		assertEquals(1, data.get("intValue"));
-		assertEquals(3, (double) data.get("doubleValue"), DELTA);
+		assertEquals(3, (float) data.get("floatValue"), DELTA);
 		assertFalse(data.containsKey("string_value"));
 	}
 
@@ -518,6 +519,23 @@ class HandleTest {
 		assertSame(instance.getAddress(), values.get("address.field"));
 		assertFalse((boolean) assertInstanceOf(Wrapper.class, values.get("booleanWrapper")).getValue());
 		assertSame(instance.getByteWrapper(), values.get("byteWrapper.field"));
+	}
+
+	@Test
+	void constructsWithBoxedFields() {
+		Handle<BoxedFields> h = newHandle(BoxedFields.class);
+
+		BoxedFields instance = h.toInstance(Map.of(
+				"integerValue", 0,
+				"floatValue", 1F));
+		assertEquals(0, instance.getIntegerValue());
+		assertEquals(1, instance.getFloatValue(), DELTA);
+
+		Map<String, Object> values = h.toValues(Map.of(
+				"integerValue", 1,
+				"floatValue", 2F));
+		assertEquals(1, values.get("integerValue"));
+		assertEquals(2, (float) values.get("floatValue"), DELTA);
 	}
 
 	@Test

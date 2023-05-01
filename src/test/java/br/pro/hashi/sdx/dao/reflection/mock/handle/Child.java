@@ -8,14 +8,14 @@ public class Child extends Parent {
 	public static Object childStaticValue = new Object();
 
 	protected boolean booleanValue;
-	public @Key double doubleValue;
+	public @Key float floatValue;
 	private String stringValue;
 	public final Object childFinalValue;
 	public transient Object childTransientValue;
 
 	public Child() {
 		this.booleanValue = false;
-		this.doubleValue = 2;
+		this.floatValue = 2;
 		this.stringValue = "c";
 		this.childFinalValue = new Object();
 		this.childTransientValue = new Object();
@@ -25,8 +25,8 @@ public class Child extends Parent {
 		return booleanValue;
 	}
 
-	public double getDoubleValue() {
-		return doubleValue;
+	public float getFloatValue() {
+		return floatValue;
 	}
 
 	public String getStringValue() {

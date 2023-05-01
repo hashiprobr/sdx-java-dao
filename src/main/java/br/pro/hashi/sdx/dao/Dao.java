@@ -219,6 +219,26 @@ public final class Dao<E> {
 	}
 
 	/**
+	 * Retrieves the entity instance with the specified key.
+	 * 
+	 * @param key the key
+	 * @return the instance
+	 * @throws NullPointerException if the key is null
+	 * @throws DataException        if the Firestore operation could not be
+	 *                              performed
+	 */
+	public E retrieve(Object key) {
+		String keyString = toString(key);
+		CollectionReference collection = getCollection(client.getFirestore());
+		DocumentSnapshot document = await(collection.document(keyString).get());
+		E instance = handle.toInstance(document.getData());
+		if (handle.hasAutoKey()) {
+			handle.setAutoKey(instance, keyString);
+		}
+		return instance;
+	}
+
+	/**
 	 * <p>
 	 * Uploads the content of the specified {@link File} field of the specified
 	 * entity and updates the field with the file link.
@@ -391,22 +411,6 @@ public final class Dao<E> {
 			throw new DataException(exception);
 		}
 		return result;
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key stub
-	 * @return stub
-	 */
-	public E retrieve(Object key) {
-		String keyString = toString(key);
-		DocumentSnapshot document = await(getDocument(keyString).get());
-		E instance = (E) handle.toInstance(document.getData());
-		if (handle.hasAutoKey()) {
-			handle.setAutoKey(instance, keyString);
-		}
-		return instance;
 	}
 
 	/**
