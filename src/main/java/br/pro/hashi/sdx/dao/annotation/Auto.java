@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a {@link Key} field should be generated automatically.
+ * Indicates that a {@link Key} field should be automatically generated.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

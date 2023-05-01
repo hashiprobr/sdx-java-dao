@@ -23,7 +23,7 @@ final class ClientFactory {
 		this.cache = new LinkedHashMap<>();
 	}
 
-	synchronized DaoClient get() {
+	synchronized DaoClient getDefault() {
 		if (cache.isEmpty()) {
 			throw new IllegalStateException("No client exists");
 		}

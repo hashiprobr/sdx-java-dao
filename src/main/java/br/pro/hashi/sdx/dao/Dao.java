@@ -21,6 +21,9 @@ import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
 
 import br.pro.hashi.sdx.dao.DaoClient.Connection;
+import br.pro.hashi.sdx.dao.annotation.Auto;
+import br.pro.hashi.sdx.dao.annotation.File;
+import br.pro.hashi.sdx.dao.annotation.Key;
 import br.pro.hashi.sdx.dao.exception.DataException;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 
@@ -36,9 +39,10 @@ public final class Dao<E> {
 	 * @param <E>  the type
 	 * @param type a {@link Class} representing {@code E}
 	 * @return the object
+	 * @throws IllegalStateException if no client exists
 	 */
 	public static <E> Dao<E> of(Class<E> type) {
-		return ClientFactory.getInstance().get().get(type);
+		return ClientFactory.getInstance().getDefault().get(type);
 	}
 
 	/**
@@ -49,6 +53,9 @@ public final class Dao<E> {
 	 * @param type      a {@link Class} representing {@code E}
 	 * @param projectId the id
 	 * @return the object
+	 * @throws NullPointerException     if the id is null
+	 * @throws IllegalArgumentException if the id is blank or a client for the id
+	 *                                  does not exist
 	 */
 	public static <E> Dao<E> of(Class<E> type, String projectId) {
 		return ClientFactory.getInstance().getFromId(projectId).get(type);
@@ -74,54 +81,256 @@ public final class Dao<E> {
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * Creates the specified entity instance and returns its key.
+	 * </p>
+	 * <p>
+	 * If {@code E} has {@link File} fields, the values are replaced by
+	 * {@code null}.
+	 * </p>
+	 * <p>
+	 * If the {@link Key} field of {@code E} is an {@link Auto} field, returns the
+	 * automatically generated key. Otherwise, returns the result of
+	 * {@link Object#toString()} for the key specified in the instance.
+	 * </p>
 	 * 
-	 * @param instance stub
-	 * @return stub
+	 * @param instance the instance
+	 * @return the key
+	 * @throws NullPointerException     if the instance is null or if the key field
+	 *                                  is not an auto field but the value is null
+	 * @throws IllegalArgumentException if the key field is an auto field but the
+	 *                                  value is not null
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public String create(E instance) {
 		check(instance);
+		Connection connection = client.getConnection();
+		CollectionReference collection = getCollection(connection.firestore());
 		String keyString;
 		DocumentReference document;
 		if (handle.hasAutoKey()) {
-			document = createDocument(instance);
+			document = createDocument(collection, instance);
 			keyString = document.getId();
 		} else {
 			keyString = getKeyString(instance);
-			document = getDocument(keyString);
+			document = collection.document(keyString);
 		}
-		await(document.create(handle.toData(instance, false, handle.hasAutoKey())));
+		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
+			await(document.create(handle.toData(instance, true, !handle.hasAutoKey())));
+		}
 		return keyString;
+	}
+
+	/**
+	 * <p>
+	 * Creates the specified entity instances and returns their keys.
+	 * </p>
+	 * <p>
+	 * If {@code E} has {@link File} fields, simply calls {@code Dao.create(E)} for
+	 * each instance. Otherwise, performs a single batch operation.
+	 * </p>
+	 * <p>
+	 * If the {@link Key} field of {@code E} is an {@link Auto} field, returns the
+	 * automatically generated keys. Otherwise, returns the result of
+	 * {@link Object#toString()} for the keys specified in the instances.
+	 * </p>
+	 * 
+	 * @param instances the instances
+	 * @return the keys
+	 * @throws NullPointerException     if an instance is null or if the key field
+	 *                                  is not an auto field but a value is null
+	 * @throws IllegalArgumentException if there are no instances or if the key
+	 *                                  field is an auto field but a value is not
+	 *                                  null
+	 * @throws DataException            if a Firestore operation could not be
+	 *                                  performed
+	 */
+	public List<String> create(List<E> instances) {
+		check(instances);
+		List<String> keyStrings = new ArrayList<>();
+		if (handle.getFileFieldNames().isEmpty()) {
+			Firestore firestore = client.getFirestore();
+			CollectionReference collection = getCollection(firestore);
+			runBatch(firestore, (batch) -> {
+				for (E instance : instances) {
+					check(instance);
+					String keyString;
+					DocumentReference document;
+					if (handle.hasAutoKey()) {
+						document = createDocument(collection, instance);
+						keyString = document.getId();
+					} else {
+						keyString = getKeyString(instance);
+						document = collection.document(keyString);
+					}
+					batch.create(document, handle.toData(instance, true, !handle.hasAutoKey()));
+					keyStrings.add(keyString);
+				}
+			});
+		} else {
+			for (E instance : instances) {
+				keyStrings.add(create(instance));
+			}
+		}
+		return keyStrings;
+	}
+
+	private void check(E instance) {
+		if (instance == null) {
+			throw new NullPointerException("Instance cannot be null");
+		}
+	}
+
+	private void check(List<E> instances) {
+		if (instances == null) {
+			throw new NullPointerException("Instance list cannot be null");
+		}
+		if (instances.isEmpty()) {
+			throw new IllegalArgumentException("Instance list cannot be empty");
+		}
+	}
+
+	private String getKeyString(E instance) {
+		return toString(handle.getKey(instance));
+	}
+
+	private List<String> getFileNames(String keyString) {
+		return handle.getFileFieldNames()
+				.stream()
+				.map((fieldName) -> getFileName(keyString, fieldName))
+				.toList();
+	}
+
+	private CollectionReference getCollection(Firestore firestore) {
+		return firestore.collection(handle.getCollectionName());
+	}
+
+	private DocumentReference createDocument(CollectionReference collection, E instance) {
+		if (handle.getKey(instance) != null) {
+			throw new IllegalArgumentException("Key must be null");
+		}
+		return collection.document();
+	}
+
+	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
+		WriteBatch batch = firestore.batch();
+		consumer.accept(batch);
+		await(batch.commit());
 	}
 
 	/**
 	 * Stub.
 	 * 
-	 * @param instances stub
+	 * @param key       stub
+	 * @param fieldName stub
+	 * @param stream    stub
 	 * @return stub
 	 */
-	public List<String> create(List<E> instances) {
-		check(instances);
-		Firestore firestore = client.getFirestore();
-		CollectionReference collection = getCollection(firestore);
-		List<String> keyStrings = new ArrayList<>();
-		runBatch(firestore, (batch) -> {
-			for (E instance : instances) {
-				check(instance);
-				String keyString;
-				DocumentReference document;
-				if (handle.hasAutoKey()) {
-					document = createDocument(collection, instance);
-					keyString = document.getId();
-				} else {
-					keyString = getKeyString(instance);
-					document = getDocument(collection, keyString);
-				}
-				batch.create(document, handle.toData(instance, false, handle.hasAutoKey()));
-				keyStrings.add(keyString);
-			}
-		});
-		return keyStrings;
+	public String uploadFile(Object key, String fieldName, InputStream stream) {
+		if (stream == null) {
+			throw new NullPointerException("Stream cannot be null");
+		}
+		check(fieldName);
+		String keyString = toString(key);
+		Connection connection = client.getConnection();
+		String fileName = getFileName(keyString, fieldName);
+		String url;
+		try (Fao fao = new Fao(connection.bucket(), fileName)) {
+			url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
+			DocumentReference document = getDocument(connection, keyString);
+			await(document.update(fieldName, url));
+		}
+		return url;
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param key       stub
+	 * @param fieldName stub
+	 * @return
+	 */
+	public String refreshFile(Object key, String fieldName) {
+		check(fieldName);
+		String keyString = toString(key);
+		Connection connection = client.getConnection();
+		String fileName = getFileName(keyString, fieldName);
+		String url;
+		try (Fao fao = new Fao(connection.bucket(), fileName)) {
+			url = fao.refresh(handle.isWeb(fieldName));
+			DocumentReference document = getDocument(connection, keyString);
+			await(document.update(fieldName, url));
+		}
+		return url;
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param key       stub
+	 * @param fieldName stub
+	 * @return stub
+	 */
+	public DaoFile downloadFile(Object key, String fieldName) {
+		check(fieldName);
+		String fileName = getFileName(toString(key), fieldName);
+		DaoFile file;
+		try (Fao fao = new Fao(client.getBucket(), fileName)) {
+			file = fao.download();
+		}
+		return file;
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param key       stub
+	 * @param fieldName stub
+	 */
+	public void removeFile(Object key, String fieldName) {
+		check(fieldName);
+		String keyString = toString(key);
+		Connection connection = client.getConnection();
+		String fileName = getFileName(keyString, fieldName);
+		try (Fao fao = new Fao(connection.bucket(), fileName)) {
+			fao.remove();
+			DocumentReference document = getDocument(connection, keyString);
+			await(document.update(fieldName, null));
+		}
+	}
+
+	private void check(String fieldName) {
+		if (fieldName == null) {
+			throw new NullPointerException("Field name cannot be null");
+		}
+	}
+
+	private String toString(Object key) {
+		if (key == null) {
+			throw new NullPointerException("Key cannot be null");
+		}
+		return key.toString();
+	}
+
+	private String getFileName(String keyString, String fieldName) {
+		return "%s/%s/%s".formatted(handle.getCollectionName(), keyString, fieldName);
+	}
+
+	private DocumentReference getDocument(Connection connection, String keyString) {
+		return getCollection(connection.firestore()).document(keyString);
+	}
+
+	private <V> V await(ApiFuture<V> future) {
+		V result;
+		try {
+			result = future.get();
+		} catch (ExecutionException exception) {
+			throw new DataException(exception.getCause());
+		} catch (InterruptedException exception) {
+			throw new DataException(exception);
+		}
+		return result;
 	}
 
 	/**
@@ -220,17 +429,6 @@ public final class Dao<E> {
 		}
 	}
 
-	private DocumentReference createDocument(E instance) {
-		return createDocument(getCollection(), instance);
-	}
-
-	private DocumentReference createDocument(CollectionReference collection, E instance) {
-		if (handle.getKey(instance) != null) {
-			throw new IllegalArgumentException("Key must be null");
-		}
-		return collection.document();
-	}
-
 	private DocumentReference getDocument(Object key) {
 		return getDocument(toString(key));
 	}
@@ -243,106 +441,12 @@ public final class Dao<E> {
 		return getCollection(client.getFirestore());
 	}
 
-	private String getKeyString(E instance) {
-		return toString(handle.getKey(instance));
-	}
-
 	private void check(Map<String, Object> values) {
 		if (values == null) {
 			throw new NullPointerException("Value map cannot be null");
 		}
 		if (values.isEmpty()) {
 			throw new IllegalArgumentException("Value map cannot be empty");
-		}
-	}
-
-	private void check(List<E> instances) {
-		if (instances == null) {
-			throw new NullPointerException("Instance list cannot be null");
-		}
-		if (instances.isEmpty()) {
-			throw new IllegalArgumentException("Instance list cannot be empty");
-		}
-	}
-
-	private void check(E instance) {
-		if (instance == null) {
-			throw new NullPointerException("Instance cannot be null");
-		}
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 * @param stream    stub
-	 */
-	public void uploadFile(Object key, String fieldName, InputStream stream) {
-		if (stream == null) {
-			throw new NullPointerException("Stream cannot be null");
-		}
-		check(fieldName);
-		String keyString = toString(key);
-		String fileName = getFileName(keyString, fieldName);
-		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection.bucket(), fileName)) {
-			String url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
-			DocumentReference document = getDocument(connection, keyString);
-			await(document.update(fieldName, url));
-		}
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 */
-	public void refreshFile(Object key, String fieldName) {
-		check(fieldName);
-		String keyString = toString(key);
-		String fileName = getFileName(keyString, fieldName);
-		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection.bucket(), fileName)) {
-			String url = fao.refresh(handle.isWeb(fieldName));
-			DocumentReference document = getDocument(connection, keyString);
-			await(document.update(fieldName, url));
-		}
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 * @return stub
-	 */
-	public DaoFile downloadFile(Object key, String fieldName) {
-		check(fieldName);
-		String fileName = getFileName(toString(key), fieldName);
-		DaoFile file;
-		try (Fao fao = new Fao(client.getBucket(), fileName)) {
-			file = fao.download();
-		}
-		return file;
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key       stub
-	 * @param fieldName stub
-	 */
-	public void removeFile(Object key, String fieldName) {
-		check(fieldName);
-		String keyString = toString(key);
-		String fileName = getFileName(keyString, fieldName);
-		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection.bucket(), fileName)) {
-			fao.remove();
-			DocumentReference document = getDocument(connection, keyString);
-			await(document.update(fieldName, null));
 		}
 	}
 
@@ -365,53 +469,6 @@ public final class Dao<E> {
 
 	private void runBatch(Consumer<WriteBatch> consumer) {
 		runBatch(client.getFirestore(), consumer);
-	}
-
-	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
-		WriteBatch batch = firestore.batch();
-		consumer.accept(batch);
-		await(batch.commit());
-	}
-
-	private <V> V await(ApiFuture<V> future) {
-		V result;
-		try {
-			result = future.get();
-		} catch (ExecutionException exception) {
-			throw new DataException(exception.getCause());
-		} catch (InterruptedException exception) {
-			throw new DataException(exception);
-		}
-		return result;
-	}
-
-	private DocumentReference getDocument(Connection connection, String keyString) {
-		return getDocument(getCollection(connection.firestore()), keyString);
-	}
-
-	private DocumentReference getDocument(CollectionReference collection, String keyString) {
-		return collection.document(keyString);
-	}
-
-	private CollectionReference getCollection(Firestore firestore) {
-		return firestore.collection(handle.getCollectionName());
-	}
-
-	private String getFileName(String keyString, String fieldName) {
-		return "%s/%s/%s".formatted(handle.getCollectionName(), keyString, fieldName);
-	}
-
-	private String toString(Object key) {
-		if (key == null) {
-			throw new NullPointerException("Key cannot be null");
-		}
-		return key.toString();
-	}
-
-	private void check(String fieldName) {
-		if (fieldName == null) {
-			throw new NullPointerException("Field name cannot be null");
-		}
 	}
 
 	/**

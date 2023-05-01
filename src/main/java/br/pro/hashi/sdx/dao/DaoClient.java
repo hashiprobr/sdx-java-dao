@@ -1,5 +1,6 @@
 package br.pro.hashi.sdx.dao;
 
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +27,9 @@ public final class DaoClient {
 	 * 
 	 * @param projectId the id
 	 * @return the client
+	 * @throws NullPointerException     if the id is null
+	 * @throws IllegalArgumentException if the id is blank or a client for the id
+	 *                                  does not exist
 	 */
 	public static DaoClient fromId(String projectId) {
 		return ClientFactory.getInstance().getFromId(projectId);
@@ -36,6 +40,9 @@ public final class DaoClient {
 	 * 
 	 * @param credentialsPath the path
 	 * @return the client
+	 * @throws NullPointerException     if the path is null
+	 * @throws IllegalArgumentException if the path is blank
+	 * @throws UncheckedIOException     if the credentials cannot be read
 	 */
 	public static DaoClient fromCredentials(String credentialsPath) {
 		return ClientFactory.getInstance().getFromCredentials(credentialsPath);
