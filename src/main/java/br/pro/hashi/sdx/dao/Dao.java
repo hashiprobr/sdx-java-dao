@@ -212,7 +212,7 @@ public final class Dao<E> {
 
 	/**
 	 * <p>
-	 * Updates all values of the specified entity instance.
+	 * Updates the values of the specified entity instance.
 	 * </p>
 	 * <p>
 	 * {@link File} fields are ignored and the {@link Key} field cannot be updated
@@ -240,9 +240,9 @@ public final class Dao<E> {
 	 * 
 	 * @param key    the key
 	 * @param values the values
-	 * @throws NullPointerException     if the values map is null or the key value
-	 *                                  is null
-	 * @throws IllegalArgumentException if the values map is empty
+	 * @throws NullPointerException     if the value map is null or the key value is
+	 *                                  null
+	 * @throws IllegalArgumentException if the value map is empty
 	 * @throws DataException            if the Firestore operation could not be
 	 *                                  performed
 	 */
@@ -252,7 +252,8 @@ public final class Dao<E> {
 	}
 
 	private void updateFromData(Object key, Map<String, Object> data) {
-		DocumentReference document = getDocument(key);
+		String keyString = toString(key);
+		DocumentReference document = getDocument(client.getFirestore(), keyString);
 		sync(document.update(data));
 	}
 
@@ -274,10 +275,11 @@ public final class Dao<E> {
 	 */
 	public void update(List<E> instances) {
 		check(instances);
-		runBatch((batch) -> {
+		Firestore firestore = client.getFirestore();
+		runBatch(firestore, (batch) -> {
 			for (E instance : instances) {
 				check(instance);
-				updateFromData(batch, handle.getKey(instance), handle.toData(instance, false, false));
+				updateFromData(firestore, batch, handle.getKey(instance), handle.toData(instance, false, false));
 			}
 		});
 	}
@@ -292,9 +294,9 @@ public final class Dao<E> {
 	 * </p>
 	 * 
 	 * @param map the map
-	 * @throws NullPointerException     if the map is null, a values map is null, or
+	 * @throws NullPointerException     if the map is null, a value map is null, or
 	 *                                  a key value is null
-	 * @throws IllegalArgumentException if the map is empty or a values map is empty
+	 * @throws IllegalArgumentException if the map is empty or a value map is empty
 	 * @throws DataException            if the Firestore operation could not be
 	 *                                  performed
 	 */
@@ -305,17 +307,19 @@ public final class Dao<E> {
 		if (map.isEmpty()) {
 			throw new IllegalArgumentException("Map cannot be empty");
 		}
-		runBatch((batch) -> {
+		Firestore firestore = client.getFirestore();
+		runBatch(firestore, (batch) -> {
 			for (Object key : map.keySet()) {
 				Map<String, Object> values = map.get(key);
 				check(values);
-				updateFromData(batch, key, handle.toData(values));
+				updateFromData(firestore, batch, key, handle.toData(values));
 			}
 		});
 	}
 
-	private void updateFromData(WriteBatch batch, Object key, Map<String, Object> data) {
-		DocumentReference document = getDocument(key);
+	private void updateFromData(Firestore firestore, WriteBatch batch, Object key, Map<String, Object> data) {
+		String keyString = toString(key);
+		DocumentReference document = getDocument(firestore, keyString);
 		batch.update(document, data);
 	}
 
@@ -341,20 +345,6 @@ public final class Dao<E> {
 		if (values.isEmpty()) {
 			throw new IllegalArgumentException("Value map cannot be empty");
 		}
-	}
-
-	private DocumentReference getDocument(Object key) {
-		return getCollection(client.getFirestore()).document(toString(key));
-	}
-
-	private void runBatch(Consumer<WriteBatch> consumer) {
-		runBatch(client.getFirestore(), consumer);
-	}
-
-	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
-		WriteBatch batch = firestore.batch();
-		consumer.accept(batch);
-		sync(batch.commit());
 	}
 
 	/**
@@ -551,80 +541,36 @@ public final class Dao<E> {
 		return getCollection(firestore).document(keyString);
 	}
 
-	private CollectionReference getCollection(Firestore firestore) {
-		return firestore.collection(handle.getCollectionName());
-	}
-
-	private <V> V sync(ApiFuture<V> future) {
-		V result;
-		try {
-			result = future.get();
-		} catch (ExecutionException exception) {
-			throw new DataException(exception.getCause());
-		} catch (InterruptedException exception) {
-			throw new DataException(exception);
-		}
-		return result;
-	}
-
 	/**
-	 * Stub.
+	 * Creates a collection of entity instances.
 	 * 
-	 * @return stub
+	 * @return the collection
 	 */
 	public Collection collect() {
-		return new Collection(getCollection(client.getFirestore()));
+		return new Collection();
 	}
 
 	/**
-	 * Stub.
-	 * 
-	 * @param fieldNames stub
-	 * @return stub
+	 * Represents a query of entity instances.
 	 */
-	public Selection select(String... fieldNames) {
-		return new Selection(getCollection(client.getFirestore()).select(fieldNames), fieldNames);
-	}
-
-	/**
-	 * Stub.
-	 */
-	public sealed class Filter permits Collection, Selection {
-		final Query query;
-
-		private Filter(Query query) {
-			this.query = query;
-		}
-
-		private void runBatch(QuerySnapshot snapshots, BiConsumer<WriteBatch, DocumentReference> consumer) {
-			Dao.this.runBatch(query.getFirestore(), (batch) -> {
-				for (DocumentSnapshot snapshot : snapshots) {
-					consumer.accept(batch, snapshot.getReference());
-				}
-			});
-		}
-	}
-
-	/**
-	 * Stub.
-	 */
-	public final class Collection extends Filter {
-		private Collection(CollectionReference reference) {
-			super(reference);
+	public final class Collection extends Filter<Collection> {
+		private Collection() {
+			super(getCollection());
 		}
 
 		/**
-		 * Stub.
+		 * Retrieves the entity instances corresponding to the query.
 		 * 
-		 * @return stub
+		 * @return the instances
+		 * @throws DataException if the Firestore operation could not be performed
 		 */
 		public List<E> retrieve() {
-			QuerySnapshot snapshot = sync(query.get());
+			QuerySnapshot snapshots = sync(query.get());
 			List<E> instances = new ArrayList<>();
-			for (DocumentSnapshot document : snapshot) {
-				E instance = handle.toInstance(document.getData());
+			for (DocumentSnapshot snapshot : snapshots) {
+				E instance = handle.toInstance(snapshot.getData());
 				if (handle.hasAutoKey()) {
-					handle.setAutoKey(instance, document.getId());
+					handle.setAutoKey(instance, snapshot.getId());
 				}
 				instances.add(instance);
 			}
@@ -632,66 +578,115 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * <p>
+		 * Updates the values of the entity instances corresponding to the query with
+		 * the values of the specified instance.
+		 * </p>
+		 * <p>
+		 * {@link File} fields and the {@link Key} field are ignored.
+		 * </p>
 		 * 
-		 * @param instance stub
+		 * @param instance the instance
+		 * @throws NullPointerException if the instance is null
+		 * @throws DataException        if the Firestore operation could not be
+		 *                              performed
 		 */
 		public void update(E instance) {
 			check(instance);
-			Map<String, Object> data = handle.toData(instance, false, true);
+			Map<String, Object> data = handle.toData(instance, false, false);
 			runBatch((batch, document) -> {
 				batch.update(document, data);
 			});
 		}
 
 		/**
-		 * Stub.
+		 * <p>
+		 * Deletes the entity instances corresponding to the query.
+		 * </p>
+		 * <p>
+		 * If {@code E} has {@link File} fields, simply calls {@link Dao#delete(Object)}
+		 * for each instance key. Otherwise, performs a single batch operation.
+		 * </p>
+		 * 
+		 * @throws FileException if a Storage operation could not be performed
+		 * @throws DataException if a Firestore operation could not be performed
 		 */
 		public void delete() {
-			runBatch((batch, document) -> {
-				batch.delete(document);
-			});
+			if (handle.getFileFieldNames().isEmpty()) {
+				runBatch((batch, document) -> {
+					batch.delete(document);
+				});
+			} else {
+				QuerySnapshot snapshots = sync(query.get());
+				for (DocumentSnapshot snapshot : snapshots) {
+					Dao.this.delete(snapshot.getId());
+				}
+			}
 		}
 
-		private void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			QuerySnapshot snapshots = sync(query.select(new String[] {}).get());
-			super.runBatch(snapshots, consumer);
+		Query getFilteredQuery() {
+			return query.select(new String[] {});
+		}
+
+		Collection self() {
+			return this;
 		}
 	}
 
 	/**
-	 * Stub.
+	 * Creates a selection of fields with the specified names.
+	 * 
+	 * @param fieldNames the names
+	 * @return the selection
 	 */
-	public final class Selection extends Filter {
+	public Selection select(String... fieldNames) {
+		return new Selection(fieldNames);
+	}
+
+	/**
+	 * Represents a query of specific fields.
+	 */
+	public final class Selection extends Filter<Selection> {
 		private final String[] fieldNames;
 
-		private Selection(Query query, String[] fieldNames) {
-			super(query);
+		private Selection(String[] fieldNames) {
+			super(getCollection().select(fieldNames));
 			this.fieldNames = fieldNames;
 		}
 
 		/**
-		 * Stub.
+		 * Retrieves a list of value maps corresponding to the query.
 		 * 
-		 * @return stub
+		 * @return the list
+		 * @throws DataException if the Firestore operation could not be performed
 		 */
 		public List<Map<String, Object>> retrieve() {
-			QuerySnapshot snapshot = sync(query.get());
-			List<Map<String, Object>> valuesList = new ArrayList<>();
-			for (DocumentSnapshot document : snapshot) {
-				Map<String, Object> values = handle.toValues(document.getData());
+			QuerySnapshot snapshots = sync(query.get());
+			List<Map<String, Object>> list = new ArrayList<>();
+			for (DocumentSnapshot snapshot : snapshots) {
+				Map<String, Object> values = handle.toValues(snapshot.getData());
 				if (handle.hasAutoKey()) {
-					handle.putAutoKey(values, document.getId());
+					handle.putAutoKey(values, snapshot.getId());
 				}
-				valuesList.add(values);
+				list.add(values);
 			}
-			return valuesList;
+			return list;
 		}
 
 		/**
-		 * Stub.
+		 * <p>
+		 * Updates the specified values of the entity instances corresponding to the
+		 * query.
+		 * </p>
+		 * <p>
+		 * {@link File} fields and the {@link Key} field cannot be updated.
+		 * </p>
 		 * 
-		 * @param fieldValues stub
+		 * @param fieldValues the values
+		 * @throws IllegalArgumentException if the number of selected fields and the
+		 *                                  number of specified values are different
+		 * @throws DataException            if the Firestore operation could not be
+		 *                                  performed
 		 */
 		public void update(Object... fieldValues) {
 			if (fieldNames.length != fieldValues.length) {
@@ -708,7 +703,15 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * <p>
+		 * Deletes the selected fields of the entity instances corresponding to the
+		 * query.
+		 * </p>
+		 * <p>
+		 * {@link File} fields and the {@link Key} field cannot be deleted.
+		 * </p>
+		 * 
+		 * @throws DataException if the Firestore operation could not be performed
 		 */
 		public void delete() {
 			Map<String, Object> values = new HashMap<>();
@@ -721,9 +724,66 @@ public final class Dao<E> {
 			});
 		}
 
-		private void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			QuerySnapshot snapshots = sync(query.get());
-			super.runBatch(snapshots, consumer);
+		Query getFilteredQuery() {
+			return query;
 		}
+
+		Selection self() {
+			return this;
+		}
+	}
+
+	private CollectionReference getCollection() {
+		return getCollection(client.getFirestore());
+	}
+
+	private CollectionReference getCollection(Firestore firestore) {
+		return firestore.collection(handle.getCollectionName());
+	}
+
+	/**
+	 * Base class for queries.
+	 *
+	 * @param <F> the subtype
+	 * @hidden
+	 */
+	public abstract sealed class Filter<F extends Filter<F>> permits Collection, Selection {
+		final Query query;
+
+		private Filter(Query query) {
+			this.query = query;
+		}
+
+		void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
+			Query filteredQuery = getFilteredQuery();
+			QuerySnapshot snapshots = sync(filteredQuery.get());
+			Dao.this.runBatch(query.getFirestore(), (batch) -> {
+				for (DocumentSnapshot snapshot : snapshots) {
+					consumer.accept(batch, snapshot.getReference());
+				}
+			});
+		}
+
+		abstract Query getFilteredQuery();
+
+		abstract F self();
+	}
+
+	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
+		WriteBatch batch = firestore.batch();
+		consumer.accept(batch);
+		sync(batch.commit());
+	}
+
+	<V> V sync(ApiFuture<V> future) {
+		V result;
+		try {
+			result = future.get();
+		} catch (ExecutionException exception) {
+			throw new DataException(exception.getCause());
+		} catch (InterruptedException exception) {
+			throw new AssertionError(exception);
+		}
+		return result;
 	}
 }

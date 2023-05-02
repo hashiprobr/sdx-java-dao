@@ -780,4 +780,14 @@ class DaoTest {
 		when(handle.getKey(instance)).thenReturn(key);
 		return instance;
 	}
+
+	@Test
+	void doesNotSync() {
+		assertDoesNotThrow(() -> {
+			when(readFuture.get()).thenThrow(InterruptedException.class);
+		});
+		assertThrows(AssertionError.class, () -> {
+			d.sync(readFuture);
+		});
+	}
 }
