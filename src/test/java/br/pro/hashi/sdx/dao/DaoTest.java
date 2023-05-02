@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -256,17 +257,7 @@ class DaoTest {
 	}
 
 	@Test
-	void doesNotCreateIfKeyIsNull() {
-		mockAutoKey();
-		Entity instance = newEntity(null, 1);
-		assertThrows(NullPointerException.class, () -> {
-			d.create(instance);
-		});
-	}
-
-	@Test
 	void doesNotCreateIfFirstIsNull() {
-		mockAutoKey();
 		mockFileFieldNames();
 		List<Entity> instances = new ArrayList<>();
 		instances.add(null);
@@ -278,13 +269,21 @@ class DaoTest {
 
 	@Test
 	void doesNotCreateIfSecondIsNull() {
-		mockAutoKey();
 		mockFileFieldNames();
 		List<Entity> instances = new ArrayList<>();
 		instances.add(newEntity(true, 1));
 		instances.add(null);
 		assertThrows(NullPointerException.class, () -> {
 			d.create(instances);
+		});
+	}
+
+	@Test
+	void doesNotCreateIfKeyIsNull() {
+		mockAutoKey();
+		Entity instance = newEntity(null, 1);
+		assertThrows(NullPointerException.class, () -> {
+			d.create(instance);
 		});
 	}
 
@@ -680,6 +679,28 @@ class DaoTest {
 		assertSame(cause, exception.getCause());
 	}
 
+	private void mockBatchWriteFutureReturn() {
+		List<WriteResult> results = List.of();
+		assertDoesNotThrow(() -> {
+			when(batchWriteFuture.get()).thenReturn(results);
+		});
+	}
+
+	private Throwable mockBatchWriteFutureThrow() {
+		Throwable cause = new Throwable();
+		ExecutionException exception = new ExecutionException(cause);
+		assertDoesNotThrow(() -> {
+			when(batchWriteFuture.get()).thenThrow(exception);
+		});
+		return cause;
+	}
+
+	private Entity newEntity(Object key, int value) {
+		Entity instance = new Entity(value);
+		when(handle.getKey(instance)).thenReturn(key);
+		return instance;
+	}
+
 	@Test
 	void deletes() {
 		mockFileFieldNames(List.of("file0", "file1"));
@@ -735,12 +756,301 @@ class DaoTest {
 		assertSame(cause, exception.getCause());
 	}
 
+	@Test
+	void uploadsFile() {
+		mockFaoFileFieldNames();
+		InputStream stream = InputStream.nullInputStream();
+		mockWriteFutureReturn();
+		String url;
+		Fao fao;
+		try (MockedConstruction<Fao> faoConstruction = mockUploadFaoConstruction(stream)) {
+			url = d.uploadFile(1, "file", stream);
+			fao = faoConstruction.constructed().get(0);
+		}
+		assertEquals("url", url);
+		verify(fao).upload(stream, "application/octet-stream", true);
+		verify(collection).document("1");
+		verify(document).update("file", "url");
+		assertDoesNotThrow(() -> {
+			verify(writeFuture).get();
+		});
+	}
+
+	@Test
+	void doesNotUploadFileIfStreamIsNull() {
+		assertThrows(NullPointerException.class, () -> {
+			d.uploadFile(1, "file", null);
+		});
+	}
+
+	@Test
+	void doesNotUploadFileIfFieldNameIsNull() {
+		InputStream stream = InputStream.nullInputStream();
+		assertThrows(NullPointerException.class, () -> {
+			d.uploadFile(1, null, stream);
+		});
+	}
+
+	@Test
+	void doesNotUploadFileIfFieldDoesNotExist() {
+		mockFileFieldNames();
+		InputStream stream = InputStream.nullInputStream();
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.uploadFile(1, "file", stream);
+		});
+	}
+
+	@Test
+	void doesNotUploadFileIfKeyIsNull() {
+		mockFaoFileFieldNames();
+		InputStream stream = InputStream.nullInputStream();
+		assertThrows(NullPointerException.class, () -> {
+			d.uploadFile(null, "file", stream);
+		});
+	}
+
+	@Test
+	void doesNotUploadFileIfFaoThrows() {
+		mockFaoFileFieldNames();
+		InputStream stream = InputStream.nullInputStream();
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			when(mock.upload(stream, "application/octet-stream", true)).thenThrow(FileException.class);
+		};
+		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			assertThrows(FileException.class, () -> {
+				d.uploadFile(1, "file", stream);
+			});
+		}
+	}
+
+	@Test
+	void doesNotUploadFileIfWriteFutureThrows() {
+		mockFaoFileFieldNames();
+		InputStream stream = InputStream.nullInputStream();
+		Throwable cause = mockWriteFutureThrow();
+		Exception exception;
+		try (MockedConstruction<Fao> faoConstruction = mockUploadFaoConstruction(stream)) {
+			exception = assertThrows(DataException.class, () -> {
+				d.uploadFile(1, "file", stream);
+			});
+		}
+		assertSame(cause, exception.getCause());
+	}
+
+	private MockedConstruction<Fao> mockUploadFaoConstruction(InputStream stream) {
+		when(document.update("file", "url")).thenReturn(writeFuture);
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			List<?> arguments = context.arguments();
+			assertEquals(bucket, arguments.get(0));
+			assertEquals("collection/1/file", arguments.get(1));
+			when(mock.upload(stream, "application/octet-stream", true)).thenReturn("url");
+		};
+		return mockConstruction(Fao.class, initializer);
+	}
+
+	@Test
+	void refreshesFile() {
+		mockFaoFileFieldNames();
+		mockWriteFutureReturn();
+		String url;
+		Fao fao;
+		try (MockedConstruction<Fao> faoConstruction = mockRefreshFaoConstruction()) {
+			url = d.refreshFile(1, "file");
+			fao = faoConstruction.constructed().get(0);
+		}
+		assertEquals("url", url);
+		verify(fao).refresh(true);
+		verify(collection).document("1");
+		verify(document).update("file", "url");
+		assertDoesNotThrow(() -> {
+			verify(writeFuture).get();
+		});
+	}
+
+	@Test
+	void doesNotRefreshFileIfFieldNameIsNull() {
+		assertThrows(NullPointerException.class, () -> {
+			d.refreshFile(1, null);
+		});
+	}
+
+	@Test
+	void doesNotRefreshFileIfFieldDoesNotExist() {
+		mockFileFieldNames();
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.refreshFile(1, "file");
+		});
+	}
+
+	@Test
+	void doesNotRefreshFileIfKeyIsNull() {
+		mockFaoFileFieldNames();
+		assertThrows(NullPointerException.class, () -> {
+			d.refreshFile(null, "file");
+		});
+	}
+
+	@Test
+	void doesNotRefreshFileIfFaoThrows() {
+		mockFaoFileFieldNames();
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			when(mock.refresh(true)).thenThrow(FileException.class);
+		};
+		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			assertThrows(FileException.class, () -> {
+				d.refreshFile(1, "file");
+			});
+		}
+	}
+
+	@Test
+	void doesNotRefreshFileIfWriteFutureThrows() {
+		mockFaoFileFieldNames();
+		Throwable cause = mockWriteFutureThrow();
+		Exception exception;
+		try (MockedConstruction<Fao> faoConstruction = mockRefreshFaoConstruction()) {
+			exception = assertThrows(DataException.class, () -> {
+				d.refreshFile(1, "file");
+			});
+		}
+		assertSame(cause, exception.getCause());
+	}
+
+	private MockedConstruction<Fao> mockRefreshFaoConstruction() {
+		when(document.update("file", "url")).thenReturn(writeFuture);
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			List<?> arguments = context.arguments();
+			assertEquals(bucket, arguments.get(0));
+			assertEquals("collection/1/file", arguments.get(1));
+			when(mock.refresh(true)).thenReturn("url");
+		};
+		return mockConstruction(Fao.class, initializer);
+	}
+
+	private void mockFaoFileFieldNames() {
+		when(handle.getContentType("file")).thenReturn("application/octet-stream");
+		when(handle.isWeb("file")).thenReturn(true);
+		mockFileFieldNames(List.of("file"));
+	}
+
+	@Test
+	void downloadsFile() {
+	}
+
+	@Test
+	void doesNotDownloadFileIfFieldNameIsNull() {
+	}
+
+	@Test
+	void doesNotDownloadFileIfFieldDoesNotExist() {
+	}
+
+	@Test
+	void doesNotDownloadFileIfKeyIsNull() {
+	}
+
+	@Test
+	void doesNotDownloadFileIfFaoThrows() {
+	}
+
+	@Test
+	void removesFile() {
+	}
+
+	@Test
+	void doesNotRemoveFileIfFieldNameIsNull() {
+	}
+
+	@Test
+	void doesNotRemoveFileIfFieldDoesNotExist() {
+	}
+
+	@Test
+	void doesNotRemoveFileIfKeyIsNull() {
+	}
+
+	@Test
+	void doesNotRemoveFileIfFaoThrows() {
+	}
+
+	@Test
+	void doesNotRemoveFileIfWriteFutureThrows() {
+	}
+
 	private void mockFileFieldNames() {
 		mockFileFieldNames(List.of());
 	}
 
 	private void mockFileFieldNames(List<String> fileFieldNames) {
 		when(handle.getFileFieldNames()).thenReturn(new LinkedHashSet<>(fileFieldNames));
+	}
+
+	@Test
+	void collectionRetrieves() {
+	}
+
+	@Test
+	void collectionRetrievesWithAutoKey() {
+	}
+
+	@Test
+	void collectionDoesNotRetrieveIfWriteFutureThrows() {
+	}
+
+	@Test
+	void collectionUpdates() {
+	}
+
+	@Test
+	void collectionDoesNotUpdateIfInstanceIsNull() {
+	}
+
+	@Test
+	void collectionDoesNotUpdateIfWriteFutureThrows() {
+	}
+
+	@Test
+	void collectionDeletes() {
+	}
+
+	@Test
+	void collectionDoesNotDeleteIfFaoThrows() {
+	}
+
+	@Test
+	void collectionDoesNotDeleteIfWriteFutureThrows() {
+	}
+
+	@Test
+	void selectionRetrieves() {
+	}
+
+	@Test
+	void selectionRetrievesWithAutoKey() {
+	}
+
+	@Test
+	void selectionDoesNotRetrieveIfWriteFutureThrows() {
+	}
+
+	@Test
+	void selectionUpdates() {
+	}
+
+	@Test
+	void selectionDoesNotUpdateIfLengthsAreDifferent() {
+	}
+
+	@Test
+	void selectionDoesNotUpdateIfWriteFutureThrows() {
+	}
+
+	@Test
+	void selectionDeletes() {
+	}
+
+	@Test
+	void selectionDoesNotDeleteIfWriteFutureThrows() {
 	}
 
 	private void mockWriteFutureReturn() {
@@ -757,28 +1067,6 @@ class DaoTest {
 			when(writeFuture.get()).thenThrow(exception);
 		});
 		return cause;
-	}
-
-	private void mockBatchWriteFutureReturn() {
-		List<WriteResult> results = List.of();
-		assertDoesNotThrow(() -> {
-			when(batchWriteFuture.get()).thenReturn(results);
-		});
-	}
-
-	private Throwable mockBatchWriteFutureThrow() {
-		Throwable cause = new Throwable();
-		ExecutionException exception = new ExecutionException(cause);
-		assertDoesNotThrow(() -> {
-			when(batchWriteFuture.get()).thenThrow(exception);
-		});
-		return cause;
-	}
-
-	private Entity newEntity(Object key, int value) {
-		Entity instance = new Entity(value);
-		when(handle.getKey(instance)).thenReturn(key);
-		return instance;
 	}
 
 	@Test

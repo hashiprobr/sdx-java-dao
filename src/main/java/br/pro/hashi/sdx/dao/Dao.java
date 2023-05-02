@@ -744,8 +744,7 @@ public final class Dao<E> {
 	/**
 	 * Base class for queries.
 	 *
-	 * @param <F> the subtype
-	 * @hidden
+	 * @param <F> the subclass
 	 */
 	public abstract sealed class Filter<F extends Filter<F>> permits Collection, Selection {
 		final Query query;
