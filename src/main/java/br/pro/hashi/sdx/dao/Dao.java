@@ -45,7 +45,7 @@ public final class Dao<E> {
 	 * @throws IllegalStateException if no client exists
 	 */
 	public static <E> Dao<E> of(Class<E> type) {
-		return ClientFactory.getInstance().getDefault().get(type);
+		return ClientFactory.getInstance().getFirst().get(type);
 	}
 
 	/**
@@ -240,6 +240,76 @@ public final class Dao<E> {
 
 	/**
 	 * <p>
+	 * Updates the specified entity instance.
+	 * </p>
+	 * <p>
+	 * {@link File} fields are ignored and the {@link Key} field is used
+	 * </p>
+	 * 
+	 * @param instance the instance
+	 */
+	public void update(E instance) {
+		check(instance);
+		doUpdate(handle.getKey(instance), handle.toData(instance, false, true));
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param key    the key
+	 * @param values the values
+	 */
+	public void update(Object key, Map<String, Object> values) {
+		check(values);
+		doUpdate(key, handle.toData(values));
+	}
+
+	private void doUpdate(Object key, Map<String, Object> data) {
+		run(getDocument(key).update(data));
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param instances the instances
+	 */
+	public void update(List<E> instances) {
+		check(instances);
+		runBatch((batch) -> {
+			for (E instance : instances) {
+				check(instance);
+				doUpdate(batch, handle.getKey(instance), handle.toData(instance, false, true));
+			}
+		});
+	}
+
+	/**
+	 * Stub.
+	 * 
+	 * @param valuesMap the map
+	 */
+	public void update(Map<Object, Map<String, Object>> valuesMap) {
+		if (valuesMap == null) {
+			throw new NullPointerException("Values map cannot be null");
+		}
+		if (valuesMap.isEmpty()) {
+			throw new IllegalArgumentException("Values map cannot be empty");
+		}
+		runBatch((batch) -> {
+			for (Object key : valuesMap.keySet()) {
+				Map<String, Object> values = valuesMap.get(key);
+				check(values);
+				doUpdate(batch, key, handle.toData(values));
+			}
+		});
+	}
+
+	private void doUpdate(WriteBatch batch, Object key, Map<String, Object> data) {
+		batch.update(getDocument(key), data);
+	}
+
+	/**
+	 * <p>
 	 * Uploads the content of the specified {@link File} field of the specified
 	 * entity and updates the field with the file link.
 	 * </p>
@@ -250,7 +320,7 @@ public final class Dao<E> {
 	 * <p>
 	 * A successful operation is guaranteed to be atomic, but a
 	 * {@link DataException} can leave the entity in an inconsistent state that must
-	 * be fixed {@link #refreshFile(Object, String)}.
+	 * be fixed with {@link #refreshFile(Object, String)}.
 	 * </p>
 	 * 
 	 * @param key       the entity key
@@ -350,7 +420,7 @@ public final class Dao<E> {
 	 * <p>
 	 * A successful operation is guaranteed to be atomic, but a
 	 * {@link DataException} can leave the entity in an inconsistent state that must
-	 * be fixed {@link #refreshFile(Object, String)}.
+	 * be fixed with {@link #refreshFile(Object, String)}.
 	 * </p>
 	 * 
 	 * @param key       the entity key
@@ -411,71 +481,6 @@ public final class Dao<E> {
 			throw new DataException(exception);
 		}
 		return result;
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param instance stub
-	 */
-	public void update(E instance) {
-		check(instance);
-		doUpdate(handle.getKey(instance), handle.toData(instance, false, true));
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key    stub
-	 * @param values stub
-	 */
-	public void update(Object key, Map<String, Object> values) {
-		check(values);
-		doUpdate(key, handle.toData(values));
-	}
-
-	private void doUpdate(Object key, Map<String, Object> data) {
-		run(getDocument(key).update(data));
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param instances stub
-	 */
-	public void update(List<E> instances) {
-		check(instances);
-		runBatch((batch) -> {
-			for (E instance : instances) {
-				check(instance);
-				doUpdate(batch, handle.getKey(instance), handle.toData(instance, false, true));
-			}
-		});
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param valuesMap stub
-	 */
-	public void update(Map<Object, Map<String, Object>> valuesMap) {
-		if (valuesMap == null) {
-			throw new NullPointerException("Values map cannot be null");
-		}
-		if (valuesMap.isEmpty()) {
-			throw new IllegalArgumentException("Values map cannot be empty");
-		}
-		runBatch((batch) -> {
-			for (Object key : valuesMap.keySet()) {
-				Map<String, Object> values = valuesMap.get(key);
-				check(values);
-				doUpdate(batch, key, handle.toData(values));
-			}
-		});
-	}
-
-	private void doUpdate(WriteBatch batch, Object key, Map<String, Object> data) {
-		batch.update(getDocument(key), data);
 	}
 
 	/**

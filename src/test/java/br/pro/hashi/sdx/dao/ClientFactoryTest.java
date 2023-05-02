@@ -63,7 +63,7 @@ class ClientFactoryTest {
 	}
 
 	@Test
-	void gets() {
+	void getsFirst() {
 		String credentialsPath = getCredentialsPath();
 		List<DaoClient> constructed = factoryConstruction.constructed();
 
@@ -72,7 +72,7 @@ class ClientFactoryTest {
 		DaoClient factory = f.getFromCredentials(credentialsPath);
 		assertEquals(List.of(factory), constructed);
 
-		assertSame(factory, f.getDefault());
+		assertSame(factory, f.getFirst());
 		assertEquals(List.of(factory), constructed);
 	}
 
@@ -112,7 +112,7 @@ class ClientFactoryTest {
 	@Test
 	void doesNotGetFromEmptyCache() {
 		assertThrows(IllegalStateException.class, () -> {
-			f.getDefault();
+			f.getFirst();
 		});
 	}
 

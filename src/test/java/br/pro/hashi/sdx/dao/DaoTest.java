@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -33,6 +34,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.storage.Bucket;
+import com.google.firebase.FirebaseApp;
 
 import br.pro.hashi.sdx.dao.Dao.Construction;
 import br.pro.hashi.sdx.dao.DaoClient.Connection;
@@ -42,11 +44,11 @@ import br.pro.hashi.sdx.dao.reflection.Handle;
 
 class DaoTest {
 	private List<String> keyStrings;
-	private ApiFuture<WriteResult> future;
-	private ApiFuture<DocumentSnapshot> snapshotFuture;
+	private ApiFuture<DocumentSnapshot> readFuture;
+	private ApiFuture<WriteResult> writeFuture;
 	private DocumentReference document;
 	private CollectionReference collection;
-	private ApiFuture<List<WriteResult>> batchFuture;
+	private ApiFuture<List<WriteResult>> batchWriteFuture;
 	private WriteBatch batch;
 	private Firestore firestore;
 	private Bucket bucket;
@@ -62,23 +64,24 @@ class DaoTest {
 		keyStrings = new ArrayList<>();
 		keyStrings.add("0");
 		keyStrings.add("1");
-		future = mock(ApiFuture.class);
-		snapshotFuture = mock(ApiFuture.class);
+		readFuture = mock(ApiFuture.class);
+		writeFuture = mock(ApiFuture.class);
 		document = mock(DocumentReference.class);
 		when(document.getId()).thenAnswer((invocation) -> keyStrings.remove(0));
-		when(document.create(any(Map.class))).thenReturn(future);
-		when(document.get()).thenReturn(snapshotFuture);
+		when(document.get()).thenReturn(readFuture);
+		when(document.create(any(Map.class))).thenReturn(writeFuture);
 		collection = mock(CollectionReference.class);
 		when(collection.document()).thenReturn(document);
 		when(collection.document(any(String.class))).thenReturn(document);
-		batchFuture = mock(ApiFuture.class);
+		batchWriteFuture = mock(ApiFuture.class);
 		batch = mock(WriteBatch.class);
-		when(batch.commit()).thenReturn(batchFuture);
+		when(batch.create(eq(document), any(Map.class))).thenReturn(batch);
+		when(batch.commit()).thenReturn(batchWriteFuture);
 		firestore = mock(Firestore.class);
 		when(firestore.collection("collection")).thenReturn(collection);
 		when(firestore.batch()).thenReturn(batch);
 		bucket = mock(Bucket.class);
-		connection = new Connection(null, firestore, bucket);
+		connection = new Connection(mock(FirebaseApp.class), firestore, bucket);
 		client = mock(DaoClient.class);
 		when(client.getFirestore()).thenReturn(firestore);
 		when(client.getBucket()).thenReturn(bucket);
@@ -113,10 +116,10 @@ class DaoTest {
 	}
 
 	@Test
-	void createsDefault() {
+	void createsFirst() {
 		when(client.get(Entity.class)).thenReturn(d);
 		ClientFactory clientFactory = mock(ClientFactory.class);
-		when(clientFactory.getDefault()).thenReturn(client);
+		when(clientFactory.getFirst()).thenReturn(client);
 		try (MockedStatic<ClientFactory> clientFactoryStatic = mockStatic(ClientFactory.class)) {
 			clientFactoryStatic.when(() -> ClientFactory.getInstance()).thenReturn(clientFactory);
 			assertSame(d, Dao.of(Entity.class));
@@ -138,16 +141,16 @@ class DaoTest {
 	void creates() {
 		mockAutoKey();
 		mockFileFieldNames();
-		mockBatchFutureReturn();
-		Entity instance0 = newEntity(false, 0);
-		Entity instance1 = newEntity(true, 1);
-		List<Entity> instances = List.of(instance0, instance1);
+		mockBatchWriteFutureReturn();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(true, 1));
 		assertEquals(List.of("false", "true"), d.create(instances));
+		verify(collection).document("false");
+		verify(collection).document("true");
 		verify(batch).create(document, Map.of("key", false, "value", 0, "file", ""));
 		verify(batch).create(document, Map.of("key", true, "value", 1, "file", ""));
 		verify(batch).commit();
 		assertDoesNotThrow(() -> {
-			verify(batchFuture).get();
+			verify(batchWriteFuture).get();
 		});
 	}
 
@@ -155,16 +158,14 @@ class DaoTest {
 	void createsWithAutoKey() {
 		mockAutoKey(true);
 		mockFileFieldNames();
-		mockBatchFutureReturn();
-		Entity instance0 = newEntity(null, 0);
-		Entity instance1 = newEntity(null, 1);
-		List<Entity> instances = List.of(instance0, instance1);
+		mockBatchWriteFutureReturn();
+		List<Entity> instances = List.of(newEntity(null, 0), newEntity(null, 1));
 		assertEquals(List.of("0", "1"), d.create(instances));
 		verify(batch).create(document, Map.of("value", 0, "file", ""));
 		verify(batch).create(document, Map.of("value", 1, "file", ""));
 		verify(batch).commit();
 		assertDoesNotThrow(() -> {
-			verify(batchFuture).get();
+			verify(batchWriteFuture).get();
 		});
 	}
 
@@ -172,15 +173,15 @@ class DaoTest {
 	void createsWithFileField() {
 		mockAutoKey();
 		mockFileFieldNames(Set.of("file"));
-		mockFutureReturn();
-		Entity instance0 = newEntity(false, 0);
-		Entity instance1 = newEntity(true, 1);
-		List<Entity> instances = List.of(instance0, instance1);
+		mockWriteFutureReturn();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(true, 1));
 		assertEquals(List.of("false", "true"), d.create(instances));
+		verify(collection).document("false");
+		verify(collection).document("true");
 		verify(document).create(Map.of("key", false, "value", 0, "file", ""));
 		verify(document).create(Map.of("key", true, "value", 1, "file", ""));
 		assertDoesNotThrow(() -> {
-			verify(future, times(2)).get();
+			verify(writeFuture, times(2)).get();
 		});
 	}
 
@@ -188,15 +189,13 @@ class DaoTest {
 	void createsWithAutoKeyAndFileField() {
 		mockAutoKey(true);
 		mockFileFieldNames(Set.of("file"));
-		mockFutureReturn();
-		Entity instance0 = newEntity(null, 0);
-		Entity instance1 = newEntity(null, 1);
-		List<Entity> instances = List.of(instance0, instance1);
+		mockWriteFutureReturn();
+		List<Entity> instances = List.of(newEntity(null, 0), newEntity(null, 1));
 		assertEquals(List.of("0", "1"), d.create(instances));
 		verify(document).create(Map.of("value", 0, "file", ""));
 		verify(document).create(Map.of("value", 1, "file", ""));
 		assertDoesNotThrow(() -> {
-			verify(future, times(2)).get();
+			verify(writeFuture, times(2)).get();
 		});
 	}
 
@@ -231,6 +230,26 @@ class DaoTest {
 	}
 
 	@Test
+	void doesNotCreateIfFirstKeyIsNull() {
+		mockAutoKey();
+		mockFileFieldNames();
+		List<Entity> instances = List.of(newEntity(null, 0), newEntity(true, 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.create(instances);
+		});
+	}
+
+	@Test
+	void doesNotCreateIfSecondKeyIsNull() {
+		mockAutoKey();
+		mockFileFieldNames();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(null, 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.create(instances);
+		});
+	}
+
+	@Test
 	void doesNotCreateWithAutoKeyIfKeyIsNotNull() {
 		mockAutoKey(true);
 		Entity instance = newEntity(false, 0);
@@ -240,13 +259,31 @@ class DaoTest {
 	}
 
 	@Test
-	void doesNotCreateIfBatchFutureThrows() {
+	void doesNotCreateWithAutoKeyIfFirstKeyIsNotNull() {
+		mockAutoKey(true);
+		mockFileFieldNames();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(null, 1));
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.create(instances);
+		});
+	}
+
+	@Test
+	void doesNotCreateWithAutoKeyIfSecondKeyIsNotNull() {
+		mockAutoKey(true);
+		mockFileFieldNames();
+		List<Entity> instances = List.of(newEntity(null, 0), newEntity(true, 1));
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.create(instances);
+		});
+	}
+
+	@Test
+	void doesNotCreateIfBatchWriteFutureThrows() {
 		mockAutoKey();
 		mockFileFieldNames();
-		Throwable cause = mockBatchFutureThrow();
-		Entity instance0 = newEntity(false, 0);
-		Entity instance1 = newEntity(true, 1);
-		List<Entity> instances = List.of(instance0, instance1);
+		Throwable cause = mockBatchWriteFutureThrow();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(true, 1));
 		Exception exception = assertThrows(DataException.class, () -> {
 			d.create(instances);
 		});
@@ -254,13 +291,11 @@ class DaoTest {
 	}
 
 	@Test
-	void doesNotCreateWithFileFieldIfFutureThrows() {
+	void doesNotCreateWithFileFieldIfWriteFutureThrows() {
 		mockAutoKey();
 		mockFileFieldNames(Set.of("file"));
-		Throwable cause = mockFutureThrow();
-		Entity instance0 = newEntity(false, 0);
-		Entity instance1 = newEntity(true, 1);
-		List<Entity> instances = List.of(instance0, instance1);
+		Throwable cause = mockWriteFutureThrow();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(true, 1));
 		Exception exception = assertThrows(DataException.class, () -> {
 			d.create(instances);
 		});
@@ -278,18 +313,19 @@ class DaoTest {
 	@Test
 	void retrieves() {
 		mockAutoKey();
-		mockSnapshotFutureReturn(1);
-		Entity instance = d.retrieve(false);
+		mockReadFutureReturn(1);
+		Entity instance = d.retrieve(true);
 		assertEquals(1, instance.getValue());
+		verify(handle, times(0)).setAutoKey(any(), any());
 	}
 
 	@Test
 	void retrievesWithAutoKey() {
 		mockAutoKey(true);
-		mockSnapshotFutureReturn(1);
-		Entity instance = d.retrieve(false);
+		mockReadFutureReturn(1);
+		Entity instance = d.retrieve(true);
 		assertEquals(1, instance.getValue());
-		verify(handle).setAutoKey(instance, "false");
+		verify(handle).setAutoKey(instance, "true");
 	}
 
 	@Test
@@ -300,28 +336,28 @@ class DaoTest {
 	}
 
 	@Test
-	void doesNotRetrieveIfSnapshotFutureThrows() {
+	void doesNotRetrieveIfReadFutureThrows() {
 		mockAutoKey();
-		Throwable cause = mockSnapshotFutureThrow();
+		Throwable cause = mockReadFutureThrow();
 		Exception exception = assertThrows(DataException.class, () -> {
 			d.retrieve(false);
 		});
 		assertSame(cause, exception.getCause());
 	}
 
-	private void mockSnapshotFutureReturn(int value) {
+	private void mockReadFutureReturn(int value) {
 		DocumentSnapshot snapshot = mock(DocumentSnapshot.class);
 		when(snapshot.getData()).thenReturn(Map.of("value", value));
 		assertDoesNotThrow(() -> {
-			when(snapshotFuture.get()).thenReturn(snapshot);
+			when(readFuture.get()).thenReturn(snapshot);
 		});
 	}
 
-	private Throwable mockSnapshotFutureThrow() {
+	private Throwable mockReadFutureThrow() {
 		Throwable cause = new Throwable();
 		ExecutionException exception = new ExecutionException(cause);
 		assertDoesNotThrow(() -> {
-			when(snapshotFuture.get()).thenThrow(exception);
+			when(readFuture.get()).thenThrow(exception);
 		});
 		return cause;
 	}
@@ -334,34 +370,34 @@ class DaoTest {
 		when(handle.hasAutoKey()).thenReturn(autoKey);
 	}
 
-	private void mockFutureReturn() {
+	private void mockWriteFutureReturn() {
 		WriteResult result = mock(WriteResult.class);
 		assertDoesNotThrow(() -> {
-			when(future.get()).thenReturn(result);
+			when(writeFuture.get()).thenReturn(result);
 		});
 	}
 
-	private Throwable mockFutureThrow() {
+	private Throwable mockWriteFutureThrow() {
 		Throwable cause = new Throwable();
 		ExecutionException exception = new ExecutionException(cause);
 		assertDoesNotThrow(() -> {
-			when(future.get()).thenThrow(exception);
+			when(writeFuture.get()).thenThrow(exception);
 		});
 		return cause;
 	}
 
-	private void mockBatchFutureReturn() {
+	private void mockBatchWriteFutureReturn() {
 		List<WriteResult> results = List.of();
 		assertDoesNotThrow(() -> {
-			when(batchFuture.get()).thenReturn(results);
+			when(batchWriteFuture.get()).thenReturn(results);
 		});
 	}
 
-	private Throwable mockBatchFutureThrow() {
+	private Throwable mockBatchWriteFutureThrow() {
 		Throwable cause = new Throwable();
 		ExecutionException exception = new ExecutionException(cause);
 		assertDoesNotThrow(() -> {
-			when(batchFuture.get()).thenThrow(exception);
+			when(batchWriteFuture.get()).thenThrow(exception);
 		});
 		return cause;
 	}
