@@ -1118,7 +1118,7 @@ class DaoTest {
 	}
 
 	@Test
-	void collectionDoesNotUpdateIfWriteFutureThrows() {
+	void collectionDoesNotUpdateIfBatchWriteFutureThrows() {
 		Dao<Entity>.Collection c = d.collect();
 	}
 
@@ -1133,7 +1133,7 @@ class DaoTest {
 	}
 
 	@Test
-	void collectionDoesNotDeleteIfWriteFutureThrows() {
+	void collectionDoesNotDeleteIfBatchWriteFutureThrows() {
 		Dao<Entity>.Collection c = d.collect();
 	}
 
@@ -1185,7 +1185,7 @@ class DaoTest {
 	}
 
 	@Test
-	void selectionDoesNotUpdateIfWriteFutureThrows() {
+	void selectionDoesNotUpdateIfBatchWriteFutureThrows() {
 		Dao<Entity>.Selection s = d.select();
 	}
 
@@ -1195,7 +1195,7 @@ class DaoTest {
 	}
 
 	@Test
-	void selectionDoesNotDeleteIfWriteFutureThrows() {
+	void selectionDoesNotDeleteIfBatchWriteFutureThrows() {
 		Dao<Entity>.Selection s = d.select();
 	}
 

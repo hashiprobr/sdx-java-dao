@@ -368,11 +368,7 @@ public final class Dao<E> {
 	public void delete(Object key) {
 		String keyString = toString(key);
 		Connection connection = client.getConnection();
-		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
-			fao.remove();
-			DocumentReference document = getDocument(connection.firestore(), keyString);
-			sync(document.delete());
-		}
+		delete(connection.firestore(), connection.bucket(), keyString);
 	}
 
 	private List<String> getFileNames(String keyString) {
@@ -547,15 +543,18 @@ public final class Dao<E> {
 	 * @return the collection
 	 */
 	public Collection collect() {
-		return new Collection();
+		return new Collection(client.getConnection());
 	}
 
 	/**
 	 * Represents a query of entity instances.
 	 */
 	public final class Collection extends Filter<Collection> {
-		private Collection() {
-			super(getCollection());
+		private final Bucket bucket;
+
+		private Collection(Connection connection) {
+			super(getCollection(connection.firestore()));
+			this.bucket = connection.bucket();
 		}
 
 		/**
@@ -619,7 +618,8 @@ public final class Dao<E> {
 			} else {
 				QuerySnapshot snapshots = sync(query.get());
 				for (DocumentSnapshot snapshot : snapshots) {
-					Dao.this.delete(snapshot.getId());
+					String keyString = snapshot.getId();
+					Dao.this.delete(query.getFirestore(), bucket, keyString);
 				}
 			}
 		}
@@ -633,6 +633,14 @@ public final class Dao<E> {
 		}
 	}
 
+	private void delete(Firestore firestore, Bucket bucket, String keyString) {
+		try (Fao fao = new Fao(bucket, getFileNames(keyString))) {
+			fao.remove();
+			DocumentReference document = getDocument(firestore, keyString);
+			sync(document.delete());
+		}
+	}
+
 	/**
 	 * Creates a selection of fields with the specified names.
 	 * 
@@ -640,7 +648,7 @@ public final class Dao<E> {
 	 * @return the selection
 	 */
 	public Selection select(String... fieldNames) {
-		return new Selection(fieldNames);
+		return new Selection(client.getFirestore(), fieldNames);
 	}
 
 	/**
@@ -649,8 +657,8 @@ public final class Dao<E> {
 	public final class Selection extends Filter<Selection> {
 		private final String[] fieldNames;
 
-		private Selection(String[] fieldNames) {
-			super(getCollection().select(fieldNames));
+		private Selection(Firestore firestore, String[] fieldNames) {
+			super(getCollection(firestore).select(fieldNames));
 			this.fieldNames = fieldNames;
 		}
 
@@ -731,10 +739,6 @@ public final class Dao<E> {
 		Selection self() {
 			return this;
 		}
-	}
-
-	private CollectionReference getCollection() {
-		return getCollection(client.getFirestore());
 	}
 
 	private CollectionReference getCollection(Firestore firestore) {
