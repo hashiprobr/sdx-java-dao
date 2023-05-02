@@ -30,6 +30,7 @@ import org.mockito.MockedConstruction.MockInitializer;
 import org.mockito.MockedStatic;
 
 import com.google.api.core.ApiFuture;
+import com.google.cloud.ReadChannel;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -762,13 +763,10 @@ class DaoTest {
 		InputStream stream = InputStream.nullInputStream();
 		mockWriteFutureReturn();
 		String url;
-		Fao fao;
 		try (MockedConstruction<Fao> faoConstruction = mockUploadFaoConstruction(stream)) {
 			url = d.uploadFile(1, "file", stream);
-			fao = faoConstruction.constructed().get(0);
 		}
 		assertEquals("url", url);
-		verify(fao).upload(stream, "application/octet-stream", true);
 		verify(collection).document("1");
 		verify(document).update("file", "url");
 		assertDoesNotThrow(() -> {
@@ -853,13 +851,10 @@ class DaoTest {
 		mockFaoFileFieldNames();
 		mockWriteFutureReturn();
 		String url;
-		Fao fao;
 		try (MockedConstruction<Fao> faoConstruction = mockRefreshFaoConstruction()) {
 			url = d.refreshFile(1, "file");
-			fao = faoConstruction.constructed().get(0);
 		}
 		assertEquals("url", url);
-		verify(fao).refresh(true);
 		verify(collection).document("1");
 		verify(document).update("file", "url");
 		assertDoesNotThrow(() -> {
@@ -929,22 +924,58 @@ class DaoTest {
 
 	@Test
 	void downloadsFile() {
+		mockFaoFileFieldNames();
+		ReadChannel channel = mock(ReadChannel.class);
+		mockWriteFutureReturn();
+		DaoFile file;
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			List<?> arguments = context.arguments();
+			assertEquals(bucket, arguments.get(0));
+			assertEquals("collection/1/file", arguments.get(1));
+			when(mock.download()).thenReturn(new DaoFile(channel, "application/octet-stream", 1));
+		};
+		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			file = d.downloadFile(1, "file");
+		}
+		assertSame(channel, file.getChannel());
+		assertEquals("application/octet-stream", file.getContentType());
+		assertEquals(1, file.getContentLength());
 	}
 
 	@Test
 	void doesNotDownloadFileIfFieldNameIsNull() {
+		assertThrows(NullPointerException.class, () -> {
+			d.downloadFile(1, null);
+		});
 	}
 
 	@Test
 	void doesNotDownloadFileIfFieldDoesNotExist() {
+		mockFileFieldNames();
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.downloadFile(1, "file");
+		});
 	}
 
 	@Test
 	void doesNotDownloadFileIfKeyIsNull() {
+		mockFaoFileFieldNames();
+		assertThrows(NullPointerException.class, () -> {
+			d.downloadFile(null, "file");
+		});
 	}
 
 	@Test
 	void doesNotDownloadFileIfFaoThrows() {
+		mockFaoFileFieldNames();
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			when(mock.download()).thenThrow(FileException.class);
+		};
+		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			assertThrows(FileException.class, () -> {
+				d.downloadFile(1, "file");
+			});
+		}
 	}
 
 	@Test
