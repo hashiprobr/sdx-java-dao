@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -120,7 +119,7 @@ public final class Dao<E> {
 			document = collection.document(keyString);
 		}
 		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
-			run(document.create(handle.toData(instance, true, !handle.hasAutoKey())));
+			sync(document.create(handle.toData(instance, true, !handle.hasAutoKey())));
 		}
 		return keyString;
 	}
@@ -141,9 +140,10 @@ public final class Dao<E> {
 	 * 
 	 * @param instances the instances
 	 * @return the keys
-	 * @throws NullPointerException     if an instance is null or if the key field
-	 *                                  is not an auto field but a value is null
-	 * @throws IllegalArgumentException if there are no instances or if the key
+	 * @throws NullPointerException     if the instance list is null, if an instance
+	 *                                  is null or if the key field is not an auto
+	 *                                  field but a value is null
+	 * @throws IllegalArgumentException if the instance list is empty or if the key
 	 *                                  field is an auto field but a value is not
 	 *                                  null
 	 * @throws DataException            if a Firestore operation could not be
@@ -183,13 +183,6 @@ public final class Dao<E> {
 		return toString(handle.getKey(instance));
 	}
 
-	private List<String> getFileNames(String keyString) {
-		return handle.getFileFieldNames()
-				.stream()
-				.map((fieldName) -> getFileName(keyString, fieldName))
-				.toList();
-	}
-
 	private DocumentReference createDocument(CollectionReference collection, E instance) {
 		if (handle.getKey(instance) != null) {
 			throw new IllegalArgumentException("Key must be null");
@@ -209,7 +202,7 @@ public final class Dao<E> {
 	public E retrieve(Object key) {
 		String keyString = toString(key);
 		DocumentReference document = getDocument(client.getFirestore(), keyString);
-		DocumentSnapshot snapshot = run(document.get());
+		DocumentSnapshot snapshot = sync(document.get());
 		E instance = handle.toInstance(snapshot.getData());
 		if (handle.hasAutoKey()) {
 			handle.setAutoKey(instance, keyString);
@@ -227,6 +220,9 @@ public final class Dao<E> {
 	 * </p>
 	 * 
 	 * @param instance the instance
+	 * @throws NullPointerException if the instance is null or the key value is null
+	 * @throws DataException        if the Firestore operation could not be
+	 *                              performed
 	 */
 	public void update(E instance) {
 		check(instance);
@@ -244,6 +240,11 @@ public final class Dao<E> {
 	 * 
 	 * @param key    the key
 	 * @param values the values
+	 * @throws NullPointerException     if the values map is null or the key value
+	 *                                  is null
+	 * @throws IllegalArgumentException if the values map is empty
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public void update(Object key, Map<String, Object> values) {
 		check(values);
@@ -252,7 +253,7 @@ public final class Dao<E> {
 
 	private void updateFromData(Object key, Map<String, Object> data) {
 		DocumentReference document = getDocument(key);
-		run(document.update(data));
+		sync(document.update(data));
 	}
 
 	/**
@@ -265,6 +266,11 @@ public final class Dao<E> {
 	 * </p>
 	 * 
 	 * @param instances the instances
+	 * @throws NullPointerException     if the instance list is null, an instance is
+	 *                                  null, or a key value is null
+	 * @throws IllegalArgumentException if the instance list is empty
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public void update(List<E> instances) {
 		check(instances);
@@ -286,6 +292,11 @@ public final class Dao<E> {
 	 * </p>
 	 * 
 	 * @param map the map
+	 * @throws NullPointerException     if the map is null, a values map is null, or
+	 *                                  a key value is null
+	 * @throws IllegalArgumentException if the map is empty or a values map is empty
+	 * @throws DataException            if the Firestore operation could not be
+	 *                                  performed
 	 */
 	public void update(Map<Object, Map<String, Object>> map) {
 		if (map == null) {
@@ -343,7 +354,42 @@ public final class Dao<E> {
 	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
 		WriteBatch batch = firestore.batch();
 		consumer.accept(batch);
-		run(batch.commit());
+		sync(batch.commit());
+	}
+
+	/**
+	 * <p>
+	 * Deletes the entity instance identified by the specified key.
+	 * </p>
+	 * <p>
+	 * If {@code E} has {@link File} fields, the files are deleted.
+	 * </p>
+	 * <p>
+	 * A successful operation is guaranteed to be atomic, but a
+	 * {@link DataException} can leave the entity in an inconsistent state.
+	 * </p>
+	 * 
+	 * @param key the key
+	 * @throws NullPointerException if the key is null
+	 * @throws FileException        if the Storage operation could not be performed
+	 * @throws DataException        if the Firestore operation could not be
+	 *                              performed
+	 */
+	public void delete(Object key) {
+		String keyString = toString(key);
+		Connection connection = client.getConnection();
+		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
+			fao.remove();
+			DocumentReference document = getDocument(connection.firestore(), keyString);
+			sync(document.delete());
+		}
+	}
+
+	private List<String> getFileNames(String keyString) {
+		return handle.getFileFieldNames()
+				.stream()
+				.map((fieldName) -> getFileName(keyString, fieldName))
+				.toList();
 	}
 
 	/**
@@ -384,7 +430,7 @@ public final class Dao<E> {
 		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			url = fao.upload(stream, handle.getContentType(fieldName), handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection.firestore(), keyString);
-			run(document.update(fieldName, url));
+			sync(document.update(fieldName, url));
 		}
 		return url;
 	}
@@ -422,7 +468,7 @@ public final class Dao<E> {
 		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			url = fao.refresh(handle.isWeb(fieldName));
 			DocumentReference document = getDocument(connection.firestore(), keyString);
-			run(document.update(fieldName, url));
+			sync(document.update(fieldName, url));
 		}
 		return url;
 	}
@@ -477,7 +523,7 @@ public final class Dao<E> {
 		try (Fao fao = new Fao(connection.bucket(), getFileName(keyString, fieldName))) {
 			fao.remove();
 			DocumentReference document = getDocument(connection.firestore(), keyString);
-			run(document.update(fieldName, null));
+			sync(document.update(fieldName, null));
 		}
 	}
 
@@ -509,7 +555,7 @@ public final class Dao<E> {
 		return firestore.collection(handle.getCollectionName());
 	}
 
-	private <V> V run(ApiFuture<V> future) {
+	private <V> V sync(ApiFuture<V> future) {
 		V result;
 		try {
 			result = future.get();
@@ -519,38 +565,6 @@ public final class Dao<E> {
 			throw new DataException(exception);
 		}
 		return result;
-	}
-
-	/**
-	 * Stub.
-	 * 
-	 * @param key stub
-	 */
-	public void delete(Object key) {
-		Set<String> fileFieldNames = handle.getFileFieldNames();
-		Connection connection = client.getConnection();
-		if (fileFieldNames.isEmpty()) {
-			delete(connection, toString(key));
-		} else {
-			delete(connection, key, fileFieldNames);
-		}
-	}
-
-	private void delete(Connection connection, Object key, Set<String> fieldNames) {
-		String keyString = toString(key);
-		List<String> fileNames = fieldNames
-				.stream()
-				.map((fieldName) -> getFileName(keyString, fieldName))
-				.toList();
-		try (Fao fao = new Fao(connection.bucket(), fileNames)) {
-			fao.remove();
-			delete(connection, keyString);
-		}
-	}
-
-	private void delete(Connection connection, String keyString) {
-		DocumentReference document = getDocument(connection.firestore(), keyString);
-		run(document.delete());
 	}
 
 	/**
@@ -605,7 +619,7 @@ public final class Dao<E> {
 		 * @return stub
 		 */
 		public List<E> retrieve() {
-			QuerySnapshot snapshot = run(query.get());
+			QuerySnapshot snapshot = sync(query.get());
 			List<E> instances = new ArrayList<>();
 			for (DocumentSnapshot document : snapshot) {
 				E instance = handle.toInstance(document.getData());
@@ -640,7 +654,7 @@ public final class Dao<E> {
 		}
 
 		private void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			QuerySnapshot snapshots = run(query.select(new String[] {}).get());
+			QuerySnapshot snapshots = sync(query.select(new String[] {}).get());
 			super.runBatch(snapshots, consumer);
 		}
 	}
@@ -662,7 +676,7 @@ public final class Dao<E> {
 		 * @return stub
 		 */
 		public List<Map<String, Object>> retrieve() {
-			QuerySnapshot snapshot = run(query.get());
+			QuerySnapshot snapshot = sync(query.get());
 			List<Map<String, Object>> valuesList = new ArrayList<>();
 			for (DocumentSnapshot document : snapshot) {
 				Map<String, Object> values = handle.toValues(document.getData());
@@ -708,7 +722,7 @@ public final class Dao<E> {
 		}
 
 		private void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			QuerySnapshot snapshots = run(query.get());
+			QuerySnapshot snapshots = sync(query.get());
 			super.runBatch(snapshots, consumer);
 		}
 	}

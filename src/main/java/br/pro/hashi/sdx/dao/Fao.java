@@ -153,15 +153,17 @@ class Fao implements AutoCloseable {
 	}
 
 	void remove() {
-		StorageBatch batch = bucket.getStorage().batch();
-		String bucketName = bucket.getName();
-		for (String fileName : fileNames) {
-			batch.delete(bucketName, fileName);
-		}
-		try {
-			batch.submit();
-		} catch (StorageException exception) {
-			throw new FileException(exception);
+		if (!fileNames.isEmpty()) {
+			StorageBatch batch = bucket.getStorage().batch();
+			String bucketName = bucket.getName();
+			for (String fileName : fileNames) {
+				batch.delete(bucketName, fileName);
+			}
+			try {
+				batch.submit();
+			} catch (StorageException exception) {
+				throw new FileException(exception);
+			}
 		}
 	}
 }

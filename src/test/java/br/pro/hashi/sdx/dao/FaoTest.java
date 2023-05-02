@@ -326,6 +326,15 @@ class FaoTest {
 	}
 
 	@Test
+	void removesNoFiles() {
+		f = newFao(List.of());
+		StorageBatch batch = mockBatch();
+		f.remove();
+		verify(batch, times(0)).delete(any(), any());
+		verify(batch, times(0)).submit();
+	}
+
+	@Test
 	void removesTwoFiles() {
 		mockAvailableLock("file0");
 		mockAvailableLock("file1");
