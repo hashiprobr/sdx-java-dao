@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,6 +71,7 @@ class DaoTest {
 		when(document.getId()).thenAnswer((invocation) -> keyStrings.remove(0));
 		when(document.get()).thenReturn(readFuture);
 		when(document.create(any(Map.class))).thenReturn(writeFuture);
+		when(document.update(any(Map.class))).thenReturn(writeFuture);
 		collection = mock(CollectionReference.class);
 		when(collection.document()).thenReturn(document);
 		when(collection.document(any(String.class))).thenReturn(document);
@@ -105,6 +107,10 @@ class DaoTest {
 				data.put("key", handle.getKey(instance));
 			}
 			return data;
+		});
+		when(handle.toData(any(Map.class))).thenAnswer((invocation) -> {
+			Map<String, Object> values = invocation.getArgument(0);
+			return Map.of("value", values.get("value"));
 		});
 		d = Construction.of(client, handle);
 		faoConstruction = mockConstruction(Fao.class);
@@ -223,9 +229,33 @@ class DaoTest {
 	@Test
 	void doesNotCreateIfKeyIsNull() {
 		mockAutoKey();
-		Entity instance = newEntity(null, 0);
+		Entity instance = newEntity(null, 1);
 		assertThrows(NullPointerException.class, () -> {
 			d.create(instance);
+		});
+	}
+
+	@Test
+	void doesNotCreateIfFirstIsNull() {
+		mockAutoKey();
+		mockFileFieldNames();
+		List<Entity> instances = new ArrayList<>();
+		instances.add(null);
+		instances.add(newEntity(true, 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.create(instances);
+		});
+	}
+
+	@Test
+	void doesNotCreateIfSecondIsNull() {
+		mockAutoKey();
+		mockFileFieldNames();
+		List<Entity> instances = new ArrayList<>();
+		instances.add(newEntity(true, 1));
+		instances.add(null);
+		assertThrows(NullPointerException.class, () -> {
+			d.create(instances);
 		});
 	}
 
@@ -252,7 +282,7 @@ class DaoTest {
 	@Test
 	void doesNotCreateWithAutoKeyIfKeyIsNotNull() {
 		mockAutoKey(true);
-		Entity instance = newEntity(false, 0);
+		Entity instance = newEntity(true, 1);
 		assertThrows(IllegalArgumentException.class, () -> {
 			d.create(instance);
 		});
@@ -345,6 +375,14 @@ class DaoTest {
 		assertSame(cause, exception.getCause());
 	}
 
+	private void mockAutoKey() {
+		mockAutoKey(false);
+	}
+
+	private void mockAutoKey(boolean autoKey) {
+		when(handle.hasAutoKey()).thenReturn(autoKey);
+	}
+
 	private void mockReadFutureReturn(int value) {
 		DocumentSnapshot snapshot = mock(DocumentSnapshot.class);
 		when(snapshot.getData()).thenReturn(Map.of("value", value));
@@ -362,12 +400,221 @@ class DaoTest {
 		return cause;
 	}
 
-	private void mockAutoKey() {
-		mockAutoKey(false);
+	@Test
+	void updatesFromInstance() {
+		mockWriteFutureReturn();
+		Entity instance = newEntity(true, 1);
+		d.update(instance);
+		verify(collection).document("true");
+		verify(document).update(Map.of("value", 1));
+		assertDoesNotThrow(() -> {
+			verify(writeFuture).get();
+		});
 	}
 
-	private void mockAutoKey(boolean autoKey) {
-		when(handle.hasAutoKey()).thenReturn(autoKey);
+	@Test
+	void doesNotUpdateFromNullInstance() {
+		assertThrows(NullPointerException.class, () -> {
+			d.update((Entity) null);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromInstanceWithNullKey() {
+		Entity instance = newEntity(null, 1);
+		assertThrows(NullPointerException.class, () -> {
+			d.update(instance);
+		});
+	}
+
+	@Test
+	void updatesFromValues() {
+		mockWriteFutureReturn();
+		Map<String, Object> values = Map.of("value", 1);
+		d.update(true, values);
+		verify(collection).document("true");
+		verify(document).update(Map.of("value", 1));
+		assertDoesNotThrow(() -> {
+			verify(writeFuture).get();
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullValues() {
+		assertThrows(NullPointerException.class, () -> {
+			d.update(true, null);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromEmptyValues() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.update(true, Map.of());
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromValuesWithNullKey() {
+		Map<String, Object> values = Map.of("value", 1);
+		assertThrows(NullPointerException.class, () -> {
+			d.update(null, values);
+		});
+	}
+
+	@Test
+	void updatesFromList() {
+		mockBatchWriteFutureReturn();
+		List<Entity> instances = List.of(newEntity(false, 0), newEntity(true, 1));
+		d.update(instances);
+		verify(collection).document("false");
+		verify(collection).document("true");
+		verify(batch).update(document, Map.of("value", 0));
+		verify(batch).update(document, Map.of("value", 1));
+		assertDoesNotThrow(() -> {
+			verify(batchWriteFuture).get();
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullList() {
+		assertThrows(NullPointerException.class, () -> {
+			d.update((List<Entity>) null);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromEmptyList() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.update(List.of());
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullListFirst() {
+		List<Entity> instances = new ArrayList<>();
+		instances.add(null);
+		instances.add(newEntity(true, 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.update(instances);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullListSecond() {
+		List<Entity> instances = new ArrayList<>();
+		instances.add(newEntity(true, 1));
+		instances.add(null);
+		assertThrows(NullPointerException.class, () -> {
+			d.update(instances);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromListFirstWithNullKey() {
+		List<Entity> instances = new ArrayList<>();
+		instances.add(newEntity(null, 0));
+		instances.add(newEntity(true, 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.update(instances);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromListSecondWithNullKey() {
+		List<Entity> instances = new ArrayList<>();
+		instances.add(newEntity(false, 0));
+		instances.add(newEntity(null, 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.update(instances);
+		});
+	}
+
+	@Test
+	void updatesFromMap() {
+		mockBatchWriteFutureReturn();
+		Map<Object, Map<String, Object>> map = Map.of("false", Map.of("value", 0), "true", Map.of("value", 1));
+		d.update(map);
+		verify(collection).document("false");
+		verify(collection).document("true");
+		verify(batch).update(document, Map.of("value", 0));
+		verify(batch).update(document, Map.of("value", 1));
+		assertDoesNotThrow(() -> {
+			verify(batchWriteFuture).get();
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullMap() {
+		assertThrows(NullPointerException.class, () -> {
+			d.update((Map<Object, Map<String, Object>>) null);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromEmptyMap() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.update(Map.of());
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullMapFirst() {
+		Map<Object, Map<String, Object>> map = new LinkedHashMap<>();
+		map.put("false", null);
+		map.put("true", Map.of("value", 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.update(map);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromNullMapSecond() {
+		Map<Object, Map<String, Object>> map = new LinkedHashMap<>();
+		map.put("false", Map.of("value", 0));
+		map.put("true", null);
+		assertThrows(NullPointerException.class, () -> {
+			d.update(map);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromEmptyMapFirst() {
+		Map<Object, Map<String, Object>> map = new LinkedHashMap<>();
+		map.put("false", Map.of());
+		map.put("true", Map.of("value", 1));
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.update(map);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromEmptyMapSecond() {
+		Map<Object, Map<String, Object>> map = new LinkedHashMap<>();
+		map.put("false", Map.of("value", 0));
+		map.put("true", Map.of());
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.update(map);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromMapFirstWithNullKey() {
+		Map<Object, Map<String, Object>> map = new LinkedHashMap<>();
+		map.put(null, Map.of("value", 0));
+		map.put("true", Map.of("value", 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.update(map);
+		});
+	}
+
+	@Test
+	void doesNotUpdateFromMapSecondWithNullKey() {
+		Map<Object, Map<String, Object>> map = new LinkedHashMap<>();
+		map.put("false", Map.of("value", 0));
+		map.put(null, Map.of("value", 1));
+		assertThrows(NullPointerException.class, () -> {
+			d.update(map);
+		});
 	}
 
 	private void mockWriteFutureReturn() {

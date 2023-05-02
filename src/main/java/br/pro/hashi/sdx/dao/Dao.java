@@ -179,21 +179,6 @@ public final class Dao<E> {
 		return keyStrings;
 	}
 
-	private void check(E instance) {
-		if (instance == null) {
-			throw new NullPointerException("Instance cannot be null");
-		}
-	}
-
-	private void check(List<E> instances) {
-		if (instances == null) {
-			throw new NullPointerException("Instance list cannot be null");
-		}
-		if (instances.isEmpty()) {
-			throw new IllegalArgumentException("Instance list cannot be empty");
-		}
-	}
-
 	private String getKeyString(E instance) {
 		return toString(handle.getKey(instance));
 	}
@@ -212,14 +197,8 @@ public final class Dao<E> {
 		return collection.document();
 	}
 
-	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
-		WriteBatch batch = firestore.batch();
-		consumer.accept(batch);
-		run(batch.commit());
-	}
-
 	/**
-	 * Retrieves the entity instance with the specified key.
+	 * Retrieves the entity instance identified by the specified key.
 	 * 
 	 * @param key the key
 	 * @return the instance
@@ -240,36 +219,50 @@ public final class Dao<E> {
 
 	/**
 	 * <p>
-	 * Updates the specified entity instance.
+	 * Updates all values of the specified entity instance.
 	 * </p>
 	 * <p>
-	 * {@link File} fields are ignored and the {@link Key} field is used
+	 * {@link File} fields are ignored and the {@link Key} field cannot be updated
+	 * because it is used to identify the instance.
 	 * </p>
 	 * 
 	 * @param instance the instance
 	 */
 	public void update(E instance) {
 		check(instance);
-		doUpdate(handle.getKey(instance), handle.toData(instance, false, true));
+		updateFromData(handle.getKey(instance), handle.toData(instance, false, false));
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * Updates the specified values of the entity instance identified by the
+	 * specified key.
+	 * </p>
+	 * <p>
+	 * {@link File} fields and the {@link Key} field cannot be updated.
+	 * </p>
 	 * 
 	 * @param key    the key
 	 * @param values the values
 	 */
 	public void update(Object key, Map<String, Object> values) {
 		check(values);
-		doUpdate(key, handle.toData(values));
+		updateFromData(key, handle.toData(values));
 	}
 
-	private void doUpdate(Object key, Map<String, Object> data) {
-		run(getDocument(key).update(data));
+	private void updateFromData(Object key, Map<String, Object> data) {
+		DocumentReference document = getDocument(key);
+		run(document.update(data));
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * Updates all values of the specified entity instances.
+	 * </p>
+	 * <p>
+	 * {@link File} fields are ignored and the {@link Key} field cannot be updated
+	 * because it is used to identify the instances.
+	 * </p>
 	 * 
 	 * @param instances the instances
 	 */
@@ -278,34 +271,79 @@ public final class Dao<E> {
 		runBatch((batch) -> {
 			for (E instance : instances) {
 				check(instance);
-				doUpdate(batch, handle.getKey(instance), handle.toData(instance, false, true));
+				updateFromData(batch, handle.getKey(instance), handle.toData(instance, false, false));
 			}
 		});
 	}
 
 	/**
-	 * Stub.
+	 * <p>
+	 * For each key-values pair of the specified map, updates the values of the
+	 * entity instance identified by the key.
+	 * </p>
+	 * <p>
+	 * {@link File} fields and the {@link Key} field cannot be updated.
+	 * </p>
 	 * 
-	 * @param valuesMap the map
+	 * @param map the map
 	 */
-	public void update(Map<Object, Map<String, Object>> valuesMap) {
-		if (valuesMap == null) {
-			throw new NullPointerException("Values map cannot be null");
+	public void update(Map<Object, Map<String, Object>> map) {
+		if (map == null) {
+			throw new NullPointerException("Map cannot be null");
 		}
-		if (valuesMap.isEmpty()) {
-			throw new IllegalArgumentException("Values map cannot be empty");
+		if (map.isEmpty()) {
+			throw new IllegalArgumentException("Map cannot be empty");
 		}
 		runBatch((batch) -> {
-			for (Object key : valuesMap.keySet()) {
-				Map<String, Object> values = valuesMap.get(key);
+			for (Object key : map.keySet()) {
+				Map<String, Object> values = map.get(key);
 				check(values);
-				doUpdate(batch, key, handle.toData(values));
+				updateFromData(batch, key, handle.toData(values));
 			}
 		});
 	}
 
-	private void doUpdate(WriteBatch batch, Object key, Map<String, Object> data) {
-		batch.update(getDocument(key), data);
+	private void updateFromData(WriteBatch batch, Object key, Map<String, Object> data) {
+		DocumentReference document = getDocument(key);
+		batch.update(document, data);
+	}
+
+	private void check(E instance) {
+		if (instance == null) {
+			throw new NullPointerException("Instance cannot be null");
+		}
+	}
+
+	private void check(List<E> instances) {
+		if (instances == null) {
+			throw new NullPointerException("Instance list cannot be null");
+		}
+		if (instances.isEmpty()) {
+			throw new IllegalArgumentException("Instance list cannot be empty");
+		}
+	}
+
+	private void check(Map<String, Object> values) {
+		if (values == null) {
+			throw new NullPointerException("Value map cannot be null");
+		}
+		if (values.isEmpty()) {
+			throw new IllegalArgumentException("Value map cannot be empty");
+		}
+	}
+
+	private DocumentReference getDocument(Object key) {
+		return getCollection(client.getFirestore()).document(toString(key));
+	}
+
+	private void runBatch(Consumer<WriteBatch> consumer) {
+		runBatch(client.getFirestore(), consumer);
+	}
+
+	private void runBatch(Firestore firestore, Consumer<WriteBatch> consumer) {
+		WriteBatch batch = firestore.batch();
+		consumer.accept(batch);
+		run(batch.commit());
 	}
 
 	/**
@@ -498,27 +536,6 @@ public final class Dao<E> {
 		}
 	}
 
-	private DocumentReference getDocument(Object key) {
-		return getDocument(toString(key));
-	}
-
-	private DocumentReference getDocument(String keyString) {
-		return getCollection().document(keyString);
-	}
-
-	private CollectionReference getCollection() {
-		return getCollection(client.getFirestore());
-	}
-
-	private void check(Map<String, Object> values) {
-		if (values == null) {
-			throw new NullPointerException("Value map cannot be null");
-		}
-		if (values.isEmpty()) {
-			throw new IllegalArgumentException("Value map cannot be empty");
-		}
-	}
-
 	private void delete(Connection connection, Object key, Set<String> fieldNames) {
 		String keyString = toString(key);
 		List<String> fileNames = fieldNames
@@ -536,17 +553,13 @@ public final class Dao<E> {
 		run(document.delete());
 	}
 
-	private void runBatch(Consumer<WriteBatch> consumer) {
-		runBatch(client.getFirestore(), consumer);
-	}
-
 	/**
 	 * Stub.
 	 * 
 	 * @return stub
 	 */
 	public Collection collect() {
-		return new Collection(getCollection());
+		return new Collection(getCollection(client.getFirestore()));
 	}
 
 	/**
@@ -556,7 +569,7 @@ public final class Dao<E> {
 	 * @return stub
 	 */
 	public Selection select(String... fieldNames) {
-		return new Selection(getCollection().select(fieldNames), fieldNames);
+		return new Selection(getCollection(client.getFirestore()).select(fieldNames), fieldNames);
 	}
 
 	/**
