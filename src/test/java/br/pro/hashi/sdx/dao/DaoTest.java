@@ -927,12 +927,6 @@ class DaoTest {
 		return mockConstruction(Fao.class, initializer);
 	}
 
-	private void mockFaoFileFieldNames() {
-		when(handle.getContentType("file")).thenReturn("application/octet-stream");
-		when(handle.isWeb("file")).thenReturn(true);
-		mockFileFieldNames(List.of("file"));
-	}
-
 	@Test
 	void downloadsFile() {
 	}
@@ -955,26 +949,84 @@ class DaoTest {
 
 	@Test
 	void removesFile() {
+		mockFaoFileFieldNames();
+		mockWriteFutureReturn();
+		Fao fao;
+		try (MockedConstruction<Fao> faoConstruction = mockRemoveFaoConstruction()) {
+			d.removeFile(1, "file");
+			fao = faoConstruction.constructed().get(0);
+		}
+		verify(fao).remove();
+		verify(collection).document("1");
+		verify(document).update("file", null);
+		assertDoesNotThrow(() -> {
+			verify(writeFuture).get();
+		});
 	}
 
 	@Test
 	void doesNotRemoveFileIfFieldNameIsNull() {
+		assertThrows(NullPointerException.class, () -> {
+			d.removeFile(1, null);
+		});
 	}
 
 	@Test
 	void doesNotRemoveFileIfFieldDoesNotExist() {
+		mockFileFieldNames();
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.removeFile(1, "file");
+		});
 	}
 
 	@Test
 	void doesNotRemoveFileIfKeyIsNull() {
+		mockFaoFileFieldNames();
+		assertThrows(NullPointerException.class, () -> {
+			d.removeFile(null, "file");
+		});
 	}
 
 	@Test
 	void doesNotRemoveFileIfFaoThrows() {
+		mockFaoFileFieldNames();
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			doThrow(FileException.class).when(mock).remove();
+		};
+		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			assertThrows(FileException.class, () -> {
+				d.removeFile(1, "file");
+			});
+		}
 	}
 
 	@Test
 	void doesNotRemoveFileIfWriteFutureThrows() {
+		mockFaoFileFieldNames();
+		Throwable cause = mockWriteFutureThrow();
+		Exception exception;
+		try (MockedConstruction<Fao> faoConstruction = mockRemoveFaoConstruction()) {
+			exception = assertThrows(DataException.class, () -> {
+				d.removeFile(1, "file");
+			});
+		}
+		assertSame(cause, exception.getCause());
+	}
+
+	private MockedConstruction<Fao> mockRemoveFaoConstruction() {
+		when(document.update("file", null)).thenReturn(writeFuture);
+		MockInitializer<Fao> initializer = (mock, context) -> {
+			List<?> arguments = context.arguments();
+			assertEquals(bucket, arguments.get(0));
+			assertEquals("collection/1/file", arguments.get(1));
+		};
+		return mockConstruction(Fao.class, initializer);
+	}
+
+	private void mockFaoFileFieldNames() {
+		when(handle.getContentType("file")).thenReturn("application/octet-stream");
+		when(handle.isWeb("file")).thenReturn(true);
+		mockFileFieldNames(List.of("file"));
 	}
 
 	private void mockFileFieldNames() {
