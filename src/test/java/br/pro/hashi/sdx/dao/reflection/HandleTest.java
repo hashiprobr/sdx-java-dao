@@ -1,5 +1,6 @@
 package br.pro.hashi.sdx.dao.reflection;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -20,6 +21,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -142,6 +144,9 @@ class HandleTest {
 		assertFalse(h.isWeb("intValue"));
 		assertTrue(h.isWeb("stringValue"));
 
+		assertFalse(h.hasKey(new String[] { "intValue", "stringValue" }));
+		assertTrue(h.hasKey(new String[] { "booleanValue" }));
+
 		Parent instance;
 
 		instance = h.toInstance(Map.of());
@@ -198,6 +203,9 @@ class HandleTest {
 		assertFalse(data.containsKey("boolean_value"));
 		assertEquals(1, data.get("intValue"));
 		assertFalse(data.containsKey("string_value"));
+
+		String[] aliases = h.toAliases(new String[] { "booleanValue", "intValue", "stringValue" });
+		assertArrayEquals(new String[] { "boolean_value", "intValue", "string_value" }, aliases);
 	}
 
 	@Test
@@ -217,6 +225,9 @@ class HandleTest {
 		assertFalse(h.isWeb("intValue"));
 		assertFalse(h.isWeb("floatValue"));
 		assertFalse(h.isWeb("stringValue"));
+
+		assertFalse(h.hasKey(new String[] { "booleanValue", "intValue", "stringValue" }));
+		assertTrue(h.hasKey(new String[] { "floatValue" }));
 
 		Child instance;
 
@@ -281,6 +292,9 @@ class HandleTest {
 		assertEquals(1, data.get("intValue"));
 		assertFalse(data.containsKey("floatValue"));
 		assertEquals("c", data.get("stringValue"));
+
+		String[] aliases = h.toAliases(new String[] { "booleanValue", "intValue", "floatValue", "stringValue" });
+		assertArrayEquals(new String[] { "booleanValue", "intValue", "floatValue", "stringValue" }, aliases);
 	}
 
 	@Test
@@ -300,6 +314,9 @@ class HandleTest {
 		assertFalse(h.isWeb("intValue"));
 		assertFalse(h.isWeb("floatValue"));
 		assertTrue(h.isWeb("stringValue"));
+
+		assertFalse(h.hasKey(new String[] { "intValue", "floatValue", "stringValue" }));
+		assertTrue(h.hasKey(new String[] { "booleanValue" }));
 
 		GrandChild instance;
 
@@ -367,6 +384,9 @@ class HandleTest {
 		assertEquals(1, data.get("intValue"));
 		assertEquals(3, (float) data.get("floatValue"), DELTA);
 		assertFalse(data.containsKey("string_value"));
+
+		String[] aliases = h.toAliases(new String[] { "booleanValue", "intValue", "floatValue", "stringValue" });
+		assertArrayEquals(new String[] { "boolean_value", "intValue", "floatValue", "string_value" }, aliases);
 	}
 
 	@Test
@@ -392,6 +412,9 @@ class HandleTest {
 		assertFalse(h.isWeb("sheet"));
 		assertFalse(h.isWeb("booleanWrapper"));
 		assertFalse(h.isWeb("byteWrapper"));
+
+		assertFalse(h.hasKey(new String[] { "value", "email", "address", "sheet", "booleanWrapper", "byteWrapper" }));
+		assertTrue(h.hasKey(new String[] { "key" }));
 
 		Email email;
 		Address address;
@@ -475,8 +498,6 @@ class HandleTest {
 
 		values.remove("key");
 		values.put("value", null);
-		values.put("", "");
-		values.put(null, null);
 
 		data = h.toData(values);
 		assertFalse(data.containsKey("key"));
@@ -493,14 +514,24 @@ class HandleTest {
 		assertEquals("true", data.get("boolean_wrapper"));
 		assertEquals(List.of('1', '2', '7'), data.get("byte_wrapper"));
 
-		data = h.toData(Map.of(
-				".", "",
-				"value", FieldValue.delete(),
-				"email", instance.getEmail(),
-				"address.", instance.getAddress(),
-				"address.field", instance.getAddress(),
-				"booleanWrapper", instance.getBooleanWrapper(),
-				"byteWrapper.field", instance.getByteWrapper()));
+		String[] aliases = h.toAliases(new String[] { "key", "value", "email", "address", "sheet", "booleanWrapper", "byteWrapper" });
+		assertArrayEquals(new String[] { "key", "value", "email", "address", "sheet", "boolean_wrapper", "byte_wrapper" }, aliases);
+
+		values = new HashMap<>();
+		values.put(null, "");
+		values.put(" \t\n", "");
+		values.put(" \t\n. \t\n", "");
+		values.put(" \t\nvalue \t\n", FieldValue.delete());
+		values.put(" \t\nemail \t\n", instance.getEmail());
+		values.put(" \t\naddress. \t\n", instance.getAddress());
+		values.put(" \t\naddress.field \t\n", instance.getAddress());
+		values.put(" \t\nbooleanWrapper \t\n", instance.getBooleanWrapper());
+		values.put(" \t\nbyteWrapper.field \t\n", instance.getByteWrapper());
+
+		data = h.toData(values);
+		assertFalse(data.containsKey(null));
+		assertFalse(data.containsKey(""));
+		assertFalse(data.containsKey("."));
 		assertSame(FieldValue.delete(), data.get("value"));
 		assertEquals("email@convertable.com", data.get("email"));
 		assertSame(instance.getAddress(), data.get("address."));
@@ -511,6 +542,7 @@ class HandleTest {
 		data.put(".", null);
 
 		values = h.toValues(data);
+		assertFalse(values.containsKey("."));
 		assertSame(FieldValue.delete(), values.get("value"));
 		email = assertInstanceOf(Email.class, values.get("email"));
 		assertEquals("email", email.getLogin());
@@ -519,6 +551,28 @@ class HandleTest {
 		assertSame(instance.getAddress(), values.get("address.field"));
 		assertFalse((boolean) assertInstanceOf(Wrapper.class, values.get("booleanWrapper")).getValue());
 		assertSame(instance.getByteWrapper(), values.get("byteWrapper.field"));
+
+		aliases = h.toAliases(new String[] {
+				null,
+				" \t\n",
+				" \t\n. \t\n",
+				" \t\nvalue \t\n",
+				" \t\nemail \t\n",
+				" \t\naddress. \t\n",
+				" \t\naddress.field \t\n",
+				" \t\nbooleanWrapper \t\n",
+				" \t\nbyteWrapper.field \t\n" });
+
+		assertArrayEquals(new String[] {
+				null,
+				"",
+				".",
+				"value",
+				"email",
+				"address.",
+				"address.field",
+				"boolean_wrapper",
+				"byte_wrapper.field" }, aliases);
 	}
 
 	@Test

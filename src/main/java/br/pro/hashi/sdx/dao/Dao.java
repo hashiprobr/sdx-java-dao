@@ -10,6 +10,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.AggregateQuery;
+import com.google.cloud.firestore.AggregateQuerySnapshot;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -118,8 +120,9 @@ public final class Dao<E> {
 			keyString = getKeyString(instance);
 			document = collection.document(keyString);
 		}
+		Map<String, Object> data = handle.toData(instance, true, !handle.hasAutoKey());
 		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
-			sync(document.create(handle.toData(instance, true, !handle.hasAutoKey())));
+			sync(document.create(data));
 		}
 		return keyString;
 	}
@@ -167,7 +170,8 @@ public final class Dao<E> {
 						keyString = getKeyString(instance);
 						document = collection.document(keyString);
 					}
-					batch.create(document, handle.toData(instance, true, !handle.hasAutoKey()));
+					Map<String, Object> data = handle.toData(instance, true, !handle.hasAutoKey());
+					batch.create(document, data);
 					keyStrings.add(keyString);
 				}
 			});
@@ -368,14 +372,8 @@ public final class Dao<E> {
 	public void delete(Object key) {
 		String keyString = toString(key);
 		Connection connection = client.getConnection();
-		delete(connection.firestore(), connection.bucket(), keyString);
-	}
-
-	private List<String> getFileNames(String keyString) {
-		return handle.getFileFieldNames()
-				.stream()
-				.map((fieldName) -> getFileName(keyString, fieldName))
-				.toList();
+		DocumentReference document = getDocument(connection.firestore(), keyString);
+		delete(connection.bucket(), keyString, document);
 	}
 
 	/**
@@ -529,10 +527,6 @@ public final class Dao<E> {
 		return key.toString();
 	}
 
-	private String getFileName(String keyString, String fieldName) {
-		return "%s/%s/%s".formatted(handle.getCollectionName(), keyString, fieldName);
-	}
-
 	private DocumentReference getDocument(Firestore firestore, String keyString) {
 		return getCollection(firestore).document(keyString);
 	}
@@ -618,8 +612,7 @@ public final class Dao<E> {
 			} else {
 				QuerySnapshot snapshots = sync(query.get());
 				for (DocumentSnapshot snapshot : snapshots) {
-					String keyString = snapshot.getId();
-					Dao.this.delete(query.getFirestore(), bucket, keyString);
+					Dao.this.delete(bucket, snapshot.getId(), snapshot.getReference());
 				}
 			}
 		}
@@ -633,33 +626,45 @@ public final class Dao<E> {
 		}
 	}
 
-	private void delete(Firestore firestore, Bucket bucket, String keyString) {
+	private void delete(Bucket bucket, String keyString, DocumentReference document) {
 		try (Fao fao = new Fao(bucket, getFileNames(keyString))) {
 			fao.remove();
-			DocumentReference document = getDocument(firestore, keyString);
 			sync(document.delete());
 		}
+	}
+
+	private List<String> getFileNames(String keyString) {
+		return handle.getFileFieldNames()
+				.stream()
+				.map((fieldName) -> getFileName(keyString, fieldName))
+				.toList();
+	}
+
+	private String getFileName(String keyString, String fieldName) {
+		return "%s/%s/%s".formatted(handle.getCollectionName(), keyString, fieldName);
 	}
 
 	/**
 	 * Creates a selection of fields with the specified names.
 	 * 
-	 * @param fieldNames the names
+	 * @param names the names
 	 * @return the selection
 	 */
-	public Selection select(String... fieldNames) {
-		return new Selection(client.getFirestore(), fieldNames);
+	public Selection select(String... names) {
+		return new Selection(client.getFirestore(), names);
 	}
 
 	/**
 	 * Represents a query of specific fields.
 	 */
 	public final class Selection extends Filter<Selection> {
-		private final String[] fieldNames;
+		private final String[] names;
+		private final boolean hasKey;
 
-		private Selection(Firestore firestore, String[] fieldNames) {
-			super(getCollection(firestore).select(fieldNames));
-			this.fieldNames = fieldNames;
+		private Selection(Firestore firestore, String[] names) {
+			super(getCollection(firestore).select(handle.toAliases(names)));
+			this.names = names;
+			this.hasKey = handle.hasKey(names);
 		}
 
 		/**
@@ -673,7 +678,7 @@ public final class Dao<E> {
 			List<Map<String, Object>> list = new ArrayList<>();
 			for (DocumentSnapshot snapshot : snapshots) {
 				Map<String, Object> values = handle.toValues(snapshot.getData());
-				if (handle.hasAutoKey()) {
+				if (hasKey && handle.hasAutoKey()) {
 					handle.putAutoKey(values, snapshot.getId());
 				}
 				list.add(values);
@@ -697,12 +702,12 @@ public final class Dao<E> {
 		 *                                  performed
 		 */
 		public void update(Object... fieldValues) {
-			if (fieldNames.length != fieldValues.length) {
-				throw new IllegalArgumentException("Cannot update %d fields with %d values".formatted(fieldNames.length, fieldValues.length));
+			if (names.length != fieldValues.length) {
+				throw new IllegalArgumentException("Cannot update %d fields with %d values".formatted(names.length, fieldValues.length));
 			}
 			Map<String, Object> values = new HashMap<>();
-			for (int i = 0; i < fieldNames.length; i++) {
-				values.put(fieldNames[i], fieldValues[i]);
+			for (int i = 0; i < names.length; i++) {
+				values.put(names[i], fieldValues[i]);
 			}
 			Map<String, Object> data = handle.toData(values);
 			runBatch((batch, document) -> {
@@ -723,8 +728,8 @@ public final class Dao<E> {
 		 */
 		public void delete() {
 			Map<String, Object> values = new HashMap<>();
-			for (int i = 0; i < fieldNames.length; i++) {
-				values.put(fieldNames[i], FieldValue.delete());
+			for (int i = 0; i < names.length; i++) {
+				values.put(names[i], FieldValue.delete());
 			}
 			Map<String, Object> data = handle.toData(values);
 			runBatch((batch, document) -> {
@@ -751,10 +756,33 @@ public final class Dao<E> {
 	 * @param <F> the subclass
 	 */
 	public abstract sealed class Filter<F extends Filter<F>> permits Collection, Selection {
-		final Query query;
+		Query query;
 
 		private Filter(Query query) {
 			this.query = query;
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @return stub
+		 */
+		public long count() {
+			AggregateQuery aggregates = query.count();
+			AggregateQuerySnapshot aggregate = sync(aggregates.get());
+			return aggregate.getCount();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return stub
+		 */
+		public F whereEqualTo(String fieldName, Object fieldValue) {
+			query = query.whereEqualTo(fieldName, fieldValue);
+			return self();
 		}
 
 		void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {

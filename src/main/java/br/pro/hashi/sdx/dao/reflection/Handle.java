@@ -230,6 +230,15 @@ public class Handle<E> {
 		return webFieldNames.contains(fieldName);
 	}
 
+	public boolean hasKey(String[] names) {
+		for (String name : names) {
+			if (name.equals(keyFieldName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public <F> F getKey(E instance) {
 		return get(keyFieldName, instance);
 	}
@@ -256,16 +265,16 @@ public class Handle<E> {
 
 	public Map<String, Object> toValues(Map<String, Object> data) {
 		Map<String, List<String>> suffixMap = new HashMap<>();
-		for (String name : data.keySet()) {
-			int index = name.indexOf('.');
-			if (index != -1 && data.get(name) != null) {
-				String propertyName = name.substring(0, index);
+		for (String alias : data.keySet()) {
+			int index = alias.indexOf('.');
+			if (index != -1 && data.get(alias) != null) {
+				String propertyName = alias.substring(0, index);
 				List<String> suffixList = suffixMap.get(propertyName);
 				if (suffixList == null) {
 					suffixList = new ArrayList<>();
 					suffixMap.put(propertyName, suffixList);
 				}
-				suffixList.add(name.substring(index));
+				suffixList.add(alias.substring(index));
 			}
 		}
 		Map<String, Object> values = new HashMap<>();
@@ -344,6 +353,27 @@ public class Handle<E> {
 			}
 		}
 		return data;
+	}
+
+	public String[] toAliases(String[] names) {
+		String[] aliases = new String[names.length];
+		for (int i = 0; i < names.length; i++) {
+			String name = names[i];
+			if (name == null) {
+				aliases[i] = name;
+			} else {
+				name = name.strip();
+				int index = name.indexOf('.');
+				if (index == -1) {
+					aliases[i] = rename(name);
+				} else {
+					String prefix = name.substring(0, index);
+					String suffix = name.substring(index);
+					aliases[i] = "%s%s".formatted(rename(prefix), suffix);
+				}
+			}
+		}
+		return aliases;
 	}
 
 	private <S> Object convertTo(String fieldName, S value) {
