@@ -1072,6 +1072,20 @@ class DaoTest {
 	}
 
 	@Test
+	void doesNotSelectNullNames() {
+		assertThrows(NullPointerException.class, () -> {
+			d.select((String[]) null);
+		});
+	}
+
+	@Test
+	void doesNotSelectEmptyNames() {
+		assertThrows(IllegalArgumentException.class, () -> {
+			d.select(new String[] {});
+		});
+	}
+
+	@Test
 	void collectionRetrieves() {
 		Dao<Entity>.Collection c = d.collect();
 		mockBatchReadFutureReturn();
