@@ -542,7 +542,7 @@ public final class Dao<E> {
 	}
 
 	/**
-	 * Represents a query of entity instances.
+	 * Represents a query of collected instances.
 	 */
 	public final class Collection extends Filter<Collection> {
 		private final Bucket bucket;
@@ -657,20 +657,21 @@ public final class Dao<E> {
 	 * 
 	 * @param names the names
 	 * @return the selection
-	 * @throws NullPointerException if the name array is null
+	 * @throws NullPointerException     if the name array is null
+	 * @throws IllegalArgumentException if the name array is empty
 	 */
 	public Selection select(String... names) {
 		if (names == null) {
 			throw new NullPointerException("Name array cannot be null");
 		}
 		if (names.length == 0) {
-			throw new NullPointerException("Name array cannot be empty");
+			throw new IllegalArgumentException("Name array cannot be empty");
 		}
 		return new Selection(client.getFirestore(), names);
 	}
 
 	/**
-	 * Represents a query of entity fields.
+	 * Represents a query of selected fields.
 	 */
 	public final class Selection extends Filter<Selection> {
 		private final String[] names;
