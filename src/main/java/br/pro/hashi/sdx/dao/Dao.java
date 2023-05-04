@@ -183,10 +183,6 @@ public final class Dao<E> {
 		return keyStrings;
 	}
 
-	private String getKeyString(E instance) {
-		return toString(handle.getKey(instance));
-	}
-
 	private DocumentReference createDocument(CollectionReference collection, E instance) {
 		if (handle.getKey(instance) != null) {
 			throw new IllegalArgumentException("Key must be null");
@@ -195,7 +191,12 @@ public final class Dao<E> {
 	}
 
 	/**
+	 * <p>
 	 * Retrieves the entity instance identified by the specified key.
+	 * </p>
+	 * <p>
+	 * If the instance does not exist, returns {@code null}.
+	 * </p>
 	 * 
 	 * @param key the key
 	 * @return the instance
@@ -235,7 +236,7 @@ public final class Dao<E> {
 	 */
 	public void update(E instance) {
 		check(instance);
-		updateFromData(handle.getKey(instance), handle.toData(instance, false, false));
+		updateFromData(getKeyString(instance), handle.toData(instance, false, false));
 	}
 
 	/**
@@ -257,11 +258,10 @@ public final class Dao<E> {
 	 */
 	public void update(Object key, Map<String, Object> values) {
 		check(values);
-		updateFromData(key, handle.toData(values));
+		updateFromData(toString(key), handle.toData(values));
 	}
 
-	private void updateFromData(Object key, Map<String, Object> data) {
-		String keyString = toString(key);
+	private void updateFromData(String keyString, Map<String, Object> data) {
 		DocumentReference document = getDocument(client.getFirestore(), keyString);
 		sync(document.update(data));
 	}
@@ -288,7 +288,7 @@ public final class Dao<E> {
 		runBatch(firestore, (batch) -> {
 			for (E instance : instances) {
 				check(instance);
-				updateFromData(firestore, batch, handle.getKey(instance), handle.toData(instance, false, false));
+				updateFromData(firestore, batch, getKeyString(instance), handle.toData(instance, false, false));
 			}
 		});
 	}
@@ -321,21 +321,14 @@ public final class Dao<E> {
 			for (Object key : map.keySet()) {
 				Map<String, Object> values = map.get(key);
 				check(values);
-				updateFromData(firestore, batch, key, handle.toData(values));
+				updateFromData(firestore, batch, toString(key), handle.toData(values));
 			}
 		});
 	}
 
-	private void updateFromData(Firestore firestore, WriteBatch batch, Object key, Map<String, Object> data) {
-		String keyString = toString(key);
+	private void updateFromData(Firestore firestore, WriteBatch batch, String keyString, Map<String, Object> data) {
 		DocumentReference document = getDocument(firestore, keyString);
 		batch.update(document, data);
-	}
-
-	private void check(E instance) {
-		if (instance == null) {
-			throw new NullPointerException("Instance cannot be null");
-		}
 	}
 
 	private void check(List<E> instances) {
@@ -354,6 +347,10 @@ public final class Dao<E> {
 		if (values.isEmpty()) {
 			throw new IllegalArgumentException("Value map cannot be empty");
 		}
+	}
+
+	private String getKeyString(E instance) {
+		return toString(handle.getKey(instance));
 	}
 
 	/**
@@ -477,9 +474,8 @@ public final class Dao<E> {
 	public DaoFile downloadFile(Object key, String fieldName) {
 		check(fieldName);
 		String keyString = toString(key);
-		Bucket bucket = client.getBucket();
 		DaoFile file;
-		try (Fao fao = new Fao(bucket, getFileName(keyString, fieldName))) {
+		try (Fao fao = new Fao(client.getBucket(), getFileName(keyString, fieldName))) {
 			file = fao.download();
 		}
 		return file;
@@ -615,19 +611,26 @@ public final class Dao<E> {
 					batch.delete(document);
 				});
 			} else {
-				QuerySnapshot snapshots = sync(query.get());
+				Query writeQuery = getWriteQuery();
+				QuerySnapshot snapshots = sync(writeQuery.get());
 				for (DocumentSnapshot snapshot : snapshots) {
 					Dao.this.delete(bucket, snapshot.getId(), snapshot.getReference());
 				}
 			}
 		}
 
-		Query getFilteredQuery() {
+		Query getWriteQuery() {
 			return query.select(new String[] {});
 		}
 
 		Collection self() {
 			return this;
+		}
+	}
+
+	private void check(E instance) {
+		if (instance == null) {
+			throw new NullPointerException("Instance cannot be null");
 		}
 	}
 
@@ -650,17 +653,24 @@ public final class Dao<E> {
 	}
 
 	/**
-	 * Creates a selection of fields with the specified names.
+	 * Creates a selection of entity fields with the specified names.
 	 * 
 	 * @param names the names
 	 * @return the selection
+	 * @throws NullPointerException if the name array is null
 	 */
 	public Selection select(String... names) {
+		if (names == null) {
+			throw new NullPointerException("Name array cannot be null");
+		}
+		if (names.length == 0) {
+			throw new NullPointerException("Name array cannot be empty");
+		}
 		return new Selection(client.getFirestore(), names);
 	}
 
 	/**
-	 * Represents a query of specific fields.
+	 * Represents a query of entity fields.
 	 */
 	public final class Selection extends Filter<Selection> {
 		private final String[] names;
@@ -742,7 +752,7 @@ public final class Dao<E> {
 			});
 		}
 
-		Query getFilteredQuery() {
+		Query getWriteQuery() {
 			return query;
 		}
 
@@ -791,8 +801,8 @@ public final class Dao<E> {
 		}
 
 		void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
-			Query filteredQuery = getFilteredQuery();
-			QuerySnapshot snapshots = sync(filteredQuery.get());
+			Query writeQuery = getWriteQuery();
+			QuerySnapshot snapshots = sync(writeQuery.get());
 			Dao.this.runBatch(query.getFirestore(), (batch) -> {
 				for (DocumentSnapshot snapshot : snapshots) {
 					consumer.accept(batch, snapshot.getReference());
@@ -800,7 +810,7 @@ public final class Dao<E> {
 			});
 		}
 
-		abstract Query getFilteredQuery();
+		abstract Query getWriteQuery();
 
 		abstract F self();
 	}
