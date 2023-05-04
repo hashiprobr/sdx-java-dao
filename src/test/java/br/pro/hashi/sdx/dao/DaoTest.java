@@ -33,6 +33,8 @@ import org.mockito.MockedStatic;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.ReadChannel;
+import com.google.cloud.firestore.AggregateQuery;
+import com.google.cloud.firestore.AggregateQuerySnapshot;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -67,6 +69,7 @@ class DaoTest {
 	private DaoClient client;
 	private Handle<Entity> handle;
 	private Dao<Entity> d;
+	private ApiFuture<AggregateQuerySnapshot> countFuture;
 
 	@SuppressWarnings("unchecked")
 	@BeforeEach
@@ -137,6 +140,7 @@ class DaoTest {
 			return invocation.getArgument(0);
 		});
 		d = Construction.of(client, handle);
+		countFuture = mock(ApiFuture.class);
 	}
 
 	@Test
@@ -1489,6 +1493,39 @@ class DaoTest {
 			when(batchWriteFuture.get()).thenThrow(exception);
 		});
 		return cause;
+	}
+
+	@Test
+	void counts() {
+		Dao<Entity>.Collection c = d.collect();
+		mockAggregates();
+		AggregateQuerySnapshot aggregate = mock(AggregateQuerySnapshot.class);
+		when(aggregate.getCount()).thenReturn(1L);
+		assertDoesNotThrow(() -> {
+			when(countFuture.get()).thenReturn(aggregate);
+		});
+		assertEquals(1, c.count());
+	}
+
+	@Test
+	void doesNotCountIfAggregatesThrows() {
+		Dao<Entity>.Collection c = d.collect();
+		mockAggregates();
+		Throwable cause = new Throwable();
+		ExecutionException executionException = new ExecutionException(cause);
+		assertDoesNotThrow(() -> {
+			when(countFuture.get()).thenThrow(executionException);
+		});
+		Exception exception = assertThrows(DataException.class, () -> {
+			c.count();
+		});
+		assertSame(cause, exception.getCause());
+	}
+
+	private void mockAggregates() {
+		AggregateQuery aggregates = mock(AggregateQuery.class);
+		when(aggregates.get()).thenReturn(countFuture);
+		when(collection.count()).thenReturn(aggregates);
 	}
 
 	@Test

@@ -783,12 +783,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is equal to the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereEqualTo(String fieldName, Object fieldValue) {
-			query = query.whereEqualTo(fieldName, fieldValue);
+		public F whereEqualTo(String name, Object fieldValue) {
+			query = query.whereEqualTo(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -796,12 +796,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is not equal to the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereNotEqualTo(String fieldName, Object fieldValue) {
-			query = query.whereNotEqualTo(fieldName, fieldValue);
+		public F whereNotEqualTo(String name, Object fieldValue) {
+			query = query.whereNotEqualTo(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -809,12 +809,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is less than the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereLessThan(String fieldName, Object fieldValue) {
-			query = query.whereLessThan(fieldName, fieldValue);
+		public F whereLessThan(String name, Object fieldValue) {
+			query = query.whereLessThan(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -822,12 +822,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is less than or equal to the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereLessThanOrEqualTo(String fieldName, Object fieldValue) {
-			query = query.whereLessThanOrEqualTo(fieldName, fieldValue);
+		public F whereLessThanOrEqualTo(String name, Object fieldValue) {
+			query = query.whereLessThanOrEqualTo(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -835,12 +835,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is greater than the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereGreaterThan(String fieldName, Object fieldValue) {
-			query = query.whereGreaterThan(fieldName, fieldValue);
+		public F whereGreaterThan(String name, Object fieldValue) {
+			query = query.whereGreaterThan(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -848,12 +848,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is greater than or equal to the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereGreaterThanOrEqualTo(String fieldName, Object fieldValue) {
-			query = query.whereGreaterThanOrEqualTo(fieldName, fieldValue);
+		public F whereGreaterThanOrEqualTo(String name, Object fieldValue) {
+			query = query.whereGreaterThanOrEqualTo(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -861,12 +861,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is represented by an array and contains the specified value.
 		 * 
-		 * @param fieldName  the name
+		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
-		public F whereArrayContains(String fieldName, Object fieldValue) {
-			query = query.whereArrayContains(fieldName, fieldValue);
+		public F whereArrayContains(String name, Object fieldValue) {
+			query = query.whereArrayContains(handle.toAlias(name), fieldValue);
 			return self();
 		}
 
@@ -875,12 +875,12 @@ public final class Dao<E> {
 		 * specified name is represented by an array and contains at least one of the
 		 * specified values.
 		 * 
-		 * @param fieldName   the name
+		 * @param name        the name
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
-		public F whereArrayContainsAny(String fieldName, List<?> fieldValues) {
-			query = query.whereArrayContainsAny(fieldName, fieldValues);
+		public F whereArrayContainsAny(String name, List<?> fieldValues) {
+			query = query.whereArrayContainsAny(handle.toAlias(name), fieldValues);
 			return self();
 		}
 
@@ -888,12 +888,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is equal to one of the specified values.
 		 * 
-		 * @param fieldName   the name
+		 * @param name        the name
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
-		public F whereIn(String fieldName, List<?> fieldValues) {
-			query = query.whereIn(fieldName, fieldValues);
+		public F whereIn(String name, List<?> fieldValues) {
+			query = query.whereIn(handle.toAlias(name), fieldValues);
 			return self();
 		}
 
@@ -901,12 +901,12 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is not equal to any of the specified values.
 		 * 
-		 * @param fieldName   the name
+		 * @param name        the name
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
-		public F whereNotIn(String fieldName, List<?> fieldValues) {
-			query = query.whereNotIn(fieldName, fieldValues);
+		public F whereNotIn(String name, List<?> fieldValues) {
+			query = query.whereNotIn(handle.toAlias(name), fieldValues);
 			return self();
 		}
 
@@ -914,11 +914,11 @@ public final class Dao<E> {
 		 * Orders the entity instances by ascending values of the field with the
 		 * specified name.
 		 * 
-		 * @param fieldName the name
+		 * @param name the name
 		 * @return this filter, for chaining
 		 */
-		public F orderByAscending(String fieldName) {
-			query = query.orderBy(fieldName, Direction.ASCENDING);
+		public F orderByAscending(String name) {
+			query = query.orderBy(handle.toAlias(name), Direction.ASCENDING);
 			return self();
 		}
 
@@ -926,11 +926,11 @@ public final class Dao<E> {
 		 * Orders the entity instances by descending values of the field with the
 		 * specified name.
 		 * 
-		 * @param fieldName the name
+		 * @param name the name
 		 * @return this filter, for chaining
 		 */
-		public F orderByDescending(String fieldName) {
-			query = query.orderBy(fieldName, Direction.DESCENDING);
+		public F orderByDescending(String name) {
+			query = query.orderBy(handle.toAlias(name), Direction.DESCENDING);
 			return self();
 		}
 

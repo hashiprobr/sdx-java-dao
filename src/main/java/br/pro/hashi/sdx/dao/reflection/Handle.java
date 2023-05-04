@@ -358,22 +358,27 @@ public class Handle<E> {
 	public String[] toAliases(String[] names) {
 		String[] aliases = new String[names.length];
 		for (int i = 0; i < names.length; i++) {
-			String name = names[i];
-			if (name == null) {
-				aliases[i] = name;
-			} else {
-				name = name.strip();
-				int index = name.indexOf('.');
-				if (index == -1) {
-					aliases[i] = rename(name);
-				} else {
-					String prefix = name.substring(0, index);
-					String suffix = name.substring(index);
-					aliases[i] = "%s%s".formatted(rename(prefix), suffix);
-				}
-			}
+			aliases[i] = toAlias(names[i]);
 		}
 		return aliases;
+	}
+
+	public String toAlias(String name) {
+		String alias;
+		if (name == null) {
+			alias = name;
+		} else {
+			name = name.strip();
+			int index = name.indexOf('.');
+			if (index == -1) {
+				alias = rename(name);
+			} else {
+				String prefix = name.substring(0, index);
+				String suffix = name.substring(index);
+				alias = "%s%s".formatted(rename(prefix), suffix);
+			}
+		}
+		return alias;
 	}
 
 	private <S> Object convertTo(String fieldName, S value) {
