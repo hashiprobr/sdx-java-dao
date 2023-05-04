@@ -1496,28 +1496,108 @@ class DaoTest {
 	}
 
 	@Test
+	void filtersWhereEqualTo() {
+	}
+
+	@Test
+	void filtersWhereNotEqualTo() {
+	}
+
+	@Test
+	void filtersWhereLessThan() {
+	}
+
+	@Test
+	void filtersWhereLessThanOrEqualTo() {
+	}
+
+	@Test
+	void filtersWhereGreaterThan() {
+	}
+
+	@Test
+	void filtersWhereGreaterThanOrEqualTo() {
+	}
+
+	@Test
+	void filtersWhereArrayContains() {
+	}
+
+	@Test
+	void filtersWhereArrayContainsAny() {
+	}
+
+	@Test
+	void filtersWhereIn() {
+	}
+
+	@Test
+	void filtersWhereNotIn() {
+	}
+
+	@Test
+	void ordersByAscending() {
+	}
+
+	@Test
+	void ordersByDescending() {
+	}
+
+	@Test
+	void offsets() {
+	}
+
+	@Test
+	void limits() {
+	}
+
+	@Test
+	void limitsToLast() {
+	}
+
+	@Test
+	void startsAt() {
+	}
+
+	@Test
+	void startsAfter() {
+	}
+
+	@Test
+	void endsBefore() {
+	}
+
+	@Test
+	void endsAt() {
+	}
+
+	@Test
 	void counts() {
-		Dao<Entity>.Collection c = d.collect();
 		mockAggregates();
 		AggregateQuerySnapshot aggregate = mock(AggregateQuerySnapshot.class);
 		when(aggregate.getCount()).thenReturn(1L);
 		assertDoesNotThrow(() -> {
 			when(countFuture.get()).thenReturn(aggregate);
 		});
-		assertEquals(1, c.count());
+		assertEquals(1, d.collect().count());
+		assertEquals(1, d.select("value").count());
 	}
 
 	@Test
 	void doesNotCountIfAggregatesThrows() {
-		Dao<Entity>.Collection c = d.collect();
 		mockAggregates();
 		Throwable cause = new Throwable();
 		ExecutionException executionException = new ExecutionException(cause);
 		assertDoesNotThrow(() -> {
 			when(countFuture.get()).thenThrow(executionException);
 		});
-		Exception exception = assertThrows(DataException.class, () -> {
-			c.count();
+		Exception exception;
+		exception = assertThrows(DataException.class, () -> {
+			d.collect().count();
+		});
+		assertSame(cause, exception.getCause());
+		exception = assertThrows(DataException.class, () -> {
+			d.select("value").count();
 		});
 		assertSame(cause, exception.getCause());
 	}
