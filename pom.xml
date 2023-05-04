@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.hashiprobr</groupId>
   <artifactId>sdx-dao</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.4-SNAPSHOT</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Simple synchronous DAO framework based on Google Cloud Firestore and Storage.</description>
   <url>https://github.com/hashiprobr/sdx-java-dao</url>
@@ -36,40 +36,40 @@
   </properties>
   <repositories>
     <repository>
-      <id>patches</id>
-      <url>file:///${project.basedir}/patches</url>
+      <id>repack</id>
+      <url>https://raw.githubusercontent.com/hashiprobr/sdx-java-repack/main</url>
     </repository>
   </repositories>
   <dependencies>
     <dependency>
       <groupId>com.google.firebase</groupId>
       <artifactId>firebase-admin</artifactId>
-      <version>9.1.1-PATCH</version>
+      <version>9.1.1-REPACK</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-firestore</artifactId>
-      <version>3.9.4-PATCH</version>
+      <version>3.10.0-REPACK</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-storage</artifactId>
-      <version>2.22.0-PATCH</version>
+      <version>2.22.1-REPACK</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-core</artifactId>
-      <version>2.15.0-PATCH</version>
+      <version>2.16.0-REPACK</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-core-http</artifactId>
-      <version>2.15.0-PATCH</version>
+      <version>2.16.0-REPACK</version>
     </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-common-protos</artifactId>
-      <version>2.17.0-PATCH</version>
+      <version>2.17.0-REPACK</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -85,7 +85,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
-      <version>5.9.2</version>
+      <version>5.9.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
