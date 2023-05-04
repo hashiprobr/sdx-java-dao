@@ -2,6 +2,7 @@ package br.pro.hashi.sdx.dao;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -378,9 +379,16 @@ class DaoTest {
 	}
 
 	@Test
+	void retrievesNull() {
+		mockAutoKey();
+		mockReadFutureReturn(false);
+		assertNull(d.retrieve(true));
+	}
+
+	@Test
 	void retrieves() {
 		mockAutoKey();
-		mockReadFutureReturn(1);
+		mockReadFutureReturn();
 		Entity instance = d.retrieve(true);
 		assertEquals(1, instance.getValue());
 		verify(handle, times(0)).setAutoKey(any(), any());
@@ -389,7 +397,7 @@ class DaoTest {
 	@Test
 	void retrievesWithAutoKey() {
 		mockAutoKey(true);
-		mockReadFutureReturn(1);
+		mockReadFutureReturn();
 		Entity instance = d.retrieve(true);
 		assertEquals(1, instance.getValue());
 		verify(handle).setAutoKey(instance, "true");
@@ -412,9 +420,14 @@ class DaoTest {
 		assertSame(cause, exception.getCause());
 	}
 
-	private void mockReadFutureReturn(int value) {
+	private void mockReadFutureReturn() {
+		mockReadFutureReturn(true);
+	}
+
+	private void mockReadFutureReturn(boolean exists) {
 		DocumentSnapshot snapshot = mock(DocumentSnapshot.class);
-		when(snapshot.getData()).thenReturn(Map.of("value", value));
+		when(snapshot.exists()).thenReturn(exists);
+		when(snapshot.getData()).thenReturn(Map.of("value", 1));
 		assertDoesNotThrow(() -> {
 			when(readFuture.get()).thenReturn(snapshot);
 		});
