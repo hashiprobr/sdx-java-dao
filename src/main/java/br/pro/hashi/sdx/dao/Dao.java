@@ -781,12 +781,13 @@ public final class Dao<E> {
 		/**
 		 * Stub.
 		 * 
-		 * @return stub
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return this filter, for chaining
 		 */
-		public long count() {
-			AggregateQuery aggregates = query.count();
-			AggregateQuerySnapshot aggregate = sync(aggregates.get());
-			return aggregate.getCount();
+		public F whereEqualTo(String fieldName, Object fieldValue) {
+			query = query.whereEqualTo(fieldName, fieldValue);
+			return self();
 		}
 
 		/**
@@ -794,11 +795,209 @@ public final class Dao<E> {
 		 * 
 		 * @param fieldName  stub
 		 * @param fieldValue stub
-		 * @return stub
+		 * @return this filter, for chaining
 		 */
-		public F whereEqualTo(String fieldName, Object fieldValue) {
-			query = query.whereEqualTo(fieldName, fieldValue);
+		public F whereNotEqualTo(String fieldName, Object fieldValue) {
+			query = query.whereNotEqualTo(fieldName, fieldValue);
 			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return this filter, for chaining
+		 */
+		public F whereLessThan(String fieldName, Object fieldValue) {
+			query = query.whereLessThan(fieldName, fieldValue);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return this filter, for chaining
+		 */
+		public F whereLessThanOrEqualTo(String fieldName, Object fieldValue) {
+			query = query.whereLessThanOrEqualTo(fieldName, fieldValue);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return this filter, for chaining
+		 */
+		public F whereGreaterThan(String fieldName, Object fieldValue) {
+			query = query.whereGreaterThan(fieldName, fieldValue);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return this filter, for chaining
+		 */
+		public F whereGreaterThanOrEqualTo(String fieldName, Object fieldValue) {
+			query = query.whereGreaterThanOrEqualTo(fieldName, fieldValue);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName  stub
+		 * @param fieldValue stub
+		 * @return this filter, for chaining
+		 */
+		public F whereArrayContains(String fieldName, Object fieldValue) {
+			query = query.whereArrayContains(fieldName, fieldValue);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName   stub
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F whereArrayContainsAny(String fieldName, List<?> fieldValues) {
+			query = query.whereArrayContainsAny(fieldName, fieldValues);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName   stub
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F whereIn(String fieldName, List<?> fieldValues) {
+			query = query.whereIn(fieldName, fieldValues);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName   stub
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F whereNotIn(String fieldName, List<?> fieldValues) {
+			query = query.whereNotIn(fieldName, fieldValues);
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName stub
+		 * @return this filter, for chaining
+		 */
+		public F orderByAscending(String fieldName) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldName stub
+		 * @return this filter, for chaining
+		 */
+		public F orderByDescending(String fieldName) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param offset stub
+		 * @return this filter, for chaining
+		 */
+		public F offset(int offset) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param limit stub
+		 * @return this filter, for chaining
+		 */
+		public F limit(int limit) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param limit stub
+		 * @return this filter, for chaining
+		 */
+		public F limitToLast(int limit) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F startAt(Object... fieldValues) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F startAfter(Object... fieldValues) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F endBefore(Object... fieldValues) {
+			return self();
+		}
+
+		/**
+		 * Stub.
+		 * 
+		 * @param fieldValues stub
+		 * @return this filter, for chaining
+		 */
+		public F endAt(Object... fieldValues) {
+			return self();
+		}
+
+		/**
+		 * Counts the number of entity instances corresponding to the query.
+		 * 
+		 * @return the result
+		 * @throws DataException if the Firestore operation could not be performed
+		 */
+		public long count() {
+			AggregateQuery aggregates = query.count();
+			AggregateQuerySnapshot aggregate = sync(aggregates.get());
+			return aggregate.getCount();
 		}
 
 		void runBatch(BiConsumer<WriteBatch, DocumentReference> consumer) {
