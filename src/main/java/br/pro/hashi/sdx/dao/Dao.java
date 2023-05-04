@@ -18,6 +18,7 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
+import com.google.cloud.firestore.Query.Direction;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
 import com.google.cloud.storage.Bucket;
@@ -779,10 +780,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is equal to the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereEqualTo(String fieldName, Object fieldValue) {
@@ -791,10 +793,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is not equal to the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereNotEqualTo(String fieldName, Object fieldValue) {
@@ -803,10 +806,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is less than the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereLessThan(String fieldName, Object fieldValue) {
@@ -815,10 +819,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is less than or equal to the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereLessThanOrEqualTo(String fieldName, Object fieldValue) {
@@ -827,10 +832,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is greater than the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereGreaterThan(String fieldName, Object fieldValue) {
@@ -839,10 +845,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is greater than or equal to the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereGreaterThanOrEqualTo(String fieldName, Object fieldValue) {
@@ -851,10 +858,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is represented by an array and contains the specified value.
 		 * 
-		 * @param fieldName  stub
-		 * @param fieldValue stub
+		 * @param fieldName  the name
+		 * @param fieldValue the value
 		 * @return this filter, for chaining
 		 */
 		public F whereArrayContains(String fieldName, Object fieldValue) {
@@ -863,10 +871,12 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is represented by an array and contains at least one of the
+		 * specified values.
 		 * 
-		 * @param fieldName   stub
-		 * @param fieldValues stub
+		 * @param fieldName   the name
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F whereArrayContainsAny(String fieldName, List<?> fieldValues) {
@@ -875,10 +885,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is equal to one of the specified values.
 		 * 
-		 * @param fieldName   stub
-		 * @param fieldValues stub
+		 * @param fieldName   the name
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F whereIn(String fieldName, List<?> fieldValues) {
@@ -887,10 +898,11 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances where the value of the field with the
+		 * specified name is not equal to any of the specified values.
 		 * 
-		 * @param fieldName   stub
-		 * @param fieldValues stub
+		 * @param fieldName   the name
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F whereNotIn(String fieldName, List<?> fieldValues) {
@@ -899,99 +911,129 @@ public final class Dao<E> {
 		}
 
 		/**
-		 * Stub.
+		 * Orders the entity instances by ascending values of the field with the
+		 * specified name.
 		 * 
-		 * @param fieldName stub
+		 * @param fieldName the name
 		 * @return this filter, for chaining
 		 */
 		public F orderByAscending(String fieldName) {
+			query = query.orderBy(fieldName, Direction.ASCENDING);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Orders the entity instances by descending values of the field with the
+		 * specified name.
 		 * 
-		 * @param fieldName stub
+		 * @param fieldName the name
 		 * @return this filter, for chaining
 		 */
 		public F orderByDescending(String fieldName) {
+			query = query.orderBy(fieldName, Direction.DESCENDING);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Ignores the first <em>n</em> entity instances.
 		 * 
-		 * @param offset stub
+		 * @param offset the value of <em>n</em>
 		 * @return this filter, for chaining
 		 */
 		public F offset(int offset) {
+			query = query.offset(offset);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Considers the first <em>n</em> entity instances, not counting the offset if
+		 * specified.
 		 * 
-		 * @param limit stub
+		 * @param limit the value of <em>n</em>
 		 * @return this filter, for chaining
 		 */
 		public F limit(int limit) {
+			query = query.limit(limit);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Considers the last <em>n</em> entity instances, but only if an order has been
+		 * specified.
 		 * 
-		 * @param limit stub
+		 * @param limit the value of <em>n</em>
 		 * @return this filter, for chaining
+		 * @throws IllegalStateException if an order has not been specified
 		 */
 		public F limitToLast(int limit) {
+			query = query.limitToLast(limit);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances that start at the specified values, relative
+		 * to the order specified by {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}. The order of the values must match the
+		 * order of the calls to {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}.
 		 * 
-		 * @param fieldValues stub
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F startAt(Object... fieldValues) {
+			query = query.startAt(fieldValues);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances that start after the specified values,
+		 * relative to the order specified by {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}. The order of the values must match the
+		 * order of the calls to {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}.
 		 * 
-		 * @param fieldValues stub
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F startAfter(Object... fieldValues) {
+			query = query.startAfter(fieldValues);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances that end before the specified values, relative
+		 * to the order specified by {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}. The order of the values must match the
+		 * order of the calls to {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}.
 		 * 
-		 * @param fieldValues stub
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F endBefore(Object... fieldValues) {
+			query = query.endBefore(fieldValues);
 			return self();
 		}
 
 		/**
-		 * Stub.
+		 * Considers the entity instances that end at the specified values, relative to
+		 * the order specified by {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}. The order of the values must match the
+		 * order of the calls to {@link #orderByAscending(String)} and
+		 * {@link #orderByDescending(String)}.
 		 * 
-		 * @param fieldValues stub
+		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
 		public F endAt(Object... fieldValues) {
+			query = query.endAt(fieldValues);
 			return self();
 		}
 
 		/**
 		 * Counts the number of entity instances corresponding to the query.
 		 * 
-		 * @return the result
+		 * @return the number
 		 * @throws DataException if the Firestore operation could not be performed
 		 */
 		public long count() {
