@@ -207,9 +207,14 @@ public final class Dao<E> {
 		String keyString = toString(key);
 		DocumentReference document = getDocument(client.getFirestore(), keyString);
 		DocumentSnapshot snapshot = sync(document.get());
-		E instance = handle.toInstance(snapshot.getData());
-		if (handle.hasAutoKey()) {
-			handle.setAutoKey(instance, keyString);
+		E instance;
+		if (snapshot.exists()) {
+			instance = handle.toInstance(snapshot.getData());
+			if (handle.hasAutoKey()) {
+				handle.setAutoKey(instance, keyString);
+			}
+		} else {
+			instance = null;
 		}
 		return instance;
 	}
