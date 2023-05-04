@@ -40,6 +40,7 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query.Direction;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.firestore.WriteBatch;
@@ -1497,78 +1498,208 @@ class DaoTest {
 
 	@Test
 	void filtersWhereEqualTo() {
+		mockAlias();
+		when(collection.whereEqualTo("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereEqualTo("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereEqualTo("name", 1));
+		verify(collection, times(2)).whereEqualTo("alias", 1);
 	}
 
 	@Test
 	void filtersWhereNotEqualTo() {
+		mockAlias();
+		when(collection.whereNotEqualTo("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereNotEqualTo("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereNotEqualTo("name", 1));
+		verify(collection, times(2)).whereNotEqualTo("alias", 1);
 	}
 
 	@Test
 	void filtersWhereLessThan() {
+		mockAlias();
+		when(collection.whereLessThan("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereLessThan("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereLessThan("name", 1));
+		verify(collection, times(2)).whereLessThan("alias", 1);
 	}
 
 	@Test
 	void filtersWhereLessThanOrEqualTo() {
+		mockAlias();
+		when(collection.whereLessThanOrEqualTo("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereLessThanOrEqualTo("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereLessThanOrEqualTo("name", 1));
+		verify(collection, times(2)).whereLessThanOrEqualTo("alias", 1);
 	}
 
 	@Test
 	void filtersWhereGreaterThan() {
+		mockAlias();
+		when(collection.whereGreaterThan("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereGreaterThan("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereGreaterThan("name", 1));
+		verify(collection, times(2)).whereGreaterThan("alias", 1);
 	}
 
 	@Test
 	void filtersWhereGreaterThanOrEqualTo() {
+		mockAlias();
+		when(collection.whereGreaterThanOrEqualTo("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereGreaterThanOrEqualTo("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereGreaterThanOrEqualTo("name", 1));
+		verify(collection, times(2)).whereGreaterThanOrEqualTo("alias", 1);
 	}
 
 	@Test
 	void filtersWhereArrayContains() {
+		mockAlias();
+		when(collection.whereArrayContains("alias", 1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereArrayContains("name", 1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereArrayContains("name", 1));
+		verify(collection, times(2)).whereArrayContains("alias", 1);
 	}
 
 	@Test
 	void filtersWhereArrayContainsAny() {
+		mockAlias();
+		when(collection.whereArrayContainsAny("alias", List.of(1))).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereArrayContainsAny("name", List.of(1)));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereArrayContainsAny("name", List.of(1)));
+		verify(collection, times(2)).whereArrayContainsAny("alias", List.of(1));
 	}
 
 	@Test
 	void filtersWhereIn() {
+		mockAlias();
+		when(collection.whereIn("alias", List.of(1))).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereIn("name", List.of(1)));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereIn("name", List.of(1)));
+		verify(collection, times(2)).whereIn("alias", List.of(1));
 	}
 
 	@Test
 	void filtersWhereNotIn() {
+		mockAlias();
+		when(collection.whereNotIn("alias", List.of(1))).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.whereNotIn("name", List.of(1)));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.whereNotIn("name", List.of(1)));
+		verify(collection, times(2)).whereNotIn("alias", List.of(1));
 	}
 
 	@Test
 	void ordersByAscending() {
+		mockAlias();
+		when(collection.orderBy("alias", Direction.ASCENDING)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.orderByAscending("name"));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.orderByAscending("name"));
+		verify(collection, times(2)).orderBy("alias", Direction.ASCENDING);
 	}
 
 	@Test
 	void ordersByDescending() {
+		mockAlias();
+		when(collection.orderBy("alias", Direction.DESCENDING)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.orderByDescending("name"));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.orderByDescending("name"));
+		verify(collection, times(2)).orderBy("alias", Direction.DESCENDING);
+	}
+
+	private void mockAlias() {
+		when(handle.toAlias("name")).thenReturn("alias");
 	}
 
 	@Test
 	void offsets() {
+		when(collection.offset(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.offset(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.offset(1));
+		verify(collection, times(2)).offset(1);
 	}
 
 	@Test
 	void limits() {
+		when(collection.limit(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.limit(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.limit(1));
+		verify(collection, times(2)).limit(1);
 	}
 
 	@Test
 	void limitsToLast() {
+		when(collection.limitToLast(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.limitToLast(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.limitToLast(1));
+		verify(collection, times(2)).limitToLast(1);
 	}
 
 	@Test
 	void startsAt() {
+		when(collection.startAt(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.startAt(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.startAt(1));
+		verify(collection, times(2)).startAt(1);
 	}
 
 	@Test
 	void startsAfter() {
+		when(collection.startAfter(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.startAfter(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.startAfter(1));
+		verify(collection, times(2)).startAfter(1);
 	}
 
 	@Test
 	void endsBefore() {
+		when(collection.endBefore(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.endBefore(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.endBefore(1));
+		verify(collection, times(2)).endBefore(1);
 	}
 
 	@Test
 	void endsAt() {
+		when(collection.endAt(1)).thenReturn(collection);
+		Dao<Entity>.Collection c = d.collect();
+		assertSame(c, c.endAt(1));
+		Dao<Entity>.Selection s = d.select("value");
+		assertSame(s, s.endAt(1));
+		verify(collection, times(2)).endAt(1);
 	}
 
 	@Test
