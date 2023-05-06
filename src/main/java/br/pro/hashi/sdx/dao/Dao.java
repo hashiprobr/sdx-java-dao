@@ -39,7 +39,8 @@ import br.pro.hashi.sdx.dao.reflection.Handle;
  */
 public final class Dao<E> {
 	/**
-	 * Creates a new data access object of the specified entity type.
+	 * Creates a new data access object of the specified entity type from the first
+	 * {@link DaoClient} created.
 	 * 
 	 * @param <E>  the type
 	 * @param type a {@link Class} representing {@code E}
@@ -52,7 +53,7 @@ public final class Dao<E> {
 
 	/**
 	 * Creates a new data access object of the specified entity type from the
-	 * specified project id.
+	 * {@link DaoClient} created for the specified project id.
 	 * 
 	 * @param <E>       the type
 	 * @param type      a {@link Class} representing {@code E}

@@ -18,7 +18,7 @@ public @interface Converted {
 	/**
 	 * The type of the converter.
 	 * 
-	 * @return a subtype of {@link DaoConverter}
+	 * @return a subclass of {@link DaoConverter}
 	 */
 	Class<? extends DaoConverter<?, ?>> value();
 }
