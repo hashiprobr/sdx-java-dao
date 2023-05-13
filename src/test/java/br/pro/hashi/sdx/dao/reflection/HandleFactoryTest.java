@@ -1,55 +1,52 @@
 package br.pro.hashi.sdx.dao.reflection;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mockConstruction;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-
-import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
+import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.MockitoAnnotations;
 
 class HandleFactoryTest {
-	private ConverterFactory converterFactory;
+	private AutoCloseable mocks;
+	private @Mock Reflector reflector;
+	private @Mock ConverterFactory factory;
 	private HandleFactory f;
 
 	@BeforeEach
 	void setUp() {
-		converterFactory = mock(ConverterFactory.class);
-		f = new HandleFactory(converterFactory);
+		mocks = MockitoAnnotations.openMocks(this);
+
+		f = new HandleFactory(reflector, factory);
+	}
+
+	@AfterEach
+	void tearDown() {
+		assertDoesNotThrow(() -> {
+			mocks.close();
+		});
 	}
 
 	@Test
 	void getsInstance() {
-		assertInstanceOf(HandleFactory.class, HandleFactory.getInstance());
-	}
-
-	@Test
-	void constructsWithDefaultConverterFactory() {
-		HandleFactory factory;
-		try (MockedStatic<ConverterFactory> converterFactoryStatic = mockStatic(ConverterFactory.class)) {
-			converterFactoryStatic.when(() -> ConverterFactory.getInstance()).thenReturn(converterFactory);
-			factory = new HandleFactory();
+		try (MockedConstruction<Reflector> reflectorConstruction = mockConstruction(Reflector.class)) {
+			try (MockedConstruction<ConverterFactory> factoryConstruction = mockConstruction(ConverterFactory.class)) {
+				assertInstanceOf(HandleFactory.class, HandleFactory.getInstance());
+			}
 		}
-		assertSame(converterFactory, factory.getConverterFactory());
 	}
 
 	@Test
 	void gets() {
-		try (MockedStatic<Construction> handleConstruction = mockStatic(Construction.class)) {
-			handleConstruction.when(() -> Construction.of(converterFactory, Object.class)).thenReturn(mock(Handle.class));
-
-			handleConstruction.verify(() -> Construction.of(any(), any()), times(0));
-
-			Handle<Object> handle = f.get(Object.class);
-			handleConstruction.verify(() -> Construction.of(converterFactory, Object.class));
-
-			assertSame(handle, f.get(Object.class));
-			handleConstruction.verify(() -> Construction.of(any(), any()), times(1));
-		}
+		@SuppressWarnings("rawtypes")
+		MockedConstruction<Handle> handleConstruction = mockConstruction(Handle.class);
+		Handle<Object> handle = f.get(Object.class);
+		handleConstruction.close();
+		assertSame(handle, f.get(Object.class));
 	}
 }

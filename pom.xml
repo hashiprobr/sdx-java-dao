@@ -4,7 +4,7 @@
   <artifactId>sdx-dao</artifactId>
   <version>0.1.0</version>
   <name>${project.groupId}:${project.artifactId}</name>
-  <description>Simple synchronous DAO framework based on Google Cloud Firestore and Storage.</description>
+  <description>Simple typed DAO framework based on Google Cloud Firestore and Storage.</description>
   <url>https://github.com/hashiprobr/sdx-java-dao</url>
   <licenses>
     <license>
@@ -31,8 +31,7 @@
   </scm>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>19</maven.compiler.source>
-    <maven.compiler.target>19</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
   </properties>
   <repositories>
     <repository>

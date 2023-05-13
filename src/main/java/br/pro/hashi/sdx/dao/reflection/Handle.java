@@ -38,17 +38,6 @@ public class Handle<E> {
 	private final String keyFieldName;
 	private final boolean autoKey;
 
-	// TODO: Replace this class with a constructor if/when
-	// Mockito can mock the construction of a generic type.
-	static class Construction {
-		static <E> Handle<E> of(ConverterFactory factory, Class<E> type) {
-			return new Handle<>(Reflector.getInstance(), factory, type);
-		}
-
-		private Construction() {
-		}
-	}
-
 	Handle(Reflector reflector, ConverterFactory factory, Class<E> type) {
 		String typeName = type.getName();
 
@@ -200,10 +189,6 @@ public class Handle<E> {
 		this.webFieldNames = webFieldNames;
 		this.keyFieldName = keyFieldName;
 		this.autoKey = autoKey;
-	}
-
-	Reflector getReflector() {
-		return reflector;
 	}
 
 	public String getCollectionName() {

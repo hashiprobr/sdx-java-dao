@@ -14,29 +14,15 @@ import org.slf4j.LoggerFactory;
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
-final class ConverterFactory {
-	private static final ConverterFactory INSTANCE = new ConverterFactory();
-
-	static ConverterFactory getInstance() {
-		return INSTANCE;
-	}
-
+class ConverterFactory {
 	private final Logger logger;
 	private final Reflector reflector;
 	private final Map<Class<? extends DaoConverter<?, ?>>, DaoConverter<?, ?>> cache;
-
-	ConverterFactory() {
-		this(Reflector.getInstance());
-	}
 
 	ConverterFactory(Reflector reflector) {
 		this.logger = LoggerFactory.getLogger(ConverterFactory.class);
 		this.reflector = reflector;
 		this.cache = new HashMap<>();
-	}
-
-	Reflector getReflector() {
-		return reflector;
 	}
 
 	DaoConverter<?, ?> get(Class<? extends DaoConverter<?, ?>> type) {

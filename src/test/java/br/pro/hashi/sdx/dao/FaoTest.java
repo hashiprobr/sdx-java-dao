@@ -1,5 +1,6 @@
 package br.pro.hashi.sdx.dao;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -18,8 +19,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Acl;
@@ -35,12 +39,20 @@ import com.google.cloud.storage.StorageException;
 import br.pro.hashi.sdx.dao.exception.FileException;
 
 class FaoTest {
-	private Bucket bucket;
+	private AutoCloseable mocks;
+	private @Mock Bucket bucket;
 	private Fao f;
 
 	@BeforeEach
 	void setUp() {
-		bucket = mock(Bucket.class);
+		mocks = MockitoAnnotations.openMocks(this);
+	}
+
+	@AfterEach
+	void tearDown() {
+		assertDoesNotThrow(() -> {
+			mocks.close();
+		});
 	}
 
 	@Test

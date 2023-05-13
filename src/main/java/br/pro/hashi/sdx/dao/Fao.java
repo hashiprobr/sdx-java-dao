@@ -20,6 +20,7 @@ import com.google.cloud.storage.StorageException;
 import br.pro.hashi.sdx.dao.exception.FileException;
 
 class Fao implements AutoCloseable {
+	private static final long EXPIRATION = 1800000;
 	private static final Entity ENTITY = Acl.User.ofAllUsers();
 	private static final Acl ACL = Acl.of(ENTITY, Acl.Role.READER);
 
@@ -45,7 +46,7 @@ class Fao implements AutoCloseable {
 				}
 				if (lock != null) {
 					Instant instant = lock.getCreateTimeOffsetDateTime().toInstant();
-					if (Instant.now().toEpochMilli() - instant.toEpochMilli() < 1800000) {
+					if (Instant.now().toEpochMilli() - instant.toEpochMilli() < EXPIRATION) {
 						throw new FileException("Could not acquire %s".formatted(lockName));
 					}
 					BlobSourceOption option = BlobSourceOption.generationMatch();

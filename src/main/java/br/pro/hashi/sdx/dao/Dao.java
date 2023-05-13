@@ -70,17 +70,6 @@ public final class Dao<E> {
 	private final DaoClient client;
 	private final Handle<E> handle;
 
-	// TODO: Replace this class with a constructor if/when
-	// Mockito can mock the construction of a generic type.
-	static class Construction {
-		static <E> Dao<E> of(DaoClient factory, Handle<E> handle) {
-			return new Dao<>(factory, handle);
-		}
-
-		private Construction() {
-		}
-	}
-
 	Dao(DaoClient client, Handle<E> handle) {
 		this.client = client;
 		this.handle = handle;
@@ -621,10 +610,12 @@ public final class Dao<E> {
 			}
 		}
 
+		@Override
 		Query getWriteQuery() {
 			return query.select(new String[] {});
 		}
 
+		@Override
 		Collection self() {
 			return this;
 		}
@@ -755,10 +746,12 @@ public final class Dao<E> {
 			});
 		}
 
+		@Override
 		Query getWriteQuery() {
 			return query;
 		}
 
+		@Override
 		Selection self() {
 			return this;
 		}
@@ -1071,7 +1064,7 @@ public final class Dao<E> {
 		} catch (ExecutionException exception) {
 			throw new DataException(exception.getCause());
 		} catch (InterruptedException exception) {
-			throw new AssertionError(exception);
+			throw new DataException(exception);
 		}
 		return result;
 	}

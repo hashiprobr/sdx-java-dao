@@ -35,11 +35,6 @@ class ReflectorTest {
 		r = new Reflector();
 	}
 
-	@Test
-	void getsInstance() {
-		assertInstanceOf(Reflector.class, Reflector.getInstance());
-	}
-
 	@ParameterizedTest
 	@ValueSource(classes = {
 			DefaultConstructor.class,

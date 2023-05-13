@@ -1,6 +1,7 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -10,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.lang.invoke.MethodHandle;
@@ -26,14 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import com.google.cloud.firestore.FieldValue;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
-import br.pro.hashi.sdx.dao.reflection.Handle.Construction;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankCollectionName;
@@ -67,12 +67,14 @@ class HandleTest {
 	private static final Lookup LOOKUP = MethodHandles.lookup();
 	private static final double DELTA = 0.000001;
 
-	private Reflector reflector;
-	private ConverterFactory factory;
+	private AutoCloseable mocks;
+	private @Mock Reflector reflector;
+	private @Mock ConverterFactory factory;
 
 	@BeforeEach
 	<E, F> void setUp() {
-		reflector = mock(Reflector.class);
+		mocks = MockitoAnnotations.openMocks(this);
+
 		when(reflector.getCreator(any(), any(String.class))).thenAnswer((invocation) -> {
 			Class<E> type = invocation.getArgument(0);
 			Constructor<E> constructor = type.getDeclaredConstructor();
@@ -102,7 +104,7 @@ class HandleTest {
 			setter.invoke(instance, value);
 			return null;
 		}).when(reflector).invokeSetter(any(MethodHandle.class), any(), any());
-		factory = mock(ConverterFactory.class);
+
 		when(factory.get(any())).thenAnswer((invocation) -> {
 			Class<? extends DaoConverter<?, ?>> type = invocation.getArgument(0);
 			Constructor<? extends DaoConverter<?, ?>> constructor = type.getDeclaredConstructor();
@@ -118,14 +120,11 @@ class HandleTest {
 		});
 	}
 
-	@Test
-	void constructsWithDefaultReflector() {
-		Handle<Default> handle;
-		try (MockedStatic<Reflector> reflectorStatic = mockStatic(Reflector.class)) {
-			reflectorStatic.when(() -> Reflector.getInstance()).thenReturn(reflector);
-			handle = Construction.of(factory, Default.class);
-		}
-		assertSame(reflector, handle.getReflector());
+	@AfterEach
+	void tearDown() {
+		assertDoesNotThrow(() -> {
+			mocks.close();
+		});
 	}
 
 	@Test

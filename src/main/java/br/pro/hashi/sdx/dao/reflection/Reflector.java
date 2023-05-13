@@ -9,13 +9,8 @@ import java.lang.reflect.Modifier;
 
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
-final class Reflector {
-	private static final Reflector INSTANCE = new Reflector();
+class Reflector {
 	private static final Lookup LOOKUP = MethodHandles.lookup();
-
-	static Reflector getInstance() {
-		return INSTANCE;
-	}
 
 	Reflector() {
 	}

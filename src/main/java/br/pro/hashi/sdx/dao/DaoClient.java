@@ -14,7 +14,6 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.cloud.StorageClient;
 
-import br.pro.hashi.sdx.dao.Dao.Construction;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 import br.pro.hashi.sdx.dao.reflection.HandleFactory;
 
@@ -49,27 +48,19 @@ public final class DaoClient {
 	}
 
 	private final Logger logger;
-	private final HandleFactory handleFactory;
+	private final HandleFactory factory;
 	private final Map<Class<?>, Dao<?>> cache;
 	private final FirebaseOptions options;
 	private final String projectId;
 	private Connection connection;
 
-	DaoClient(FirebaseOptions options, String projectId) {
-		this(HandleFactory.getInstance(), options, projectId);
-	}
-
 	DaoClient(HandleFactory factory, FirebaseOptions options, String projectId) {
 		this.logger = LoggerFactory.getLogger(DaoClient.class);
-		this.handleFactory = factory;
+		this.factory = factory;
 		this.cache = new HashMap<>();
 		this.options = options;
 		this.projectId = projectId;
 		this.connection = null;
-	}
-
-	HandleFactory getHandleFactory() {
-		return handleFactory;
 	}
 
 	synchronized Firestore getFirestore() {
@@ -128,8 +119,8 @@ public final class DaoClient {
 			@SuppressWarnings("unchecked")
 			Dao<E> dao = (Dao<E>) cache.get(type);
 			if (dao == null) {
-				Handle<E> handle = handleFactory.get(type);
-				dao = Construction.of(this, handle);
+				Handle<E> handle = factory.get(type);
+				dao = new Dao<>(this, handle);
 				cache.put(type, dao);
 			}
 			return dao;

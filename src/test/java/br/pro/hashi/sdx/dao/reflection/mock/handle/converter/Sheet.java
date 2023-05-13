@@ -2,7 +2,6 @@ package br.pro.hashi.sdx.dao.reflection.mock.handle.converter;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 public class Sheet {
@@ -21,11 +20,6 @@ public class Sheet {
 	}
 
 	public Iterable<List<String>> getRows() {
-		return new Iterable<>() {
-			@Override
-			public Iterator<List<String>> iterator() {
-				return rows.iterator();
-			}
-		};
+		return () -> rows.iterator();
 	}
 }

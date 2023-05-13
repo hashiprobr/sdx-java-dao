@@ -25,11 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedConstruction.MockInitializer;
 import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.ReadChannel;
@@ -48,7 +51,6 @@ import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.storage.Bucket;
 import com.google.firebase.FirebaseApp;
 
-import br.pro.hashi.sdx.dao.Dao.Construction;
 import br.pro.hashi.sdx.dao.DaoClient.Connection;
 import br.pro.hashi.sdx.dao.exception.DataException;
 import br.pro.hashi.sdx.dao.exception.FileException;
@@ -56,66 +58,66 @@ import br.pro.hashi.sdx.dao.mock.Entity;
 import br.pro.hashi.sdx.dao.reflection.Handle;
 
 class DaoTest {
-	private List<String> autoKeys;
-	private ApiFuture<DocumentSnapshot> readFuture;
-	private ApiFuture<WriteResult> writeFuture;
-	private DocumentReference document;
-	private ApiFuture<QuerySnapshot> batchReadFuture;
-	private CollectionReference collection;
-	private ApiFuture<List<WriteResult>> batchWriteFuture;
-	private WriteBatch batch;
-	private Firestore firestore;
-	private Bucket bucket;
-	private Connection connection;
-	private DaoClient client;
-	private Handle<Entity> handle;
+	private AutoCloseable mocks;
+	private @Mock ClientFactory clientFactory;
+	private @Mock ApiFuture<DocumentSnapshot> readFuture;
+	private @Mock ApiFuture<WriteResult> writeFuture;
+	private @Mock DocumentReference document;
+	private @Mock ApiFuture<QuerySnapshot> batchReadFuture;
+	private @Mock CollectionReference collection;
+	private @Mock ApiFuture<List<WriteResult>> batchWriteFuture;
+	private @Mock WriteBatch batch;
+	private @Mock FirebaseApp firebase;
+	private @Mock Firestore firestore;
+	private @Mock Bucket bucket;
+	private @Mock DaoClient client;
+	private @Mock Handle<Entity> handle;
 	private Dao<Entity> d;
-	private ApiFuture<AggregateQuerySnapshot> countFuture;
+	private @Mock ApiFuture<AggregateQuerySnapshot> countFuture;
 
-	@SuppressWarnings("unchecked")
 	@BeforeEach
 	void setUp() {
-		autoKeys = new ArrayList<>();
+		mocks = MockitoAnnotations.openMocks(this);
+
+		List<String> autoKeys = new ArrayList<>();
 		autoKeys.add("0");
 		autoKeys.add("1");
-		readFuture = mock(ApiFuture.class);
-		writeFuture = mock(ApiFuture.class);
-		document = mock(DocumentReference.class);
+
 		when(document.getId()).thenAnswer((invocation) -> {
 			return autoKeys.remove(0);
 		});
 		when(document.get()).thenReturn(readFuture);
-		when(document.create(any(Map.class))).thenReturn(writeFuture);
-		when(document.update(any(Map.class))).thenReturn(writeFuture);
+		when(document.create(any())).thenReturn(writeFuture);
+		when(document.update(any())).thenReturn(writeFuture);
 		when(document.delete()).thenReturn(writeFuture);
-		batchReadFuture = mock(ApiFuture.class);
-		collection = mock(CollectionReference.class);
+
 		when(collection.document()).thenReturn(document);
 		when(collection.document(any(String.class))).thenReturn(document);
 		when(collection.select(any(String[].class))).thenReturn(collection);
 		when(collection.get()).thenReturn(batchReadFuture);
-		batchWriteFuture = mock(ApiFuture.class);
-		batch = mock(WriteBatch.class);
-		when(batch.create(eq(document), any(Map.class))).thenReturn(batch);
-		when(batch.update(eq(document), any(Map.class))).thenReturn(batch);
+
+		when(batch.create(eq(document), any())).thenReturn(batch);
+		when(batch.update(eq(document), any())).thenReturn(batch);
 		when(batch.delete(document)).thenReturn(batch);
 		when(batch.commit()).thenReturn(batchWriteFuture);
-		firestore = mock(Firestore.class);
+
 		when(firestore.collection("collection")).thenReturn(collection);
 		when(firestore.batch()).thenReturn(batch);
-		bucket = mock(Bucket.class);
-		connection = new Connection(mock(FirebaseApp.class), firestore, bucket);
-		client = mock(DaoClient.class);
+
+		when(collection.getFirestore()).thenReturn(firestore);
+
+		Connection connection = new Connection(firebase, firestore, bucket);
+
 		when(client.getFirestore()).thenReturn(firestore);
 		when(client.getBucket()).thenReturn(bucket);
 		when(client.getConnection()).thenReturn(connection);
-		handle = mock(Handle.class);
+
 		when(handle.getCollectionName()).thenReturn("collection");
-		when(handle.toInstance(any(Map.class))).thenAnswer((invocation) -> {
+		when(handle.toInstance(any())).thenAnswer((invocation) -> {
 			Map<String, Object> data = invocation.getArgument(0);
 			return new Entity((int) data.get("value"));
 		});
-		when(handle.toValues(any(Map.class))).thenAnswer((invocation) -> {
+		when(handle.toValues(any())).thenAnswer((invocation) -> {
 			Map<String, Object> data = invocation.getArgument(0);
 			return Map.of("value", data.get("value"));
 		});
@@ -133,41 +135,46 @@ class DaoTest {
 			}
 			return data;
 		});
-		when(handle.toData(any(Map.class))).thenAnswer((invocation) -> {
+		when(handle.toData(any())).thenAnswer((invocation) -> {
 			Map<String, Object> values = invocation.getArgument(0);
 			return Map.of("value", values.get("value"));
 		});
 		when(handle.toAliases(any(String[].class))).thenAnswer((invocation) -> {
 			return invocation.getArgument(0);
 		});
-		d = Construction.of(client, handle);
-		countFuture = mock(ApiFuture.class);
+
+		d = new Dao<>(client, handle);
+
+		when(client.get(Entity.class)).thenReturn(d);
+	}
+
+	@AfterEach
+	void tearDown() {
+		assertDoesNotThrow(() -> {
+			mocks.close();
+		});
 	}
 
 	@Test
 	void createsFirst() {
-		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class)) {
-			when(client.get(Entity.class)).thenReturn(d);
-			ClientFactory clientFactory = mock(ClientFactory.class);
-			when(clientFactory.getFirst()).thenReturn(client);
-			try (MockedStatic<ClientFactory> clientFactoryStatic = mockStatic(ClientFactory.class)) {
-				clientFactoryStatic.when(() -> ClientFactory.getInstance()).thenReturn(clientFactory);
-				assertSame(d, Dao.of(Entity.class));
-			}
+		when(clientFactory.getFirst()).thenReturn(client);
+		try (MockedStatic<ClientFactory> factoryStatic = mockFactoryStatic()) {
+			assertSame(d, Dao.of(Entity.class));
 		}
 	}
 
 	@Test
 	void createsFromId() {
-		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class)) {
-			when(client.get(Entity.class)).thenReturn(d);
-			ClientFactory clientFactory = mock(ClientFactory.class);
-			when(clientFactory.getFromId("id")).thenReturn(client);
-			try (MockedStatic<ClientFactory> clientFactoryStatic = mockStatic(ClientFactory.class)) {
-				clientFactoryStatic.when(() -> ClientFactory.getInstance()).thenReturn(clientFactory);
-				assertSame(d, Dao.of(Entity.class, "id"));
-			}
+		when(clientFactory.getFromId("id")).thenReturn(client);
+		try (MockedStatic<ClientFactory> factoryStatic = mockFactoryStatic()) {
+			assertSame(d, Dao.of(Entity.class, "id"));
 		}
+	}
+
+	private MockedStatic<ClientFactory> mockFactoryStatic() {
+		MockedStatic<ClientFactory> factoryStatic = mockStatic(ClientFactory.class);
+		factoryStatic.when(() -> ClientFactory.getInstance()).thenReturn(clientFactory);
+		return factoryStatic;
 	}
 
 	@Test
@@ -1468,7 +1475,6 @@ class DaoTest {
 		assertDoesNotThrow(() -> {
 			when(batchReadFuture.get()).thenReturn(snapshots);
 		});
-		when(collection.getFirestore()).thenReturn(firestore);
 	}
 
 	private Throwable mockBatchReadFutureThrow() {
@@ -1740,12 +1746,14 @@ class DaoTest {
 	}
 
 	@Test
-	void doesNotSync() {
+	void doesNotSyncInterruptedFuture() {
+		InterruptedException cause = new InterruptedException();
 		assertDoesNotThrow(() -> {
-			when(readFuture.get()).thenThrow(InterruptedException.class);
+			when(readFuture.get()).thenThrow(cause);
 		});
-		assertThrows(AssertionError.class, () -> {
+		Exception exception = assertThrows(DataException.class, () -> {
 			d.sync(readFuture);
 		});
+		assertSame(cause, exception.getCause());
 	}
 }

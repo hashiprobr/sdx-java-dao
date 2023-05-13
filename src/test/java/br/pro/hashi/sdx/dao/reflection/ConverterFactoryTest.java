@@ -1,23 +1,21 @@
 package br.pro.hashi.sdx.dao.reflection;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Constructor;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
@@ -37,48 +35,38 @@ import br.pro.hashi.sdx.dao.reflection.mock.converter.ThrowerImplementation;
 class ConverterFactoryTest {
 	private static final Lookup LOOKUP = MethodHandles.lookup();
 
-	private Reflector reflector;
+	private AutoCloseable mocks;
+	private @Mock Reflector reflector;
 	private ConverterFactory f;
 
 	@BeforeEach
 	void setUp() {
-		reflector = mock(Reflector.class);
+		mocks = MockitoAnnotations.openMocks(this);
+
 		when(reflector.getCreator(any(), any(String.class))).thenAnswer((invocation) -> {
 			Class<? extends DaoConverter<?, ?>> type = invocation.getArgument(0);
 			Constructor<? extends DaoConverter<?, ?>> constructor = type.getDeclaredConstructor();
 			return LOOKUP.unreflectConstructor(constructor);
 		});
+
 		f = new ConverterFactory(reflector);
 	}
 
-	@Test
-	void getsInstance() {
-		assertInstanceOf(ConverterFactory.class, ConverterFactory.getInstance());
-	}
-
-	@Test
-	void constructsWithDefaultReflector() {
-		ConverterFactory factory;
-		try (MockedStatic<Reflector> reflectorStatic = mockStatic(Reflector.class)) {
-			reflectorStatic.when(() -> Reflector.getInstance()).thenReturn(reflector);
-			factory = new ConverterFactory();
-		}
-		assertSame(reflector, factory.getReflector());
+	@AfterEach
+	void tearDown() {
+		assertDoesNotThrow(() -> {
+			mocks.close();
+		});
 	}
 
 	@Test
 	void gets() {
-		verify(reflector, times(0)).getCreator(any(), any());
-
 		DaoConverter<?, ?> converter = f.get(DefaultImplementation.class);
-		verify(reflector).getCreator(DefaultImplementation.class, DefaultImplementation.class.getName());
-
 		assertSame(converter, f.get(DefaultImplementation.class));
-		verify(reflector, times(1)).getCreator(any(), any());
 	}
 
 	@Test
-	void doesNotGetThrower() {
+	void doesNotGetThrowerImplementation() {
 		assertThrows(ReflectionException.class, () -> {
 			f.get(ThrowerImplementation.class);
 		});

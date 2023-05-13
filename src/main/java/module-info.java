@@ -1,5 +1,6 @@
 /**
- * Defines a simple DAO framework based on Google Cloud Firestore and Storage.
+ * Defines a simple typed DAO framework based on Google Cloud Firestore and
+ * Storage.
  */
 module br.pro.hashi.sdx.dao {
 	requires firebase.admin;
