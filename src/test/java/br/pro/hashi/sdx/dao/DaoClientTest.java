@@ -147,4 +147,11 @@ class DaoClientTest {
 		construction.close();
 		assertSame(handle, c.get(Object.class));
 	}
+
+	@Test
+	void doesNotGetForNullType() {
+		assertThrows(NullPointerException.class, () -> {
+			c.get(null);
+		});
+	}
 }

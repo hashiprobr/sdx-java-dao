@@ -108,13 +108,17 @@ public final class DaoClient {
 	}
 
 	/**
-	 * Obtains the data access object of an entity.
+	 * Obtains the data access object of the specified entity type.
 	 * 
-	 * @param <E>  the entity type
+	 * @param <E>  the type
 	 * @param type a {@link Class} representing {@code E}
 	 * @return the object
+	 * @throws NullPointerException if the type is null
 	 */
 	public <E> Dao<E> get(Class<E> type) {
+		if (type == null) {
+			throw new NullPointerException("Type cannot be null");
+		}
 		synchronized (cache) {
 			@SuppressWarnings("unchecked")
 			Dao<E> dao = (Dao<E>) cache.get(type);

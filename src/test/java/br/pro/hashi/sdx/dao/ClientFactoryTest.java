@@ -69,9 +69,7 @@ class ClientFactoryTest {
 
 	@Test
 	void getsInstance() {
-		try (MockedConstruction<HandleFactory> factoryConstruction = mockConstruction(HandleFactory.class)) {
-			assertInstanceOf(ClientFactory.class, ClientFactory.getInstance());
-		}
+		assertInstanceOf(ClientFactory.class, ClientFactory.getInstance());
 	}
 
 	@Test

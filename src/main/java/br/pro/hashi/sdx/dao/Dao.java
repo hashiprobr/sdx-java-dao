@@ -45,6 +45,7 @@ public final class Dao<E> {
 	 * @param <E>  the type
 	 * @param type a {@link Class} representing {@code E}
 	 * @return the object
+	 * @throws NullPointerException  if the type is null
 	 * @throws IllegalStateException if no client exists
 	 */
 	public static <E> Dao<E> of(Class<E> type) {
@@ -59,7 +60,7 @@ public final class Dao<E> {
 	 * @param type      a {@link Class} representing {@code E}
 	 * @param projectId the id
 	 * @return the object
-	 * @throws NullPointerException     if the id is null
+	 * @throws NullPointerException     if the type is null or the id is null
 	 * @throws IllegalArgumentException if the id is blank or a client for the id
 	 *                                  does not exist
 	 */
@@ -95,6 +96,8 @@ public final class Dao<E> {
 	 *                                  is not an auto field but the value is null
 	 * @throws IllegalArgumentException if the key field is an auto field but the
 	 *                                  value is not null
+	 * @throws FileException            if a Storage operation could not be
+	 *                                  performed
 	 * @throws DataException            if the Firestore operation could not be
 	 *                                  performed
 	 */
@@ -140,6 +143,8 @@ public final class Dao<E> {
 	 * @throws IllegalArgumentException if the instance list is empty or if the key
 	 *                                  field is an auto field but a value is not
 	 *                                  null
+	 * @throws FileException            if a Storage operation could not be
+	 *                                  performed
 	 * @throws DataException            if a Firestore operation could not be
 	 *                                  performed
 	 */
@@ -353,12 +358,13 @@ public final class Dao<E> {
 	 * </p>
 	 * <p>
 	 * A successful operation is guaranteed to be atomic, but a
-	 * {@link DataException} can leave the entity in an inconsistent state.
+	 * {@link DataException} can leave the entity in an inconsistent state that must
+	 * be fixed with another call to this method.
 	 * </p>
 	 * 
 	 * @param key the key
 	 * @throws NullPointerException if the key is null
-	 * @throws FileException        if the Storage operation could not be performed
+	 * @throws FileException        if a Storage operation could not be performed
 	 * @throws DataException        if the Firestore operation could not be
 	 *                              performed
 	 */
@@ -391,7 +397,7 @@ public final class Dao<E> {
 	 * @throws NullPointerException     if the key is null, the field name is null,
 	 *                                  or the stream is null
 	 * @throws IllegalArgumentException if the file field does not exist
-	 * @throws FileException            if the Storage operation could not be
+	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if the Firestore operation could not be
 	 *                                  performed
@@ -432,7 +438,7 @@ public final class Dao<E> {
 	 * @return the link
 	 * @throws NullPointerException     if the key is null or the field name is null
 	 * @throws IllegalArgumentException if the file field does not exist
-	 * @throws FileException            if the Storage operation could not be
+	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if the Firestore operation could not be
 	 *                                  performed
@@ -459,7 +465,7 @@ public final class Dao<E> {
 	 * @return the file content
 	 * @throws NullPointerException     if the key is null or the field name is null
 	 * @throws IllegalArgumentException if the file field does not exist
-	 * @throws FileException            if the Storage operation could not be
+	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 */
 	public DaoFile downloadFile(Object key, String fieldName) {
@@ -487,7 +493,7 @@ public final class Dao<E> {
 	 * @param fieldName the field name
 	 * @throws NullPointerException     if the key is null or the field name is null
 	 * @throws IllegalArgumentException if the file field does not exist
-	 * @throws FileException            if the Storage operation could not be
+	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if the Firestore operation could not be
 	 *                                  performed
