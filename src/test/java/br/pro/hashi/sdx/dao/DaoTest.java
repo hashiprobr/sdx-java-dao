@@ -2,6 +2,7 @@ package br.pro.hashi.sdx.dao;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -261,9 +262,10 @@ class DaoTest {
 		MockInitializer<Fao> initializer = (mock, context) -> {
 			List<?> arguments = context.arguments();
 			assertEquals(bucket, arguments.get(0));
-			@SuppressWarnings("unchecked")
-			List<String> fileNames = (List<String>) arguments.get(1);
-			allFileNames.addAll(fileNames);
+			List<?> fileNames = assertInstanceOf(List.class, arguments.get(1));
+			for (Object fileName : fileNames) {
+				allFileNames.add(assertInstanceOf(String.class, fileName));
+			}
 		};
 		return mockConstruction(Fao.class, initializer);
 	}
