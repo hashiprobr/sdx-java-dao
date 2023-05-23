@@ -32,6 +32,8 @@ public class Handle<E> {
 	private final Map<String, String> propertyNames;
 	private final Map<String, String> contentTypes;
 	private final Set<String> fieldNames;
+	private final Set<String> byteFieldNames;
+	private final Set<String> shortFieldNames;
 	private final Set<String> intFieldNames;
 	private final Set<String> floatFieldNames;
 	private final Set<String> webFieldNames;
@@ -74,6 +76,8 @@ public class Handle<E> {
 		Map<String, String> propertyNames = new HashMap<>();
 		Map<String, String> contentTypes = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
+		Set<String> byteFieldNames = new HashSet<>();
+		Set<String> shortFieldNames = new HashSet<>();
 		Set<String> intFieldNames = new HashSet<>();
 		Set<String> floatFieldNames = new HashSet<>();
 		Set<String> webFieldNames = new HashSet<>();
@@ -117,7 +121,11 @@ public class Handle<E> {
 						fieldNames.add(fieldName);
 
 						Class<?> fieldType = field.getType();
-						if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+						if (fieldType.equals(byte.class) || fieldType.equals(Byte.class)) {
+							byteFieldNames.add(fieldName);
+						} else if (fieldType.equals(short.class) || fieldType.equals(Short.class)) {
+							shortFieldNames.add(fieldName);
+						} else if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
 							intFieldNames.add(fieldName);
 						} else if (fieldType.equals(float.class) || fieldType.equals(Float.class)) {
 							floatFieldNames.add(fieldName);
@@ -184,6 +192,8 @@ public class Handle<E> {
 		this.propertyNames = propertyNames;
 		this.contentTypes = contentTypes;
 		this.fieldNames = fieldNames;
+		this.byteFieldNames = byteFieldNames;
+		this.shortFieldNames = shortFieldNames;
 		this.intFieldNames = intFieldNames;
 		this.floatFieldNames = floatFieldNames;
 		this.webFieldNames = webFieldNames;
@@ -379,13 +389,23 @@ public class Handle<E> {
 		@SuppressWarnings("unchecked")
 		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
 		if (converter == null) {
-			if (intFieldNames.contains(fieldName) && value instanceof Long) {
+			if (value instanceof Long) {
 				Long longValue = (Long) value;
-				return longValue.intValue();
+				if (byteFieldNames.contains(fieldName)) {
+					return longValue.byteValue();
+				}
+				if (shortFieldNames.contains(fieldName)) {
+					return longValue.shortValue();
+				}
+				if (intFieldNames.contains(fieldName)) {
+					return longValue.intValue();
+				}
 			}
-			if (floatFieldNames.contains(fieldName) && value instanceof Double) {
+			if (value instanceof Double) {
 				Double doubleValue = (Double) value;
-				return doubleValue.floatValue();
+				if (floatFieldNames.contains(fieldName)) {
+					return doubleValue.floatValue();
+				}
 			}
 			return value;
 		}

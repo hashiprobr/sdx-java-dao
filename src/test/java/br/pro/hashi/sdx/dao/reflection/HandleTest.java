@@ -47,6 +47,7 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.Default;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FileKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.GrandChild;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.LargeFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NoKeyFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonConvertableField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonFileWebField;
@@ -56,6 +57,7 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.NonStringFileField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.Parent;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.PluralEntities;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.SingularEntity;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.SmallFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ThrowerConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.TwoKeyFields;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Address;
@@ -575,20 +577,62 @@ class HandleTest {
 	}
 
 	@Test
+	void constructsWithSmallFields() {
+		Handle<SmallFields> h = newHandle(SmallFields.class);
+
+		SmallFields instance = h.toInstance(Map.of(
+				"byteValue", 1L,
+				"shortValue", 2L));
+		assertEquals(1, instance.getByteValue());
+		assertEquals(2, instance.getShortValue());
+
+		Map<String, Object> values = h.toValues(Map.of(
+				"byteValue", 1L,
+				"shortValue", 2L));
+		assertEquals(1, (byte) values.get("byteValue"));
+		assertEquals(2, (short) values.get("shortValue"));
+	}
+
+	@Test
+	void constructsWithLargeFields() {
+		Handle<LargeFields> h = newHandle(LargeFields.class);
+
+		LargeFields instance = h.toInstance(Map.of(
+				"longValue", 1L,
+				"doubleValue", 2.0));
+		assertEquals(1, instance.getLongValue());
+		assertEquals(2, instance.getDoubleValue(), DELTA);
+
+		Map<String, Object> values = h.toValues(Map.of(
+				"longValue", 1L,
+				"doubleValue", 2.0));
+		assertEquals(1, (long) values.get("longValue"));
+		assertEquals(2, (double) values.get("doubleValue"), DELTA);
+	}
+
+	@Test
 	void constructsWithBoxedFields() {
 		Handle<BoxedFields> h = newHandle(BoxedFields.class);
 
 		BoxedFields instance = h.toInstance(Map.of(
-				"integerValue", 0,
-				"floatValue", 1F));
-		assertEquals(0, instance.getIntegerValue());
-		assertEquals(1, instance.getFloatValue(), DELTA);
+				"byteValue", (byte) 1,
+				"shortValue", (short) 2,
+				"integerValue", 3,
+				"floatValue", 4F));
+		assertEquals(1, (byte) instance.getByteValue());
+		assertEquals(2, (short) instance.getShortValue());
+		assertEquals(3, instance.getIntegerValue());
+		assertEquals(4, instance.getFloatValue(), DELTA);
 
 		Map<String, Object> values = h.toValues(Map.of(
-				"integerValue", 1,
-				"floatValue", 2F));
-		assertEquals(1, values.get("integerValue"));
-		assertEquals(2, (float) values.get("floatValue"), DELTA);
+				"byteValue", 1,
+				"shortValue", 2,
+				"integerValue", 3,
+				"floatValue", 4F));
+		assertEquals(1, values.get("byteValue"));
+		assertEquals(2, values.get("shortValue"));
+		assertEquals(3, values.get("integerValue"));
+		assertEquals(4, (float) values.get("floatValue"), DELTA);
 	}
 
 	@Test
