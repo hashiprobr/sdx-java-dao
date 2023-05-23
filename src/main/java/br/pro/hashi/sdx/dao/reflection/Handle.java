@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.cloud.firestore.FieldValue;
+import com.google.firebase.database.utilities.encoding.CustomClassMapper;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.annotation.Auto;
@@ -29,13 +30,10 @@ public class Handle<E> {
 	private final Map<String, DaoConverter<?, ?>> converters;
 	private final Map<String, MethodHandle> getters;
 	private final Map<String, MethodHandle> setters;
-	private final Map<String, String> propertyNames;
+	private final Map<String, Class<?>> fieldTypes;
 	private final Map<String, String> contentTypes;
+	private final Map<String, String> propertyNames;
 	private final Set<String> fieldNames;
-	private final Set<String> byteFieldNames;
-	private final Set<String> shortFieldNames;
-	private final Set<String> intFieldNames;
-	private final Set<String> floatFieldNames;
 	private final Set<String> webFieldNames;
 	private final String keyFieldName;
 	private final boolean autoKey;
@@ -73,13 +71,10 @@ public class Handle<E> {
 		Map<String, DaoConverter<?, ?>> converters = new HashMap<>();
 		Map<String, MethodHandle> getters = new HashMap<>();
 		Map<String, MethodHandle> setters = new HashMap<>();
-		Map<String, String> propertyNames = new HashMap<>();
+		Map<String, Class<?>> fieldTypes = new HashMap<>();
 		Map<String, String> contentTypes = new HashMap<>();
+		Map<String, String> propertyNames = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
-		Set<String> byteFieldNames = new HashSet<>();
-		Set<String> shortFieldNames = new HashSet<>();
-		Set<String> intFieldNames = new HashSet<>();
-		Set<String> floatFieldNames = new HashSet<>();
 		Set<String> webFieldNames = new HashSet<>();
 		String keyFieldName = null;
 		boolean autoKey = false;
@@ -118,18 +113,7 @@ public class Handle<E> {
 							propertyNames.put(fieldName, propertyName);
 						}
 
-						fieldNames.add(fieldName);
-
 						Class<?> fieldType = field.getType();
-						if (fieldType.equals(byte.class) || fieldType.equals(Byte.class)) {
-							byteFieldNames.add(fieldName);
-						} else if (fieldType.equals(short.class) || fieldType.equals(Short.class)) {
-							shortFieldNames.add(fieldName);
-						} else if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
-							intFieldNames.add(fieldName);
-						} else if (fieldType.equals(float.class) || fieldType.equals(Float.class)) {
-							floatFieldNames.add(fieldName);
-						}
 
 						File fileAnnotation = field.getDeclaredAnnotation(File.class);
 						Web webAnnotation = field.getDeclaredAnnotation(Web.class);
@@ -174,6 +158,9 @@ public class Handle<E> {
 								autoKey = true;
 							}
 						}
+
+						fieldTypes.put(fieldName, fieldType);
+						fieldNames.add(fieldName);
 					}
 				}
 			}
@@ -189,13 +176,10 @@ public class Handle<E> {
 		this.converters = converters;
 		this.getters = getters;
 		this.setters = setters;
-		this.propertyNames = propertyNames;
+		this.fieldTypes = fieldTypes;
 		this.contentTypes = contentTypes;
+		this.propertyNames = propertyNames;
 		this.fieldNames = fieldNames;
-		this.byteFieldNames = byteFieldNames;
-		this.shortFieldNames = shortFieldNames;
-		this.intFieldNames = intFieldNames;
-		this.floatFieldNames = floatFieldNames;
 		this.webFieldNames = webFieldNames;
 		this.keyFieldName = keyFieldName;
 		this.autoKey = autoKey;
@@ -389,25 +373,26 @@ public class Handle<E> {
 		@SuppressWarnings("unchecked")
 		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
 		if (converter == null) {
+			Class<?> fieldType = fieldTypes.get(fieldName);
 			if (value instanceof Long) {
-				Long longValue = (Long) value;
-				if (byteFieldNames.contains(fieldName)) {
-					return longValue.byteValue();
+				Long l = (Long) value;
+				if (fieldType.equals(byte.class) || fieldType.equals(Byte.class)) {
+					return l.byteValue();
 				}
-				if (shortFieldNames.contains(fieldName)) {
-					return longValue.shortValue();
+				if (fieldType.equals(short.class) || fieldType.equals(Short.class)) {
+					return l.shortValue();
 				}
-				if (intFieldNames.contains(fieldName)) {
-					return longValue.intValue();
+				if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+					return l.intValue();
 				}
 			}
 			if (value instanceof Double) {
-				Double doubleValue = (Double) value;
-				if (floatFieldNames.contains(fieldName)) {
-					return doubleValue.floatValue();
+				Double d = (Double) value;
+				if (fieldType.equals(float.class) || fieldType.equals(Float.class)) {
+					return d.floatValue();
 				}
 			}
-			return value;
+			return CustomClassMapper.convertToCustomClass(value, fieldType);
 		}
 		return converter.from(value);
 	}

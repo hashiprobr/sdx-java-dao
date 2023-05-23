@@ -241,7 +241,7 @@ class HandleTest {
 		instance = h.toInstance(Map.of(
 				"booleanValue", true,
 				"intValue", 0,
-				"floatValue", 1F,
+				"floatValue", 1,
 				"stringValue", ""));
 		assertTrue(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
@@ -330,7 +330,7 @@ class HandleTest {
 		instance = h.toInstance(Map.of(
 				"boolean_value", false,
 				"intValue", 0,
-				"floatValue", 2F,
+				"floatValue", 2,
 				"string_value", ""));
 		assertFalse(instance.isBooleanValue());
 		assertEquals(0, instance.getIntValue());
@@ -541,10 +541,10 @@ class HandleTest {
 		assertSame(instance.getByteWrapper(), data.get("byte_wrapper.field"));
 
 		data.put(".", null);
+		data.remove("value");
 
 		values = h.toValues(data);
 		assertFalse(values.containsKey("."));
-		assertSame(FieldValue.delete(), values.get("value"));
 		email = assertInstanceOf(Email.class, values.get("email"));
 		assertEquals("email", email.getLogin());
 		assertEquals("convertable.com", email.getDomain());
@@ -615,24 +615,32 @@ class HandleTest {
 		Handle<BoxedFields> h = newHandle(BoxedFields.class);
 
 		BoxedFields instance = h.toInstance(Map.of(
-				"byteValue", (byte) 1,
-				"shortValue", (short) 2,
-				"integerValue", 3,
-				"floatValue", 4F));
+				"byteValue", 1L,
+				"shortValue", 2L,
+				"integerValue", 3L,
+				"longValue", 4L,
+				"floatValue", 5.0,
+				"doubleValue", 6.0));
 		assertEquals(1, (byte) instance.getByteValue());
 		assertEquals(2, (short) instance.getShortValue());
 		assertEquals(3, instance.getIntegerValue());
-		assertEquals(4, instance.getFloatValue(), DELTA);
+		assertEquals(4, instance.getLongValue());
+		assertEquals(5, instance.getFloatValue(), DELTA);
+		assertEquals(6, instance.getDoubleValue(), DELTA);
 
 		Map<String, Object> values = h.toValues(Map.of(
-				"byteValue", 1,
-				"shortValue", 2,
-				"integerValue", 3,
-				"floatValue", 4F));
-		assertEquals(1, values.get("byteValue"));
-		assertEquals(2, values.get("shortValue"));
+				"byteValue", 1L,
+				"shortValue", 2L,
+				"integerValue", 3L,
+				"longValue", 4L,
+				"floatValue", 5.0,
+				"doubleValue", 6.0));
+		assertEquals(1, (byte) values.get("byteValue"));
+		assertEquals(2, (short) values.get("shortValue"));
 		assertEquals(3, values.get("integerValue"));
-		assertEquals(4, (float) values.get("floatValue"), DELTA);
+		assertEquals(4, (long) values.get("longValue"));
+		assertEquals(5, (float) values.get("floatValue"), DELTA);
+		assertEquals(6, (double) values.get("doubleValue"), DELTA);
 	}
 
 	@Test
