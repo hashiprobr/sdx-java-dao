@@ -1,8 +1,20 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,8 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.Blob;
 import com.google.cloud.firestore.FieldValue;
-import com.google.firebase.database.utilities.encoding.CustomClassMapper;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.annotation.Auto;
@@ -24,13 +37,28 @@ import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
 public class Handle<E> {
+	private static final Set<Class<?>> PRIMITIVE_TYPES = Set.of(
+			boolean.class,
+			short.class,
+			int.class,
+			long.class,
+			float.class,
+			double.class,
+			Boolean.class,
+			Short.class,
+			Integer.class,
+			Long.class,
+			Float.class,
+			Double.class,
+			String.class);
+
 	private final Reflector reflector;
 	private final MethodHandle creator;
 	private final String collectionName;
 	private final Map<String, DaoConverter<?, ?>> converters;
 	private final Map<String, MethodHandle> getters;
 	private final Map<String, MethodHandle> setters;
-	private final Map<String, Class<?>> fieldTypes;
+	private final Map<String, Type> fieldTypes;
 	private final Map<String, String> contentTypes;
 	private final Map<String, String> propertyNames;
 	private final Set<String> fieldNames;
@@ -71,7 +99,7 @@ public class Handle<E> {
 		Map<String, DaoConverter<?, ?>> converters = new HashMap<>();
 		Map<String, MethodHandle> getters = new HashMap<>();
 		Map<String, MethodHandle> setters = new HashMap<>();
-		Map<String, Class<?>> fieldTypes = new HashMap<>();
+		Map<String, Type> fieldTypes = new HashMap<>();
 		Map<String, String> contentTypes = new HashMap<>();
 		Map<String, String> propertyNames = new HashMap<>();
 		Set<String> fieldNames = new HashSet<>();
@@ -113,7 +141,7 @@ public class Handle<E> {
 							propertyNames.put(fieldName, propertyName);
 						}
 
-						Class<?> fieldType = field.getType();
+						Type fieldType = field.getGenericType();
 
 						File fileAnnotation = field.getDeclaredAnnotation(File.class);
 						Web webAnnotation = field.getDeclaredAnnotation(Web.class);
@@ -364,37 +392,208 @@ public class Handle<E> {
 		@SuppressWarnings("unchecked")
 		DaoConverter<S, ?> converter = (DaoConverter<S, ?>) converters.get(fieldName);
 		if (converter == null) {
-			return value;
+			Type fieldType = fieldTypes.get(fieldName);
+			return convertTo(fieldType, value);
 		}
 		return converter.to(value);
+	}
+
+	private <S> Object convertTo(Type fieldType, S value) {
+		if (value instanceof byte[]) {
+			return Blob.fromBytes((byte[]) value);
+		}
+		if (value instanceof Byte) {
+			return Blob.fromBytes((new byte[] { (byte) value }));
+		}
+		if (value instanceof Byte[]) {
+			Byte[] boxedBytes = (Byte[]) value;
+			byte[] bytes = new byte[boxedBytes.length];
+			for (int i = 0; i < boxedBytes.length; i++) {
+				bytes[i] = boxedBytes[i];
+			}
+			return Blob.fromBytes(bytes);
+		}
+		if (value instanceof Character) {
+			return (int) value;
+		}
+		if (value instanceof Instant) {
+			Instant i = (Instant) value;
+			return Timestamp.ofTimeSecondsAndNanos(i.getEpochSecond(), i.getNano());
+		}
+		if (value instanceof ZonedDateTime) {
+			ZonedDateTime dt = (ZonedDateTime) value;
+			return Timestamp.ofTimeSecondsAndNanos(dt.toEpochSecond(), dt.getNano());
+		}
+		if (value instanceof OffsetDateTime) {
+			OffsetDateTime dt = (OffsetDateTime) value;
+			return Timestamp.ofTimeSecondsAndNanos(dt.toEpochSecond(), dt.getNano());
+		}
+		if (value instanceof OffsetTime) {
+			OffsetTime t = (OffsetTime) value;
+			return Timestamp.ofTimeSecondsAndNanos(t.toEpochSecond(LocalDate.EPOCH), t.getNano());
+		}
+		if (value instanceof LocalDateTime) {
+			LocalDateTime dt = (LocalDateTime) value;
+			return Timestamp.ofTimeSecondsAndNanos(dt.toEpochSecond(ZoneOffset.UTC), dt.getNano());
+		}
+		if (value instanceof LocalDate) {
+			LocalDate d = (LocalDate) value;
+			return Timestamp.ofTimeSecondsAndNanos(d.toEpochSecond(LocalTime.MIN, ZoneOffset.UTC), 0);
+		}
+		if (value instanceof LocalTime) {
+			LocalTime t = (LocalTime) value;
+			return Timestamp.ofTimeSecondsAndNanos(t.toEpochSecond(LocalDate.EPOCH, ZoneOffset.UTC), t.getNano());
+		}
+		if (fieldType instanceof ParameterizedType) {
+			ParameterizedType genericType = (ParameterizedType) fieldType;
+			Type[] componentTypes = genericType.getActualTypeArguments();
+			if (value instanceof List) {
+				List<?> list = (List<?>) value;
+				List<Object> values = new ArrayList<>();
+				for (Object component : list) {
+					values.add(convertTo(componentTypes[0], component));
+				}
+				return values;
+			}
+			if (value instanceof Map && componentTypes[0].equals(String.class)) {
+				Map<?, ?> map = (Map<?, ?>) value;
+				Map<Object, Object> values = new HashMap<>();
+				for (Object name : map.keySet()) {
+					values.put(name, convertTo(componentTypes[1], map.get(name)));
+				}
+				return values;
+			}
+		} else {
+			Class<?> rawType = (Class<?>) fieldType;
+			if (rawType.isArray()) {
+				Class<?> componentType = rawType.componentType();
+				List<Object> values = new ArrayList<>();
+				for (int i = 0; i < Array.getLength(value); i++) {
+					values.add(convertTo(componentType, Array.get(value, i)));
+				}
+				return values;
+			}
+			if (PRIMITIVE_TYPES.contains(rawType)) {
+				return value;
+			}
+		}
+		return value;
 	}
 
 	private <T> Object convertFrom(String fieldName, T value) {
 		@SuppressWarnings("unchecked")
 		DaoConverter<?, T> converter = (DaoConverter<?, T>) converters.get(fieldName);
 		if (converter == null) {
-			Class<?> fieldType = fieldTypes.get(fieldName);
-			if (value instanceof Long) {
-				Long l = (Long) value;
-				if (fieldType.equals(byte.class) || fieldType.equals(Byte.class)) {
-					return l.byteValue();
-				}
-				if (fieldType.equals(short.class) || fieldType.equals(Short.class)) {
-					return l.shortValue();
-				}
-				if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
-					return l.intValue();
-				}
-			}
-			if (value instanceof Double) {
-				Double d = (Double) value;
-				if (fieldType.equals(float.class) || fieldType.equals(Float.class)) {
-					return d.floatValue();
-				}
-			}
-			return CustomClassMapper.convertToCustomClass(value, fieldType);
+			Type fieldType = fieldTypes.get(fieldName);
+			return convertFrom(fieldType, value);
 		}
 		return converter.from(value);
+	}
+
+	private <T> Object convertFrom(Type fieldType, T value) {
+		if (value instanceof Blob) {
+			Blob b = (Blob) value;
+			if (fieldType.equals(byte.class) || fieldType.equals(Byte.class)) {
+				byte[] bytes = b.toBytes();
+				return bytes[0];
+			}
+			if (fieldType.equals(byte[].class)) {
+				return b.toBytes();
+			}
+			if (fieldType.equals(Byte[].class)) {
+				byte[] bytes = b.toBytes();
+				Byte[] boxedBytes = new Byte[bytes.length];
+				for (int i = 0; i < bytes.length; i++) {
+					boxedBytes[i] = bytes[i];
+				}
+				return boxedBytes;
+			}
+		}
+		if (value instanceof Long) {
+			Long l = (Long) value;
+			if (fieldType.equals(char.class) || fieldType.equals(Character.class)) {
+				char[] chars = Character.toChars(l.intValue());
+				return chars[0];
+			}
+			if (fieldType.equals(short.class) || fieldType.equals(Short.class)) {
+				return l.shortValue();
+			}
+			if (fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+				return l.intValue();
+			}
+		}
+		if (value instanceof Double) {
+			Double d = (Double) value;
+			if (fieldType.equals(float.class) || fieldType.equals(Float.class)) {
+				return d.floatValue();
+			}
+		}
+		if (value instanceof Timestamp) {
+			Timestamp t = (Timestamp) value;
+			Instant i = Instant.ofEpochSecond(t.getSeconds(), t.getNanos());
+			if (fieldType.equals(Instant.class)) {
+				return i;
+			}
+			if (fieldType.equals(ZonedDateTime.class)) {
+				return ZonedDateTime.ofInstant(i, ZoneId.systemDefault());
+			}
+			if (fieldType.equals(OffsetDateTime.class)) {
+				return OffsetDateTime.ofInstant(i, ZoneId.systemDefault());
+			}
+			if (fieldType.equals(OffsetTime.class)) {
+				return OffsetTime.ofInstant(i, ZoneId.systemDefault());
+			}
+			if (fieldType.equals(LocalDateTime.class)) {
+				return LocalDateTime.ofInstant(i, ZoneOffset.UTC);
+			}
+			if (fieldType.equals(LocalDate.class)) {
+				return LocalDate.ofInstant(i, ZoneOffset.UTC);
+			}
+			if (fieldType.equals(LocalTime.class)) {
+				return LocalTime.ofInstant(i, ZoneOffset.UTC);
+			}
+		}
+		if (value instanceof List) {
+			List<?> list = (List<?>) value;
+			if (fieldType instanceof ParameterizedType) {
+				ParameterizedType genericType = (ParameterizedType) fieldType;
+				if (genericType.getRawType().equals(List.class)) {
+					Type[] componentTypes = genericType.getActualTypeArguments();
+					List<Object> values = new ArrayList<>();
+					for (Object component : list) {
+						values.add(convertFrom(componentTypes[0], component));
+					}
+					return values;
+				}
+			} else {
+				Class<?> rawType = (Class<?>) fieldType;
+				if (rawType.isArray()) {
+					Class<?> componentType = rawType.componentType();
+					Object values = Array.newInstance(componentType, list.size());
+					int index = 0;
+					for (Object component : list) {
+						Array.set(values, index, convertFrom(componentType, component));
+						index++;
+					}
+					return values;
+				}
+			}
+		}
+		if (value instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>) value;
+			if (fieldType instanceof ParameterizedType) {
+				ParameterizedType genericType = (ParameterizedType) fieldType;
+				if (genericType.getRawType().equals(Map.class)) {
+					Type[] componentTypes = genericType.getActualTypeArguments();
+					Map<Object, Object> values = new HashMap<>();
+					for (Object name : map.keySet()) {
+						values.put(name, convertFrom(componentTypes[1], map.get(name)));
+					}
+					return values;
+				}
+			}
+		}
+		return value;
 	}
 
 	private <F> F get(String fieldName, E instance) {

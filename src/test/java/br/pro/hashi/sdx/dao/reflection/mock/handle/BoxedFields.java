@@ -3,7 +3,7 @@ package br.pro.hashi.sdx.dao.reflection.mock.handle;
 import br.pro.hashi.sdx.dao.annotation.Key;
 
 public class BoxedFields {
-	private @Key Byte byteValue;
+	private @Key Character characterValue;
 	private Short shortValue;
 	private Integer integerValue;
 	private Long longValue;
@@ -11,7 +11,7 @@ public class BoxedFields {
 	private Double doubleValue;
 
 	public BoxedFields() {
-		this.byteValue = 1;
+		this.characterValue = 1;
 		this.shortValue = 2;
 		this.integerValue = 3;
 		this.longValue = 4L;
@@ -19,8 +19,8 @@ public class BoxedFields {
 		this.doubleValue = 6.0;
 	}
 
-	public Byte getByteValue() {
-		return byteValue;
+	public Character getCharacterValue() {
+		return characterValue;
 	}
 
 	public Short getShortValue() {
