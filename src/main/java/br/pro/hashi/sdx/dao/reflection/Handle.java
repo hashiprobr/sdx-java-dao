@@ -640,13 +640,10 @@ public class Handle<E> {
 			componentTypes = genericType.getActualTypeArguments();
 		} else {
 			rawType = (Class<?>) fieldType;
-			if (rawType.isArray()) {
-				throw new IllegalArgumentException("Field %s is supposed to be an array".formatted(fieldPath));
-			}
 			componentTypes = null;
 		}
-		if (rawType.equals(List.class)) {
-			throw new IllegalArgumentException("Field %s is supposed to be a list".formatted(fieldPath));
+		if (rawType.isArray() || rawType.equals(List.class)) {
+			throw new IllegalArgumentException("Field %s is supposed to be an array".formatted(fieldPath));
 		}
 		Type componentType;
 		if (rawType.equals(Map.class)) {
