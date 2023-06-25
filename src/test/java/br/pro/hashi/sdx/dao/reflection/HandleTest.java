@@ -323,6 +323,7 @@ class HandleTest {
 	@Test
 	void buildsEntryPathsFromFieldNames() {
 		Handle<FieldNames> h = fieldNamesHandle;
+		assertBuildsEntryPath("file", h, "file");
 		assertBuildsEntryPath("zeroProperty", h, "zeroProperty");
 		assertBuildsEntryPath("zeroProperty.key", h, "zeroProperty.key");
 		assertBuildsEntryPath("zeroProperty.zero_map", h, "zeroProperty.zeroMap");
@@ -394,6 +395,7 @@ class HandleTest {
 	@Test
 	void buildsEntryPathsFromPropertyNames() {
 		Handle<PropertyNames> h = propertyNamesHandle;
+		assertBuildsEntryPath("key", h, "key");
 		assertBuildsEntryPath("zero_field", h, "zeroField");
 		assertBuildsEntryPath("zero_field.file", h, "zeroField.file");
 		assertBuildsEntryPath("zero_field.zeroMap", h, "zeroField.zeroMap");
@@ -979,6 +981,7 @@ class HandleTest {
 		Map<Integer, PropertyNames> intProperty = Map.of(1, zeroProperty);
 		Map<String, Map<Integer, PropertyNames>> twoProperty = Map.of("two", intProperty);
 		assertConvertsNameTo("zeroProperty", h, "zeroProperty", zeroProperty);
+		assertConvertsNameTo("zeroProperty.key", h, "zeroProperty.key", "s");
 		assertConvertsNameTo("zeroProperty.zero_map", h, "zeroProperty.zeroMap", zeroField);
 		assertConvertsNameTo("zeroProperty.zero_map.name", h, "zeroProperty.zeroMap.name", "s");
 		assertConvertsNameTo("zeroProperty.zero_field", h, "zeroProperty.zeroField", zeroField);
@@ -998,6 +1001,7 @@ class HandleTest {
 		assertConvertsNameTo("zeroProperty.two_field.one.two.twoProperty", h, "zeroProperty.twoField.one.two.twoProperty", twoProperty);
 		assertConvertsNameTo("oneProperty", h, "oneProperty", oneProperty);
 		assertConvertsNameTo("oneProperty.one", h, "oneProperty.one", zeroProperty);
+		assertConvertsNameTo("oneProperty.one.key", h, "oneProperty.one.key", "s");
 		assertConvertsNameTo("oneProperty.one.zero_map", h, "oneProperty.one.zeroMap", zeroField);
 		assertConvertsNameTo("oneProperty.one.zero_map.name", h, "oneProperty.one.zeroMap.name", "s");
 		assertConvertsNameTo("oneProperty.one.zero_field", h, "oneProperty.one.zeroField", zeroField);
@@ -1018,6 +1022,7 @@ class HandleTest {
 		assertConvertsNameTo("twoProperty", h, "twoProperty", twoProperty);
 		assertConvertsNameTo("twoProperty.one", h, "twoProperty.one", intProperty);
 		assertConvertsNameTo("twoProperty.one.two", h, "twoProperty.one.two", zeroProperty);
+		assertConvertsNameTo("twoProperty.one.two.key", h, "twoProperty.one.two.key", "s");
 		assertConvertsNameTo("twoProperty.one.two.zero_map", h, "twoProperty.one.two.zeroMap", zeroField);
 		assertConvertsNameTo("twoProperty.one.two.zero_map.name", h, "twoProperty.one.two.zeroMap.name", "s");
 		assertConvertsNameTo("twoProperty.one.two.zero_field", h, "twoProperty.one.two.zeroField", zeroField);
@@ -1810,6 +1815,15 @@ class HandleTest {
 	void doesNotConvertFieldPathsTo() {
 		Handle<FieldNames> h = fieldNamesHandle;
 		assertDoesNotConvertIllegalTo(h, "file", "s");
+		assertDoesNotConvertIllegalTo(h, "zeroProperty.zeroField.file", "s");
+		assertDoesNotConvertIllegalTo(h, "zeroProperty.oneField.one.file", "s");
+		assertDoesNotConvertIllegalTo(h, "zeroProperty.twoField.one.two.file", "s");
+		assertDoesNotConvertIllegalTo(h, "oneProperty.one.zeroField.file", "s");
+		assertDoesNotConvertIllegalTo(h, "oneProperty.one.oneField.one.file", "s");
+		assertDoesNotConvertIllegalTo(h, "oneProperty.one.twoField.one.two.file", "s");
+		assertDoesNotConvertIllegalTo(h, "twoProperty.one.two.zeroField.file", "s");
+		assertDoesNotConvertIllegalTo(h, "twoProperty.one.two.oneField.one.file", "s");
+		assertDoesNotConvertIllegalTo(h, "twoProperty.one.two.twoField.one.two.file", "s");
 	}
 
 	@Test
@@ -2119,6 +2133,7 @@ class HandleTest {
 		Map<String, Map<String, Object>> oneMap = Map.of("one", zeroMap);
 		Map<String, Map<String, Object>> intMap = Map.of("1", zeroMap);
 		Map<String, Map<String, Map<String, Object>>> twoMap = Map.of("two", intMap);
+		assertConvertsNameFrom("file", h, "file", "s");
 		assertConvertsNameFrom("zeroProperty", h, "zeroProperty", zeroMap);
 		assertConvertsNameFrom("zeroProperty.key", h, "zeroProperty.key", "s");
 		assertConvertsNameFrom("zeroProperty.zeroMap", h, "zeroProperty.zero_map", zeroMap);
@@ -2197,6 +2212,7 @@ class HandleTest {
 		Map<String, Map<String, Object>> oneMap = Map.of("one", zeroMap);
 		Map<String, Map<String, Object>> intMap = Map.of("1", zeroMap);
 		Map<String, Map<String, Map<String, Object>>> twoMap = Map.of("two", intMap);
+		assertConvertsNameFrom("key", h, "key", "s");
 		assertConvertsNameFrom("zeroField", h, "zero_field", zeroMap);
 		assertConvertsNameFrom("zeroField.file", h, "zero_field.file", "s");
 		assertConvertsNameFrom("zeroField.zeroMap", h, "zero_field.zeroMap", zeroMap);
