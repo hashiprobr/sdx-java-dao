@@ -16,6 +16,7 @@ import com.google.firebase.cloud.StorageClient;
 
 import br.pro.hashi.sdx.dao.reflection.Handle;
 import br.pro.hashi.sdx.dao.reflection.HandleFactory;
+import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 
 /**
  * Creates data access objects from a Firebase project.
@@ -124,6 +125,9 @@ public final class DaoClient {
 			Dao<E> dao = (Dao<E>) cache.get(type);
 			if (dao == null) {
 				Handle<E> handle = factory.get(type);
+				if (handle.getKeyFieldName() == null) {
+					throw new AnnotationException(type.getName(), "Must have a @Key field");
+				}
 				dao = new Dao<>(this, handle);
 				cache.put(type, dao);
 			}

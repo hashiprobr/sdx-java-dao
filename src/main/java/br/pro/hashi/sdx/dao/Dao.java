@@ -114,7 +114,7 @@ public final class Dao<E> {
 			keyString = getKeyString(instance);
 			document = collection.document(keyString);
 		}
-		Map<String, Object> data = handle.toData(instance, true, !handle.hasAutoKey());
+		Map<String, Object> data = handle.buildCreateData(instance);
 		try (Fao fao = new Fao(connection.bucket(), getFileNames(keyString))) {
 			sync(document.create(data));
 		}
@@ -166,7 +166,7 @@ public final class Dao<E> {
 						keyString = getKeyString(instance);
 						document = collection.document(keyString);
 					}
-					Map<String, Object> data = handle.toData(instance, true, !handle.hasAutoKey());
+					Map<String, Object> data = handle.buildCreateData(instance);
 					batch.create(document, data);
 					keyStrings.add(keyString);
 				}
@@ -206,7 +206,7 @@ public final class Dao<E> {
 		DocumentSnapshot snapshot = sync(document.get());
 		E instance;
 		if (snapshot.exists()) {
-			instance = handle.toInstance(snapshot.getData());
+			instance = handle.buildInstance(snapshot.getData());
 			if (handle.hasAutoKey()) {
 				handle.setAutoKey(instance, keyString);
 			}
@@ -232,7 +232,7 @@ public final class Dao<E> {
 	 */
 	public void update(E instance) {
 		check(instance);
-		updateFromData(getKeyString(instance), handle.toData(instance, false, false));
+		updateFromData(getKeyString(instance), handle.buildUpdateData(instance));
 	}
 
 	/**
@@ -254,7 +254,7 @@ public final class Dao<E> {
 	 */
 	public void update(Object key, Map<String, Object> values) {
 		check(values);
-		updateFromData(toString(key), handle.toData(values));
+		updateFromData(toString(key), handle.buildData(values));
 	}
 
 	private void updateFromData(String keyString, Map<String, Object> data) {
@@ -284,7 +284,7 @@ public final class Dao<E> {
 		runBatch(firestore, (batch) -> {
 			for (E instance : instances) {
 				check(instance);
-				updateFromData(firestore, batch, getKeyString(instance), handle.toData(instance, false, false));
+				updateFromData(firestore, batch, getKeyString(instance), handle.buildUpdateData(instance));
 			}
 		});
 	}
@@ -317,7 +317,7 @@ public final class Dao<E> {
 			for (Object key : map.keySet()) {
 				Map<String, Object> values = map.get(key);
 				check(values);
-				updateFromData(firestore, batch, toString(key), handle.toData(values));
+				updateFromData(firestore, batch, toString(key), handle.buildData(values));
 			}
 		});
 	}
@@ -559,7 +559,7 @@ public final class Dao<E> {
 			QuerySnapshot snapshots = sync(query.get());
 			List<E> instances = new ArrayList<>();
 			for (DocumentSnapshot snapshot : snapshots) {
-				E instance = handle.toInstance(snapshot.getData());
+				E instance = handle.buildInstance(snapshot.getData());
 				if (handle.hasAutoKey()) {
 					handle.setAutoKey(instance, snapshot.getId());
 				}
@@ -584,7 +584,7 @@ public final class Dao<E> {
 		 */
 		public void update(E instance) {
 			check(instance);
-			Map<String, Object> data = handle.toData(instance, false, false);
+			Map<String, Object> data = handle.buildUpdateData(instance);
 			runBatch((batch, document) -> {
 				batch.update(document, data);
 			});
@@ -677,7 +677,7 @@ public final class Dao<E> {
 		private final boolean hasKey;
 
 		private Selection(Firestore firestore, String[] names) {
-			super(getCollection(firestore).select(handle.toAliases(names)));
+			super(getCollection(firestore).select(handle.buildDataEntryPaths(names)));
 			this.names = names;
 			this.hasKey = handle.hasKey(names);
 		}
@@ -692,7 +692,7 @@ public final class Dao<E> {
 			QuerySnapshot snapshots = sync(query.get());
 			List<Map<String, Object>> list = new ArrayList<>();
 			for (DocumentSnapshot snapshot : snapshots) {
-				Map<String, Object> values = handle.toValues(snapshot.getData());
+				Map<String, Object> values = handle.buildValues(snapshot.getData());
 				if (hasKey && handle.hasAutoKey()) {
 					handle.putAutoKey(values, snapshot.getId());
 				}
@@ -724,7 +724,7 @@ public final class Dao<E> {
 			for (int i = 0; i < names.length; i++) {
 				values.put(names[i], fieldValues[i]);
 			}
-			Map<String, Object> data = handle.toData(values);
+			Map<String, Object> data = handle.buildData(values);
 			runBatch((batch, document) -> {
 				batch.update(document, data);
 			});
@@ -746,7 +746,7 @@ public final class Dao<E> {
 			for (int i = 0; i < names.length; i++) {
 				values.put(names[i], FieldValue.delete());
 			}
-			Map<String, Object> data = handle.toData(values);
+			Map<String, Object> data = handle.buildData(values);
 			runBatch((batch, document) -> {
 				batch.update(document, data);
 			});
@@ -788,7 +788,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereEqualTo(String name, Object fieldValue) {
-			query = query.whereEqualTo(handle.toAlias(name), fieldValue);
+			query = query.whereEqualTo(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -801,7 +801,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereNotEqualTo(String name, Object fieldValue) {
-			query = query.whereNotEqualTo(handle.toAlias(name), fieldValue);
+			query = query.whereNotEqualTo(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -814,7 +814,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereLessThan(String name, Object fieldValue) {
-			query = query.whereLessThan(handle.toAlias(name), fieldValue);
+			query = query.whereLessThan(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -827,7 +827,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereLessThanOrEqualTo(String name, Object fieldValue) {
-			query = query.whereLessThanOrEqualTo(handle.toAlias(name), fieldValue);
+			query = query.whereLessThanOrEqualTo(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -840,7 +840,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereGreaterThan(String name, Object fieldValue) {
-			query = query.whereGreaterThan(handle.toAlias(name), fieldValue);
+			query = query.whereGreaterThan(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -853,7 +853,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereGreaterThanOrEqualTo(String name, Object fieldValue) {
-			query = query.whereGreaterThanOrEqualTo(handle.toAlias(name), fieldValue);
+			query = query.whereGreaterThanOrEqualTo(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -866,7 +866,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereArrayContains(String name, Object fieldValue) {
-			query = query.whereArrayContains(handle.toAlias(name), fieldValue);
+			query = query.whereArrayContains(handle.buildDataEntryPath(name), fieldValue);
 			return self();
 		}
 
@@ -880,7 +880,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereArrayContainsAny(String name, List<?> fieldValues) {
-			query = query.whereArrayContainsAny(handle.toAlias(name), fieldValues);
+			query = query.whereArrayContainsAny(handle.buildDataEntryPath(name), fieldValues);
 			return self();
 		}
 
@@ -893,7 +893,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereIn(String name, List<?> fieldValues) {
-			query = query.whereIn(handle.toAlias(name), fieldValues);
+			query = query.whereIn(handle.buildDataEntryPath(name), fieldValues);
 			return self();
 		}
 
@@ -906,7 +906,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F whereNotIn(String name, List<?> fieldValues) {
-			query = query.whereNotIn(handle.toAlias(name), fieldValues);
+			query = query.whereNotIn(handle.buildDataEntryPath(name), fieldValues);
 			return self();
 		}
 
@@ -918,7 +918,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F orderByAscending(String name) {
-			query = query.orderBy(handle.toAlias(name), Direction.ASCENDING);
+			query = query.orderBy(handle.buildDataEntryPath(name), Direction.ASCENDING);
 			return self();
 		}
 
@@ -930,7 +930,7 @@ public final class Dao<E> {
 		 * @return this filter, for chaining
 		 */
 		public F orderByDescending(String name) {
-			query = query.orderBy(handle.toAlias(name), Direction.DESCENDING);
+			query = query.orderBy(handle.buildDataEntryPath(name), Direction.DESCENDING);
 			return self();
 		}
 

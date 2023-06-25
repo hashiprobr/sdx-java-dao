@@ -27,6 +27,7 @@ import com.google.firebase.cloud.StorageClient;
 
 import br.pro.hashi.sdx.dao.reflection.Handle;
 import br.pro.hashi.sdx.dao.reflection.HandleFactory;
+import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 
 class DaoClientTest {
 	private AutoCloseable mocks;
@@ -141,6 +142,7 @@ class DaoClientTest {
 
 	@Test
 	void gets() {
+		when(handle.getKeyFieldName()).thenReturn("key");
 		@SuppressWarnings("rawtypes")
 		MockedConstruction<Dao> construction = mockConstruction(Dao.class);
 		Dao<Object> handle = c.get(Object.class);
@@ -149,9 +151,18 @@ class DaoClientTest {
 	}
 
 	@Test
-	void doesNotGetForNullType() {
+	void doesNotGetWithoutType() {
+		when(handle.getKeyFieldName()).thenReturn("key");
 		assertThrows(NullPointerException.class, () -> {
 			c.get(null);
+		});
+	}
+
+	@Test
+	void doesNotGetWithoutKey() {
+		when(handle.getKeyFieldName()).thenReturn(null);
+		assertThrows(AnnotationException.class, () -> {
+			c.get(Object.class);
 		});
 	}
 }

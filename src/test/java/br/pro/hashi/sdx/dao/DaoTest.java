@@ -114,33 +114,33 @@ class DaoTest {
 		when(client.getConnection()).thenReturn(connection);
 
 		when(handle.getCollectionName()).thenReturn("collection");
-		when(handle.toInstance(any())).thenAnswer((invocation) -> {
+		when(handle.buildInstance(any())).thenAnswer((invocation) -> {
 			Map<String, Object> data = invocation.getArgument(0);
 			return new Entity((int) data.get("value"));
 		});
-		when(handle.toValues(any())).thenAnswer((invocation) -> {
+		when(handle.buildValues(any())).thenAnswer((invocation) -> {
 			Map<String, Object> data = invocation.getArgument(0);
 			return Map.of("value", data.get("value"));
 		});
-		when(handle.toData(any(Entity.class), any(boolean.class), any(boolean.class))).thenAnswer((invocation) -> {
+		when(handle.buildCreateData(any(Entity.class))).thenAnswer((invocation) -> {
 			Entity instance = invocation.getArgument(0);
-			boolean withFiles = invocation.getArgument(1);
-			boolean withKey = invocation.getArgument(2);
 			Map<String, Object> data = new HashMap<>();
 			data.put("value", instance.getValue());
-			if (withFiles) {
-				data.put("file", "");
-			}
-			if (withKey) {
-				data.put("key", handle.getKey(instance));
-			}
+			data.put("file", "");
+			data.put("key", handle.getKey(instance));
 			return data;
 		});
-		when(handle.toData(any())).thenAnswer((invocation) -> {
+		when(handle.buildUpdateData(any(Entity.class))).thenAnswer((invocation) -> {
+			Entity instance = invocation.getArgument(0);
+			Map<String, Object> data = new HashMap<>();
+			data.put("value", instance.getValue());
+			return data;
+		});
+		when(handle.buildData(any())).thenAnswer((invocation) -> {
 			Map<String, Object> values = invocation.getArgument(0);
 			return Map.of("value", values.get("value"));
 		});
-		when(handle.toAliases(any(String[].class))).thenAnswer((invocation) -> {
+		when(handle.buildDataEntryPaths(any(String[].class))).thenAnswer((invocation) -> {
 			return invocation.getArgument(0);
 		});
 
@@ -1637,7 +1637,7 @@ class DaoTest {
 	}
 
 	private void mockAlias() {
-		when(handle.toAlias("name")).thenReturn("alias");
+		when(handle.buildDataEntryPath("name")).thenReturn("alias");
 	}
 
 	@Test

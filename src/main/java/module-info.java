@@ -11,6 +11,7 @@ module br.pro.hashi.sdx.dao {
 	requires com.google.auth;
 	requires com.google.auth.oauth2;
 	requires com.google.api.apicommon;
+	requires com.google.protobuf;
 	requires com.google.common;
 	requires org.slf4j;
 

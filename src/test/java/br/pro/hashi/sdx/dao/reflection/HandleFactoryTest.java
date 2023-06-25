@@ -15,14 +15,15 @@ import org.mockito.MockitoAnnotations;
 class HandleFactoryTest {
 	private AutoCloseable mocks;
 	private @Mock Reflector reflector;
-	private @Mock ConverterFactory factory;
+	private @Mock ParserFactory parserFactory;
+	private @Mock ConverterFactory converterFactory;
 	private HandleFactory f;
 
 	@BeforeEach
 	void setUp() {
 		mocks = MockitoAnnotations.openMocks(this);
 
-		f = new HandleFactory(reflector, factory);
+		f = new HandleFactory(reflector, parserFactory, converterFactory);
 	}
 
 	@AfterEach

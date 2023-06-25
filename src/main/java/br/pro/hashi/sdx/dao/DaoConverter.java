@@ -7,7 +7,7 @@ package br.pro.hashi.sdx.dao;
  * </p>
  * <p>
  * The idea is that the source type is not supported by Google Cloud Firestore
- * but the target type is.
+ * but the target type is (possibly via other converters).
  * </p>
  * 
  * @param <S> the source type

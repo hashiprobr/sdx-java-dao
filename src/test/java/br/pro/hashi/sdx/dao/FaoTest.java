@@ -80,7 +80,7 @@ class FaoTest {
 	void constructsWithDeadLockAndCloses() {
 		String lockName = getLockName("file");
 		BlobSourceOption option = BlobSourceOption.generationMatch();
-		Blob oldLock = mockOldLock(lockName, 0);
+		Blob oldLock = mockOldLock(lockName, Instant.EPOCH);
 		when(oldLock.delete(option)).thenReturn(true);
 		Blob newLock = mockCloseableLock(lockName);
 		f = newFao("file");
@@ -143,7 +143,7 @@ class FaoTest {
 
 	@Test
 	void doesNotConstructWithLiveLock() {
-		Blob lock = mockOldLock(getLockName("file"), Instant.now().toEpochMilli());
+		Blob lock = mockOldLock(getLockName("file"), Instant.now());
 		assertThrows(FileException.class, () -> {
 			newFao("file");
 		});
@@ -154,7 +154,7 @@ class FaoTest {
 	@Test
 	void doesNotConstructWithReplacedLock() {
 		BlobSourceOption option = BlobSourceOption.generationMatch();
-		Blob lock = mockOldLock(getLockName("file"), 0);
+		Blob lock = mockOldLock(getLockName("file"), Instant.EPOCH);
 		when(lock.delete(option)).thenThrow(StorageException.class);
 		assertThrows(FileException.class, () -> {
 			newFao("file");
@@ -163,8 +163,8 @@ class FaoTest {
 		verify(bucket, times(0)).create(any(), any(), (BlobTargetOption) any());
 	}
 
-	private Blob mockOldLock(String lockName, long timestamp) {
-		OffsetDateTime datetime = OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+	private Blob mockOldLock(String lockName, Instant instant) {
+		OffsetDateTime datetime = OffsetDateTime.ofInstant(instant, ZoneId.systemDefault());
 		Blob lock = mock(Blob.class);
 		when(lock.getCreateTimeOffsetDateTime()).thenReturn(datetime);
 		when(bucket.get(lockName)).thenReturn(lock);
