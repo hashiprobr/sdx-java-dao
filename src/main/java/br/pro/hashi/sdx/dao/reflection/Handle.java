@@ -477,18 +477,18 @@ public class Handle<E> {
 	public String buildDataEntryPath(String fieldPath) {
 		int index = fieldPath.indexOf('.');
 		if (index == -1) {
-			getFieldType(fieldPath);
+			getPropertyType(fieldPath);
 			return rename(fieldPath);
 		}
 		String fieldPrefix = fieldPath.substring(0, index);
 		String fieldName = fieldPrefix;
-		Type fieldType = getFieldType(fieldName);
+		Type propertyType = getPropertyType(fieldName);
 		String propertyPrefix = rename(fieldName);
 		String propertyName = propertyPrefix;
 		String suffix = fieldPath.substring(index + 1);
 		index = -1;
 		do {
-			PathType pathType = getPathType(fieldPrefix, fieldType);
+			PathType pathType = getPathType(fieldPrefix, propertyType);
 			Class<?> rawType = pathType.raw();
 			if (rawType.equals(Map.class)) {
 				index = suffix.indexOf('.', index + 1);
@@ -497,7 +497,7 @@ public class Handle<E> {
 					fieldPrefix = "%s.%s".formatted(fieldName, base);
 					propertyPrefix = "%s.%s".formatted(propertyName, base);
 				}
-				fieldType = pathType.component();
+				propertyType = pathType.component();
 			} else {
 				Handle<?> handle = handleFactory.get(rawType);
 				fieldPath = suffix.substring(index + 1);
@@ -512,25 +512,19 @@ public class Handle<E> {
 		String propertyPath;
 		int index = fieldPath.indexOf('.');
 		if (index == -1) {
-			getFieldType(fieldPath);
+			getPropertyType(fieldPath, rooted);
 			propertyPath = rename(fieldPath);
 			return new Entry(propertyPath, convertTo(objectPath, fieldPath, value));
 		}
 		String fieldPrefix = fieldPath.substring(0, index);
 		String fieldName = fieldPrefix;
-		Type fieldType = getFieldType(fieldName);
-		if (contentTypes.containsKey(fieldName)) {
-			throw new IllegalArgumentException("@File fields cannot be directly updated");
-		}
-		if (rooted && fieldName.equals(keyFieldName)) {
-			throw new IllegalArgumentException("Rooted @Key fields cannot be updated");
-		}
+		Type propertyType = getPropertyType(fieldName, rooted);
 		String propertyPrefix = rename(fieldName);
 		String propertyName = propertyPrefix;
 		String suffix = fieldPath.substring(index + 1);
 		index = -1;
 		do {
-			PathType pathType = getPathType(fieldPrefix, fieldType);
+			PathType pathType = getPathType(fieldPrefix, propertyType);
 			Class<?> rawType = pathType.raw();
 			if (rawType.equals(Map.class)) {
 				index = suffix.indexOf('.', index + 1);
@@ -539,7 +533,7 @@ public class Handle<E> {
 					fieldPrefix = "%s.%s".formatted(fieldName, base);
 					propertyPrefix = "%s.%s".formatted(propertyName, base);
 				}
-				fieldType = pathType.component();
+				propertyType = pathType.component();
 			} else {
 				Handle<?> handle = handleFactory.get(rawType);
 				fieldPath = suffix.substring(index + 1);
@@ -549,7 +543,7 @@ public class Handle<E> {
 			}
 		} while (index != -1);
 		propertyPath = "%s.%s".formatted(propertyName, suffix);
-		return new Entry(propertyPath, convertTo(objectPath, fieldType, value));
+		return new Entry(propertyPath, convertTo(objectPath, propertyType, value));
 	}
 
 	private Entry buildValuesEntry(String propertyPath, Object value) {
@@ -557,7 +551,7 @@ public class Handle<E> {
 		int index = propertyPath.indexOf('.');
 		if (index == -1) {
 			fieldPath = revert(propertyPath);
-			getFieldType(fieldPath);
+			getPropertyType(fieldPath);
 			return new Entry(fieldPath, convertFrom(fieldPath, value));
 		}
 		String propertyPrefix = propertyPath.substring(0, index);
@@ -565,10 +559,10 @@ public class Handle<E> {
 		String suffix = propertyPath.substring(index + 1);
 		String fieldPrefix = revert(propertyName);
 		String fieldName = fieldPrefix;
-		Type fieldType = getFieldType(fieldName);
+		Type propertyType = getPropertyType(fieldName);
 		index = -1;
 		do {
-			PathType pathType = getPathType(fieldPrefix, fieldType);
+			PathType pathType = getPathType(fieldPrefix, propertyType);
 			Class<?> rawType = pathType.raw();
 			if (rawType.equals(Map.class)) {
 				index = suffix.indexOf('.', index + 1);
@@ -577,7 +571,7 @@ public class Handle<E> {
 					propertyPrefix = "%s.%s".formatted(propertyName, base);
 					fieldPrefix = "%s.%s".formatted(fieldName, base);
 				}
-				fieldType = pathType.component();
+				propertyType = pathType.component();
 			} else {
 				Handle<?> handle = handleFactory.get(rawType);
 				propertyPath = suffix.substring(index + 1);
@@ -587,19 +581,30 @@ public class Handle<E> {
 			}
 		} while (index != -1);
 		fieldPath = "%s.%s".formatted(fieldName, suffix);
-		return new Entry(fieldPath, convertFrom(fieldType, value));
+		return new Entry(fieldPath, convertFrom(propertyType, value));
 	}
 
 	private record Entry(String path, Object value) {
 	}
 
-	private Type getFieldType(String fieldName) {
-		Type fieldType = fieldTypes.get(fieldName);
-		if (fieldType == null) {
-			throw new IllegalArgumentException("Field '%s' does not exist".formatted(fieldName));
+	private Type getPropertyType(String fieldName, boolean rooted) {
+		Type propertyType = getPropertyType(fieldName);
+		if (contentTypes.containsKey(fieldName)) {
+			throw new IllegalArgumentException("@File fields cannot be directly updated");
 		}
+		if (rooted && fieldName.equals(keyFieldName)) {
+			throw new IllegalArgumentException("Rooted @Key fields cannot be updated");
+		}
+		return propertyType;
+	}
+
+	private Type getPropertyType(String fieldName) {
 		Type targetType = targetTypes.get(fieldName);
 		if (targetType == null) {
+			Type fieldType = fieldTypes.get(fieldName);
+			if (fieldType == null) {
+				throw new IllegalArgumentException("Field '%s' does not exist".formatted(fieldName));
+			}
 			return fieldType;
 		}
 		return targetType;
