@@ -1,9 +1,13 @@
 package br.pro.hashi.sdx.dao.reflection.mock.handle.type;
 
 public class Custom {
-	private String k;
+	private String key;
 
-	public String getK() {
-		return k;
+	public Custom() {
+		this.key = "value";
+	}
+
+	public String getKey() {
+		return key;
 	}
 }

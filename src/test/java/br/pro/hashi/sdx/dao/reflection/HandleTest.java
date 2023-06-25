@@ -912,7 +912,7 @@ class HandleTest {
 	void convertsCustomTo() {
 		Handle<CompositeFields> h = newHandle(CompositeFields.class);
 		Custom value = new Custom();
-		Map<String, Object> expected = Map.of();
+		Map<String, Object> expected = Map.of("key", "value");
 		assertConvertsTo(expected, h, "custom", value);
 	}
 
@@ -2063,9 +2063,9 @@ class HandleTest {
 	@Test
 	void convertsCustomFrom() {
 		Handle<CompositeFields> h = newHandle(CompositeFields.class);
-		Map<String, Object> value = Map.of("k", "v");
+		Map<String, Object> value = Map.of("key", "value");
 		Custom actual = assertInstanceOf(Custom.class, convertFrom(h, "custom", value));
-		assertEquals("v", actual.getK());
+		assertEquals("value", actual.getKey());
 	}
 
 	@Test

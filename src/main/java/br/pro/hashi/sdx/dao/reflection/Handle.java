@@ -418,14 +418,15 @@ public class Handle<E> {
 			String propertyName = rename(fieldName);
 			if (contentTypes.containsKey(fieldName)) {
 				if (!exists) {
+					if (get(fieldName, instance) != null) {
+						throw new IllegalArgumentException("@File fields cannot be directly created");
+					}
 					data.put(propertyName, null);
 				}
 			} else {
 				if (!(fieldName.equals(keyFieldName) && (exists || (rooted && autoKey)))) {
 					Object value = get(fieldName, instance);
-					if (value != null) {
-						data.put(propertyName, convertTo(objectPath, fieldName, value));
-					}
+					data.put(propertyName, convertTo(objectPath, fieldName, value));
 				}
 			}
 		}
@@ -437,11 +438,12 @@ public class Handle<E> {
 		objectPath.add(values);
 		Map<String, Object> data = new HashMap<>();
 		for (String fieldPath : values.keySet()) {
-			if (fieldPath != null) {
-				Object value = values.get(fieldPath);
-				Entry entry = buildDataEntry(objectPath, fieldPath, value, true);
-				data.put(entry.path(), entry.value());
+			if (fieldPath == null) {
+				throw new IllegalArgumentException("Field path cannot be null");
 			}
+			Object value = values.get(fieldPath);
+			Entry entry = buildDataEntry(objectPath, fieldPath, value, true);
+			data.put(entry.path(), entry.value());
 		}
 		return data;
 	}

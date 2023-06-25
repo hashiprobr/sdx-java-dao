@@ -81,10 +81,6 @@ public final class Dao<E> {
 	 * Creates the specified entity instance and returns its key.
 	 * </p>
 	 * <p>
-	 * If {@code E} has {@link File} fields, the values are replaced by
-	 * {@code null}.
-	 * </p>
-	 * <p>
 	 * If the {@link Key} field of {@code E} is an {@link Auto} field, returns the
 	 * automatically generated key. Otherwise, returns the result of
 	 * {@link Object#toString()} for the key specified in the instance.
@@ -95,7 +91,8 @@ public final class Dao<E> {
 	 * @throws NullPointerException     if the instance is null or if the key field
 	 *                                  is not an auto field but the value is null
 	 * @throws IllegalArgumentException if the key field is an auto field but the
-	 *                                  value is not null
+	 *                                  value is not null or if a file field value
+	 *                                  is not null
 	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if the Firestore operation could not be
@@ -140,9 +137,9 @@ public final class Dao<E> {
 	 * @throws NullPointerException     if the instance list is null, if an instance
 	 *                                  is null or if the key field is not an auto
 	 *                                  field but a value is null
-	 * @throws IllegalArgumentException if the instance list is empty or if the key
+	 * @throws IllegalArgumentException if the instance list is empty, if the key
 	 *                                  field is an auto field but a value is not
-	 *                                  null
+	 *                                  null, or if a file field value is not null
 	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if a Firestore operation could not be
