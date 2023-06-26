@@ -11,7 +11,7 @@ public class GrandParent {
 
 	private @File("image/png") String file;
 	private @Key int key;
-	boolean notFileOrKey;
+	private boolean notFileOrKey;
 
 	public Parent parent;
 	public List<Parent> list;

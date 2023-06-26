@@ -228,6 +228,36 @@ class HandleTest {
 		assertEquals(map, data.get("parent"));
 		assertEquals(List.of(map), data.get("list"));
 		assertEquals(Map.of("0", map), data.get("map"));
+
+		map.put("key", 0L);
+		map.put("not_file_or_key", 0.0);
+
+		data = Map.of(
+				"file", "f",
+				"key", 4L,
+				"notFileOrKey", true,
+				"parent", map,
+				"list", List.of(map),
+				"map", Map.of("0", map));
+
+		Parent parent = new Parent();
+
+		instance = h.buildInstance(data);
+		assertEquals("f", instance.getFile());
+		assertEquals(4, instance.getKey());
+		assertTrue(instance.isNotFileOrKey());
+		assertEquals(parent, instance.parent);
+		assertEquals(List.of(parent), instance.list);
+		assertEquals(Map.of(0, parent), instance.map);
+
+		Map<String, Object> values = h.buildValues(data);
+		assertEquals(6, values.size());
+		assertEquals("f", values.get("file"));
+		assertEquals(4, values.get("key"));
+		assertTrue((boolean) values.get("notFileOrKey"));
+		assertEquals(parent, values.get("parent"));
+		assertEquals(List.of(parent), values.get("list"));
+		assertEquals(Map.of(0, parent), values.get("map"));
 	}
 
 	@Test
@@ -280,8 +310,7 @@ class HandleTest {
 
 		data = h.buildCreateData(instance);
 		assertEquals(7, data.size());
-		assertTrue(data.containsKey("file"));
-		assertNull(data.get("file"));
+		assertEquals("f", data.get("file"));
 		assertEquals(3.0, data.get("key"));
 		assertEquals(5.5F, data.get("not_file_or_key"));
 		assertEquals(map, data.get("parent"));
@@ -291,14 +320,46 @@ class HandleTest {
 
 		data = h.buildUpdateData(instance);
 		assertEquals(7, data.size());
-		assertTrue(data.containsKey("file"));
-		assertNull(data.get("file"));
+		assertEquals("f", data.get("file"));
 		assertEquals(3.0, data.get("key"));
 		assertEquals(5.5F, data.get("not_file_or_key"));
 		assertEquals(map, data.get("parent"));
 		assertEquals(List.of(map), data.get("array"));
 		assertEquals(List.of(Map.of("0", map)), data.get("list"));
 		assertEquals(Map.of("1", List.of(map)), data.get("map"));
+
+		map.put("key", 0L);
+		map.put("not_file_or_key", 0.0);
+
+		data = Map.of(
+				"file", "f",
+				"key", 6.6,
+				"not_file_or_key", 6.6,
+				"parent", map,
+				"array", List.of(map),
+				"list", List.of(Map.of("0", map)),
+				"map", Map.of("1", List.of(map)));
+
+		Parent parent = new Parent();
+
+		instance = h.buildInstance(data);
+		assertEquals("f", instance.getFile());
+		assertEquals(6, instance.getBoxedKey());
+		assertEquals(6.6F, instance.getNotFileOrKey());
+		assertEquals(parent, instance.parent);
+		assertArrayEquals(new Parent[] { parent }, instance.array);
+		assertEquals(List.of(Map.of(0, parent)), instance.list);
+		assertEquals(Map.of(1, List.of(parent)), instance.map);
+
+		Map<String, Object> values = h.buildValues(data);
+		assertEquals(7, values.size());
+		assertEquals("f", values.get("file"));
+		assertEquals(6, values.get("key"));
+		assertEquals(6.6F, values.get("notFileOrKey"));
+		assertEquals(parent, values.get("parent"));
+		assertArrayEquals(new Parent[] { parent }, (Parent[]) values.get("array"));
+		assertEquals(List.of(Map.of(0, parent)), values.get("list"));
+		assertEquals(Map.of(1, List.of(parent)), values.get("map"));
 	}
 
 	@Test
@@ -369,7 +430,48 @@ class HandleTest {
 		assertEquals(List.of(Map.of("0", List.of(map))), data.get("list"));
 		assertEquals(Map.of("1", List.of(Map.of("2", map))), data.get("map"));
 
-		Map<String, Object> values = new HashMap<>();
+		map.put("key", 0L);
+		map.put("not_file_or_key", 0.0);
+
+		data = Map.of(
+				"file", "f",
+				"not_file_or_key", 6.6,
+				"parent", map,
+				"array", List.of(map),
+				"list", List.of(Map.of("0", List.of(map))),
+				"map", Map.of("1", List.of(Map.of("2", map))));
+
+		Parent parent = new Parent();
+
+		List<?> mapList;
+		Map<?, ?> arrayMap;
+
+		instance = h.buildInstance(data);
+		assertEquals("f", instance.getFile());
+		assertNull(instance.key);
+		assertEquals(6.6F, instance.getNotFileOrKey());
+		assertEquals(parent, instance.parent);
+		assertArrayEquals(new Parent[] { parent }, instance.array);
+		mapList = assertInstanceOf(List.class, instance.list);
+		assertEquals(1, mapList.size());
+		arrayMap = assertInstanceOf(Map.class, mapList.get(0));
+		assertEquals(1, arrayMap.size());
+		assertArrayEquals(new Parent[] { parent }, (Parent[]) arrayMap.get(0));
+		assertEquals(Map.of(1, List.of(Map.of(2, parent))), instance.map);
+
+		Map<String, Object> values = h.buildValues(data);
+		assertEquals(6, values.size());
+		assertEquals("f", values.get("file"));
+		assertEquals(6.6F, values.get("notFileOrKey"));
+		assertEquals(parent, values.get("parent"));
+		assertArrayEquals(new Parent[] { parent }, (Parent[]) values.get("array"));
+		mapList = assertInstanceOf(List.class, values.get("list"));
+		assertEquals(1, mapList.size());
+		arrayMap = assertInstanceOf(Map.class, mapList.get(0));
+		assertEquals(1, arrayMap.size());
+		assertArrayEquals(new Parent[] { parent }, (Parent[]) arrayMap.get(0));
+		assertEquals(Map.of(1, List.of(Map.of(2, parent))), values.get("map"));
+
 		h.putAutoKey(values, "k");
 		assertEquals("k", values.get("key"));
 	}

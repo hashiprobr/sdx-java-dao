@@ -30,4 +30,14 @@ public class Child extends Parent {
 		this.finalValue = null;
 		this.transientValue = null;
 	}
+
+	@Override
+	public String getFile() {
+		return file;
+	}
+
+	@Override
+	public void setFile(String file) {
+		this.file = file;
+	}
 }
