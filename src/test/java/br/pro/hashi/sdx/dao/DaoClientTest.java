@@ -142,7 +142,7 @@ class DaoClientTest {
 
 	@Test
 	void gets() {
-		when(handle.getKeyFieldName()).thenReturn("key");
+		when(handle.hasKey()).thenReturn(true);
 		@SuppressWarnings("rawtypes")
 		MockedConstruction<Dao> construction = mockConstruction(Dao.class);
 		Dao<Object> handle = c.get(Object.class);
@@ -152,7 +152,7 @@ class DaoClientTest {
 
 	@Test
 	void doesNotGetWithoutType() {
-		when(handle.getKeyFieldName()).thenReturn("key");
+		when(handle.hasKey()).thenReturn(true);
 		assertThrows(NullPointerException.class, () -> {
 			c.get(null);
 		});
@@ -160,7 +160,7 @@ class DaoClientTest {
 
 	@Test
 	void doesNotGetWithoutKey() {
-		when(handle.getKeyFieldName()).thenReturn(null);
+		when(handle.hasKey()).thenReturn(false);
 		assertThrows(AnnotationException.class, () -> {
 			c.get(Object.class);
 		});

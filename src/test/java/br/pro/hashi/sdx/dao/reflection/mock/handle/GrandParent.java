@@ -1,5 +1,8 @@
 package br.pro.hashi.sdx.dao.reflection.mock.handle;
 
+import java.util.List;
+import java.util.Map;
+
 import br.pro.hashi.sdx.dao.annotation.File;
 import br.pro.hashi.sdx.dao.annotation.Key;
 
@@ -9,6 +12,10 @@ public class GrandParent {
 	private @File("image/png") String file;
 	private @Key int key;
 	boolean notFileOrKey;
+
+	Parent parent;
+	List<Parent> list;
+	Map<Integer, Parent> map;
 
 	public final Object finalValue;
 	public transient Object transientValue;

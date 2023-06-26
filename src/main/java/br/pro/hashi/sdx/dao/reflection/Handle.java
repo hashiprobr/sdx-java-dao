@@ -353,18 +353,6 @@ public class Handle<E> {
 		return collectionName;
 	}
 
-	public Set<String> getFieldNames() {
-		return fieldTypes.keySet();
-	}
-
-	public String getKeyFieldName() {
-		return keyFieldName;
-	}
-
-	public boolean hasAutoKey() {
-		return autoKey;
-	}
-
 	public Set<String> getFileFieldNames() {
 		return contentTypes.keySet();
 	}
@@ -377,7 +365,15 @@ public class Handle<E> {
 		return webFieldNames.contains(fieldName);
 	}
 
-	public boolean hasKey(String[] names) {
+	public boolean hasKey() {
+		return keyFieldName != null;
+	}
+
+	public <F> F getKey(E instance) {
+		return get(keyFieldName, instance);
+	}
+
+	public boolean containsKey(String[] names) {
 		for (String name : names) {
 			if (name.equals(keyFieldName)) {
 				return true;
@@ -386,8 +382,8 @@ public class Handle<E> {
 		return false;
 	}
 
-	public <F> F getKey(E instance) {
-		return get(keyFieldName, instance);
+	public boolean hasAutoKey() {
+		return autoKey;
 	}
 
 	public void setAutoKey(E instance, String value) {
@@ -835,7 +831,7 @@ public class Handle<E> {
 		Map<?, ?> map = (Map<?, ?>) value;
 		Map<String, Object> data = new HashMap<>();
 		for (Object key : map.keySet()) {
-			if (!keyType.isAssignableFrom(key.getClass())) {
+			if (!key.getClass().equals(keyType)) {
 				throw new IllegalArgumentException("Map key type is supposed to be %s".formatted(keyType.getName()));
 			}
 			String name = key.toString();

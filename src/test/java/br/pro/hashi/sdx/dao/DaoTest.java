@@ -1459,7 +1459,7 @@ class DaoTest {
 	}
 
 	private void mockHasKey(boolean hasKey) {
-		when(handle.hasKey(any(String[].class))).thenReturn(hasKey);
+		when(handle.containsKey(any(String[].class))).thenReturn(hasKey);
 	}
 
 	private void mockBatchReadFutureReturn() {

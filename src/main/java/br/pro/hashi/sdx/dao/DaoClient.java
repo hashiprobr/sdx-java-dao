@@ -125,7 +125,7 @@ public final class DaoClient {
 			Dao<E> dao = (Dao<E>) cache.get(type);
 			if (dao == null) {
 				Handle<E> handle = factory.get(type);
-				if (handle.getKeyFieldName() == null) {
+				if (!handle.hasKey()) {
 					throw new AnnotationException(type.getName(), "Must have a @Key field");
 				}
 				dao = new Dao<>(this, handle);

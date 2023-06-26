@@ -675,7 +675,7 @@ public final class Dao<E> {
 		private Selection(Firestore firestore, String[] names) {
 			super(getCollection(firestore).select(handle.buildDataEntryPaths(names)));
 			this.names = names;
-			this.hasKey = handle.hasKey(names);
+			this.hasKey = handle.containsKey(names);
 		}
 
 		/**

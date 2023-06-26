@@ -1,5 +1,8 @@
 package br.pro.hashi.sdx.dao.reflection.mock.handle;
 
+import java.util.List;
+import java.util.Map;
+
 import br.pro.hashi.sdx.dao.annotation.Auto;
 import br.pro.hashi.sdx.dao.annotation.File;
 import br.pro.hashi.sdx.dao.annotation.Key;
@@ -13,6 +16,9 @@ public class Child extends Parent {
 	protected @Web @File String file;
 	public @Auto @Key String key;
 
+	List<Map<Integer, Parent[]>> list;
+	Map<Integer, List<Map<Integer, Parent>>> map;
+
 	public final Object finalValue;
 	public transient Object transientValue;
 
@@ -21,13 +27,5 @@ public class Child extends Parent {
 		this.key = null;
 		this.finalValue = null;
 		this.transientValue = null;
-	}
-
-	public String getFile() {
-		return file;
-	}
-
-	public void setFile(String file) {
-		this.file = file;
 	}
 }
