@@ -58,6 +58,7 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedCollectionName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FieldValueField;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.FileField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FileKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonConvertableField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonFileWebField;
@@ -317,6 +318,25 @@ class HandleTest {
 	void doesNotConstructWithNonStringAutoField() {
 		assertThrows(AnnotationException.class, () -> {
 			newHandle(NonStringAutoField.class);
+		});
+	}
+
+	@Test
+	void doesNotBuildCreateData() {
+		Handle<FileField> h = newHandle(FileField.class);
+		FileField instance = new FileField();
+		assertThrows(IllegalArgumentException.class, () -> {
+			h.buildCreateData(instance);
+		});
+	}
+
+	@Test
+	void doesNotBuildUpdateData() {
+		Handle<FileField> h = newHandle(FileField.class);
+		Map<String, Object> values = new HashMap<>();
+		values.put(null, "");
+		assertThrows(NullPointerException.class, () -> {
+			h.buildData(values);
 		});
 	}
 

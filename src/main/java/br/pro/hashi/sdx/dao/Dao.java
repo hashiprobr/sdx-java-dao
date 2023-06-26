@@ -91,8 +91,7 @@ public final class Dao<E> {
 	 * @throws NullPointerException     if the instance is null or if the key field
 	 *                                  is not an auto field but the value is null
 	 * @throws IllegalArgumentException if the key field is an auto field but the
-	 *                                  value is not null or if a file field value
-	 *                                  is not null
+	 *                                  value is not null
 	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if the Firestore operation could not be
@@ -137,9 +136,9 @@ public final class Dao<E> {
 	 * @throws NullPointerException     if the instance list is null, if an instance
 	 *                                  is null or if the key field is not an auto
 	 *                                  field but a value is null
-	 * @throws IllegalArgumentException if the instance list is empty, if the key
+	 * @throws IllegalArgumentException if the instance list is empty or if the key
 	 *                                  field is an auto field but a value is not
-	 *                                  null, or if a file field value is not null
+	 *                                  null
 	 * @throws FileException            if a Storage operation could not be
 	 *                                  performed
 	 * @throws DataException            if a Firestore operation could not be

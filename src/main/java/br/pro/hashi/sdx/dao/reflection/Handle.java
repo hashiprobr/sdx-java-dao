@@ -439,7 +439,7 @@ public class Handle<E> {
 		Map<String, Object> data = new HashMap<>();
 		for (String fieldPath : values.keySet()) {
 			if (fieldPath == null) {
-				throw new IllegalArgumentException("Field path cannot be null");
+				throw new NullPointerException("Field path cannot be null");
 			}
 			Object value = values.get(fieldPath);
 			Entry entry = buildDataEntry(objectPath, fieldPath, value, true);
