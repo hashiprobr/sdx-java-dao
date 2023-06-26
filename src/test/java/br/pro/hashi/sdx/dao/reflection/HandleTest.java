@@ -51,6 +51,7 @@ import br.pro.hashi.sdx.dao.reflection.exception.ConversionException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankCollectionName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.BlankPropertyName;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.Child;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ClashingFieldName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ClashingPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedFileField;
@@ -58,13 +59,15 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedCollectionName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FieldValueField;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.FileField;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.Default;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FileKeyField;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.GrandParent;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonConvertableField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonFileWebField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonKeyAutoField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonStringAutoField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonStringFileField;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.Parent;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.PluralEntities;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.SingularEntity;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.SlashedCollectionName;
@@ -167,6 +170,24 @@ class HandleTest {
 		assertDoesNotThrow(() -> {
 			mocks.close();
 		});
+	}
+
+	@Test
+	void constructsAndBuildsFromGrandParent() {
+		Handle<GrandParent> h = newHandle(GrandParent.class);
+		assertEquals("GrandParents", h.getCollectionName());
+	}
+
+	@Test
+	void constructsAndBuildsFromParent() {
+		Handle<Parent> h = newHandle(Parent.class);
+		assertEquals("Parents", h.getCollectionName());
+	}
+
+	@Test
+	void constructsAndBuildsFromChild() {
+		Handle<Child> h = newHandle(Child.class);
+		assertEquals("Children", h.getCollectionName());
 	}
 
 	@Test
@@ -323,8 +344,8 @@ class HandleTest {
 
 	@Test
 	void doesNotBuildCreateData() {
-		Handle<FileField> h = newHandle(FileField.class);
-		FileField instance = new FileField();
+		Handle<Default> h = newHandle(Default.class);
+		Default instance = new Default();
 		assertThrows(IllegalArgumentException.class, () -> {
 			h.buildCreateData(instance);
 		});
@@ -332,7 +353,7 @@ class HandleTest {
 
 	@Test
 	void doesNotBuildUpdateData() {
-		Handle<FileField> h = newHandle(FileField.class);
+		Handle<Default> h = newHandle(Default.class);
 		Map<String, Object> values = new HashMap<>();
 		values.put(null, "");
 		assertThrows(NullPointerException.class, () -> {

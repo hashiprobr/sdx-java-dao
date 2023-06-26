@@ -5,11 +5,11 @@ import br.pro.hashi.sdx.dao.DaoConverter;
 public class DefaultImplementation implements DaoConverter<Integer, Double> {
 	@Override
 	public Double to(Integer source) {
-		return null;
+		return source.doubleValue();
 	}
 
 	@Override
 	public Integer from(Double target) {
-		return null;
+		return target.intValue();
 	}
 }
