@@ -157,12 +157,14 @@ class HandleTest {
 		Handle<Custom> customHandle = newHandle(Custom.class);
 		Handle<Object> objectHandle = newHandle(Object.class);
 		Handle<Recursive> recursiveHandle = newHandle(Recursive.class);
+		Handle<Parent> parentHandle = newHandle(Parent.class);
 		fieldNamesHandle = newHandle(FieldNames.class);
 		propertyNamesHandle = newHandle(PropertyNames.class);
 
 		when(handleFactory.get(Custom.class)).thenReturn(customHandle);
 		when(handleFactory.get(Object.class)).thenReturn(objectHandle);
 		when(handleFactory.get(Recursive.class)).thenReturn(recursiveHandle);
+		when(handleFactory.get(Parent.class)).thenReturn(parentHandle);
 		when(handleFactory.get(FieldNames.class)).thenReturn(fieldNamesHandle);
 		when(handleFactory.get(PropertyNames.class)).thenReturn(propertyNamesHandle);
 	}
@@ -204,6 +206,14 @@ class HandleTest {
 		GrandParent instance = new GrandParent();
 		instance.setKey(3);
 		assertEquals(Integer.valueOf(3), h.getKey(instance));
+
+		instance.setNotFileOrKey(true);
+		instance.parent = new Parent();
+		instance.list = List.of(new Parent());
+		instance.map = Map.of(0, new Parent());
+
+		h.buildCreateData(instance);
+		h.buildUpdateData(instance);
 	}
 
 	@Test
@@ -232,6 +242,19 @@ class HandleTest {
 
 		assertFalse(h.hasKey());
 		assertFalse(h.containsKey(new String[] { "file", "key", "notFileOrKey", "parent", "array", "list", "map" }));
+
+		Parent instance = new Parent();
+
+		instance.setFile("f");
+		instance.setKey(3);
+		instance.setNotFileOrKey(5.5F);
+		instance.parent = new Parent();
+		instance.array = new Parent[] { new Parent() };
+		instance.list = List.of(Map.of(0, new Parent()));
+		instance.map = Map.of(1, List.of(new Parent()));
+
+		h.buildCreateData(instance);
+		h.buildUpdateData(instance);
 	}
 
 	@Test
@@ -264,12 +287,21 @@ class HandleTest {
 		assertTrue(h.hasAutoKey());
 
 		Child instance = new Child();
-		h.setAutoKey(instance, "s");
-		assertEquals("s", h.getKey(instance));
+		h.setAutoKey(instance, "k");
+		assertEquals("k", h.getKey(instance));
+
+		instance.setNotFileOrKey(5.5F);
+		instance.parent = new Parent();
+		instance.array = new Parent[] { new Parent() };
+		instance.list = List.of(Map.of(0, new Parent[] { new Parent() }));
+		instance.map = Map.of(1, List.of(Map.of(2, new Parent())));
+
+		h.buildCreateData(instance);
+		h.buildUpdateData(instance);
 
 		Map<String, Object> values = new HashMap<>();
-		h.putAutoKey(values, "s");
-		assertEquals("s", values.get("key"));
+		h.putAutoKey(values, "k");
+		assertEquals("k", values.get("key"));
 	}
 
 	@Test

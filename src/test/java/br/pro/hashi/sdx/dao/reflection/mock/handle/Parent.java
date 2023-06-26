@@ -12,11 +12,11 @@ public class Parent extends GrandParent {
 
 	String file;
 	private @Converted(DefaultImplementation.class) Integer key;
-	private @Renamed("not_file_or_key") double notFileOrKey;
+	private @Renamed("not_file_or_key") float notFileOrKey;
 
-	Parent[] array;
-	List<Map<Integer, Parent>> list;
-	Map<Integer, List<Parent>> map;
+	public Parent[] array;
+	public List<Map<Integer, Parent>> list;
+	public Map<Integer, List<Parent>> map;
 
 	public final Object finalValue;
 	public transient Object transientValue;
@@ -29,11 +29,11 @@ public class Parent extends GrandParent {
 		this.transientValue = null;
 	}
 
-	public double getNotFileOrKey() {
+	public float getNotFileOrKey() {
 		return notFileOrKey;
 	}
 
-	public void setNotFileOrKey(double notFileOrKey) {
+	public void setNotFileOrKey(float notFileOrKey) {
 		this.notFileOrKey = notFileOrKey;
 	}
 }

@@ -13,9 +13,9 @@ public class GrandParent {
 	private @Key int key;
 	boolean notFileOrKey;
 
-	Parent parent;
-	List<Parent> list;
-	Map<Integer, Parent> map;
+	public Parent parent;
+	public List<Parent> list;
+	public Map<Integer, Parent> map;
 
 	public final Object finalValue;
 	public transient Object transientValue;

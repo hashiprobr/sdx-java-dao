@@ -16,8 +16,8 @@ public class Child extends Parent {
 	protected @Web @File String file;
 	public @Auto @Key String key;
 
-	List<Map<Integer, Parent[]>> list;
-	Map<Integer, List<Map<Integer, Parent>>> map;
+	public List<Map<Integer, Parent[]>> list;
+	public Map<Integer, List<Map<Integer, Parent>>> map;
 
 	public final Object finalValue;
 	public transient Object transientValue;
