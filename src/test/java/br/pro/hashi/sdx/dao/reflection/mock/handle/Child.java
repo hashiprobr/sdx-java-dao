@@ -25,6 +25,8 @@ public class Child extends Parent {
 	public Child() {
 		this.file = null;
 		this.key = null;
+		this.list = null;
+		this.map = null;
 		this.finalValue = null;
 		this.transientValue = null;
 	}

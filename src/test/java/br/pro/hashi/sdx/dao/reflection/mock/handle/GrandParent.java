@@ -24,6 +24,9 @@ public class GrandParent {
 		this.file = null;
 		this.key = 0;
 		this.notFileOrKey = false;
+		this.parent = null;
+		this.list = null;
+		this.map = null;
 		this.finalValue = null;
 		this.transientValue = null;
 	}

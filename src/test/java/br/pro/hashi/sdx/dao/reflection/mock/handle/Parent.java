@@ -25,8 +25,19 @@ public class Parent extends GrandParent {
 		this.file = null;
 		this.key = 0;
 		this.notFileOrKey = 0;
+		this.array = null;
+		this.list = null;
+		this.map = null;
 		this.finalValue = null;
 		this.transientValue = null;
+	}
+
+	public Integer getBoxedKey() {
+		return key;
+	}
+
+	public void setBoxedKey(Integer key) {
+		this.key = key;
 	}
 
 	public float getNotFileOrKey() {

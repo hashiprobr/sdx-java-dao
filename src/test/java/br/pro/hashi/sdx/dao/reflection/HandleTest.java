@@ -96,8 +96,6 @@ class HandleTest {
 	private @Mock Reflector reflector;
 	private @Mock ParserFactory parserFactory;
 	private @Mock ConverterFactory converterFactory;
-	private Handle<FieldNames> fieldNamesHandle;
-	private Handle<PropertyNames> propertyNamesHandle;
 	private @Mock HandleFactory handleFactory;
 
 	@BeforeEach
@@ -154,19 +152,10 @@ class HandleTest {
 			return constructor.newInstance();
 		});
 
-		Handle<Custom> customHandle = newHandle(Custom.class);
-		Handle<Object> objectHandle = newHandle(Object.class);
-		Handle<Recursive> recursiveHandle = newHandle(Recursive.class);
-		Handle<Parent> parentHandle = newHandle(Parent.class);
-		fieldNamesHandle = newHandle(FieldNames.class);
-		propertyNamesHandle = newHandle(PropertyNames.class);
-
-		when(handleFactory.get(Custom.class)).thenReturn(customHandle);
-		when(handleFactory.get(Object.class)).thenReturn(objectHandle);
-		when(handleFactory.get(Recursive.class)).thenReturn(recursiveHandle);
-		when(handleFactory.get(Parent.class)).thenReturn(parentHandle);
-		when(handleFactory.get(FieldNames.class)).thenReturn(fieldNamesHandle);
-		when(handleFactory.get(PropertyNames.class)).thenReturn(propertyNamesHandle);
+		when(handleFactory.get(any())).thenAnswer((invocation) -> {
+			Class<E> type = invocation.getArgument(0);
+			return newHandle(type);
+		});
 	}
 
 	@AfterEach
@@ -212,8 +201,33 @@ class HandleTest {
 		instance.list = List.of(new Parent());
 		instance.map = Map.of(0, new Parent());
 
-		h.buildCreateData(instance);
-		h.buildUpdateData(instance);
+		Map<String, Object> map = new HashMap<>();
+		map.put("file", null);
+		map.put("key", 0.0);
+		map.put("not_file_or_key", 0F);
+		map.put("parent", null);
+		map.put("array", null);
+		map.put("list", null);
+		map.put("map", null);
+
+		Map<String, Object> data;
+
+		data = h.buildCreateData(instance);
+		assertEquals(6, data.size());
+		assertTrue(data.containsKey("file"));
+		assertNull(data.get("file"));
+		assertEquals(3, data.get("key"));
+		assertTrue((boolean) data.get("notFileOrKey"));
+		assertEquals(map, data.get("parent"));
+		assertEquals(List.of(map), data.get("list"));
+		assertEquals(Map.of("0", map), data.get("map"));
+
+		data = h.buildUpdateData(instance);
+		assertEquals(4, data.size());
+		assertTrue((boolean) data.get("notFileOrKey"));
+		assertEquals(map, data.get("parent"));
+		assertEquals(List.of(map), data.get("list"));
+		assertEquals(Map.of("0", map), data.get("map"));
 	}
 
 	@Test
@@ -246,15 +260,45 @@ class HandleTest {
 		Parent instance = new Parent();
 
 		instance.setFile("f");
-		instance.setKey(3);
+		instance.setBoxedKey(Integer.valueOf(3));
 		instance.setNotFileOrKey(5.5F);
 		instance.parent = new Parent();
 		instance.array = new Parent[] { new Parent() };
 		instance.list = List.of(Map.of(0, new Parent()));
 		instance.map = Map.of(1, List.of(new Parent()));
 
-		h.buildCreateData(instance);
-		h.buildUpdateData(instance);
+		Map<String, Object> map = new HashMap<>();
+		map.put("file", null);
+		map.put("key", 0.0);
+		map.put("not_file_or_key", 0F);
+		map.put("parent", null);
+		map.put("array", null);
+		map.put("list", null);
+		map.put("map", null);
+
+		Map<String, Object> data;
+
+		data = h.buildCreateData(instance);
+		assertEquals(7, data.size());
+		assertTrue(data.containsKey("file"));
+		assertNull(data.get("file"));
+		assertEquals(3.0, data.get("key"));
+		assertEquals(5.5F, data.get("not_file_or_key"));
+		assertEquals(map, data.get("parent"));
+		assertEquals(List.of(map), data.get("array"));
+		assertEquals(List.of(Map.of("0", map)), data.get("list"));
+		assertEquals(Map.of("1", List.of(map)), data.get("map"));
+
+		data = h.buildUpdateData(instance);
+		assertEquals(7, data.size());
+		assertTrue(data.containsKey("file"));
+		assertNull(data.get("file"));
+		assertEquals(3.0, data.get("key"));
+		assertEquals(5.5F, data.get("not_file_or_key"));
+		assertEquals(map, data.get("parent"));
+		assertEquals(List.of(map), data.get("array"));
+		assertEquals(List.of(Map.of("0", map)), data.get("list"));
+		assertEquals(Map.of("1", List.of(map)), data.get("map"));
 	}
 
 	@Test
@@ -296,8 +340,34 @@ class HandleTest {
 		instance.list = List.of(Map.of(0, new Parent[] { new Parent() }));
 		instance.map = Map.of(1, List.of(Map.of(2, new Parent())));
 
-		h.buildCreateData(instance);
-		h.buildUpdateData(instance);
+		Map<String, Object> map = new HashMap<>();
+		map.put("file", null);
+		map.put("key", 0.0);
+		map.put("not_file_or_key", 0F);
+		map.put("parent", null);
+		map.put("array", null);
+		map.put("list", null);
+		map.put("map", null);
+
+		Map<String, Object> data;
+
+		data = h.buildCreateData(instance);
+		assertEquals(6, data.size());
+		assertTrue(data.containsKey("file"));
+		assertNull(data.get("file"));
+		assertEquals(5.5F, data.get("not_file_or_key"));
+		assertEquals(map, data.get("parent"));
+		assertEquals(List.of(map), data.get("array"));
+		assertEquals(List.of(Map.of("0", List.of(map))), data.get("list"));
+		assertEquals(Map.of("1", List.of(Map.of("2", map))), data.get("map"));
+
+		data = h.buildUpdateData(instance);
+		assertEquals(5, data.size());
+		assertEquals(5.5F, data.get("not_file_or_key"));
+		assertEquals(map, data.get("parent"));
+		assertEquals(List.of(map), data.get("array"));
+		assertEquals(List.of(Map.of("0", List.of(map))), data.get("list"));
+		assertEquals(Map.of("1", List.of(Map.of("2", map))), data.get("map"));
 
 		Map<String, Object> values = new HashMap<>();
 		h.putAutoKey(values, "k");
@@ -477,7 +547,7 @@ class HandleTest {
 
 	@Test
 	void buildsEntryPathsFromFieldNames() {
-		Handle<FieldNames> h = fieldNamesHandle;
+		Handle<FieldNames> h = newHandle(FieldNames.class);
 		assertBuildsEntryPath("file", h, "file");
 		assertBuildsEntryPath("zeroProperty", h, "zeroProperty");
 		assertBuildsEntryPath("zeroProperty.key", h, "zeroProperty.key");
@@ -549,7 +619,7 @@ class HandleTest {
 
 	@Test
 	void buildsEntryPathsFromPropertyNames() {
-		Handle<PropertyNames> h = propertyNamesHandle;
+		Handle<PropertyNames> h = newHandle(PropertyNames.class);
 		assertBuildsEntryPath("key", h, "key");
 		assertBuildsEntryPath("zero_field", h, "zeroField");
 		assertBuildsEntryPath("zero_field.file", h, "zeroField.file");
@@ -1126,7 +1196,7 @@ class HandleTest {
 
 	@Test
 	void convertsFieldPathsTo() {
-		Handle<FieldNames> h = fieldNamesHandle;
+		Handle<FieldNames> h = newHandle(FieldNames.class);
 		FieldNames zeroField = new FieldNames();
 		Map<String, FieldNames> oneField = Map.of("one", zeroField);
 		Map<Integer, FieldNames> intField = Map.of(1, zeroField);
@@ -1199,7 +1269,7 @@ class HandleTest {
 
 	@Test
 	void convertsPropertyPathsTo() {
-		Handle<PropertyNames> h = propertyNamesHandle;
+		Handle<PropertyNames> h = newHandle(PropertyNames.class);
 		PropertyNames zeroProperty = new PropertyNames();
 		Map<String, PropertyNames> oneProperty = Map.of("one", zeroProperty);
 		Map<Integer, PropertyNames> intProperty = Map.of(1, zeroProperty);
@@ -1968,7 +2038,7 @@ class HandleTest {
 
 	@Test
 	void doesNotConvertFieldPathsTo() {
-		Handle<FieldNames> h = fieldNamesHandle;
+		Handle<FieldNames> h = newHandle(FieldNames.class);
 		assertDoesNotConvertIllegalTo(h, "file", "s");
 		assertDoesNotConvertIllegalTo(h, "zeroProperty.zeroField.file", "s");
 		assertDoesNotConvertIllegalTo(h, "zeroProperty.oneField.one.file", "s");
@@ -1983,7 +2053,7 @@ class HandleTest {
 
 	@Test
 	void doesNotConvertPropertyPathsTo() {
-		Handle<PropertyNames> h = propertyNamesHandle;
+		Handle<PropertyNames> h = newHandle(PropertyNames.class);
 		assertDoesNotConvertIllegalTo(h, "key", "s");
 		assertDoesNotConvertIllegalTo(h, "zero_field.file", "s");
 		assertDoesNotConvertIllegalTo(h, "one_field.one.file", "s");
@@ -2283,7 +2353,7 @@ class HandleTest {
 
 	@Test
 	void convertsFieldPathsFrom() {
-		Handle<FieldNames> h = fieldNamesHandle;
+		Handle<FieldNames> h = newHandle(FieldNames.class);
 		Map<String, Object> zeroMap = Map.of();
 		Map<String, Map<String, Object>> oneMap = Map.of("one", zeroMap);
 		Map<String, Map<String, Object>> intMap = Map.of("1", zeroMap);
@@ -2362,7 +2432,7 @@ class HandleTest {
 
 	@Test
 	void convertsPropertyPathsFrom() {
-		Handle<PropertyNames> h = propertyNamesHandle;
+		Handle<PropertyNames> h = newHandle(PropertyNames.class);
 		Map<String, Object> zeroMap = Map.of();
 		Map<String, Map<String, Object>> oneMap = Map.of("one", zeroMap);
 		Map<String, Map<String, Object>> intMap = Map.of("1", zeroMap);
