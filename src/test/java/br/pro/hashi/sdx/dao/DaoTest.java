@@ -114,20 +114,14 @@ class DaoTest {
 		when(client.getConnection()).thenReturn(connection);
 
 		when(handle.getCollectionName()).thenReturn("collection");
-		when(handle.buildInstance(any())).thenAnswer((invocation) -> {
-			Map<String, Object> data = invocation.getArgument(0);
-			return new Entity((int) data.get("value"));
-		});
-		when(handle.buildValues(any())).thenAnswer((invocation) -> {
-			Map<String, Object> data = invocation.getArgument(0);
-			return Map.of("value", data.get("value"));
-		});
 		when(handle.buildCreateData(any(Entity.class))).thenAnswer((invocation) -> {
 			Entity instance = invocation.getArgument(0);
 			Map<String, Object> data = new HashMap<>();
 			data.put("value", instance.getValue());
 			data.put("file", "");
-			data.put("key", handle.getKey(instance));
+			if (!handle.hasAutoKey()) {
+				data.put("key", handle.getKey(instance));
+			}
 			return data;
 		});
 		when(handle.buildUpdateData(any(Entity.class))).thenAnswer((invocation) -> {
@@ -142,6 +136,14 @@ class DaoTest {
 		});
 		when(handle.buildDataEntryPaths(any(String[].class))).thenAnswer((invocation) -> {
 			return invocation.getArgument(0);
+		});
+		when(handle.buildInstance(any())).thenAnswer((invocation) -> {
+			Map<String, Object> data = invocation.getArgument(0);
+			return new Entity((int) data.get("value"));
+		});
+		when(handle.buildValues(any())).thenAnswer((invocation) -> {
+			Map<String, Object> data = invocation.getArgument(0);
+			return Map.of("value", data.get("value"));
 		});
 
 		d = new Dao<>(client, handle);
