@@ -3,6 +3,7 @@ package br.pro.hashi.sdx.dao.reflection;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,10 +58,10 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.ClashingFieldName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ClashingPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedFileField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ConvertedKeyField;
+import br.pro.hashi.sdx.dao.reflection.mock.handle.Default;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedCollectionName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.DottedPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FieldValueField;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.Default;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.FileKeyField;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.GrandParent;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.NonConvertableField;
@@ -176,18 +178,98 @@ class HandleTest {
 	void constructsAndBuildsFromGrandParent() {
 		Handle<GrandParent> h = newHandle(GrandParent.class);
 		assertEquals("GrandParents", h.getCollectionName());
+
+		assertEquals(Set.of("file", "key", "notFileOrKey", "parent", "list", "map"), h.getFieldNames());
+		assertEquals(Set.of("file"), h.getFileFieldNames());
+
+		assertEquals("image/png", h.getContentType("file"));
+		assertNull(h.getContentType("key"));
+		assertNull(h.getContentType("notFileOrKey"));
+		assertNull(h.getContentType("parent"));
+		assertNull(h.getContentType("list"));
+		assertNull(h.getContentType("map"));
+
+		assertFalse(h.isWeb("file"));
+		assertFalse(h.isWeb("key"));
+		assertFalse(h.isWeb("notFileOrKey"));
+		assertFalse(h.isWeb("parent"));
+		assertFalse(h.isWeb("list"));
+		assertFalse(h.isWeb("map"));
+
+		assertTrue(h.hasKey());
+		assertTrue(h.containsKey(new String[] { "key" }));
+		assertFalse(h.containsKey(new String[] { "file", "notFileOrKey", "parent", "list", "map" }));
+		assertFalse(h.hasAutoKey());
+
+		GrandParent instance = new GrandParent();
+		instance.setKey(3);
+		assertEquals(Integer.valueOf(3), h.getKey(instance));
 	}
 
 	@Test
 	void constructsAndBuildsFromParent() {
 		Handle<Parent> h = newHandle(Parent.class);
 		assertEquals("Parents", h.getCollectionName());
+
+		assertEquals(Set.of("file", "key", "notFileOrKey", "parent", "array", "list", "map"), h.getFieldNames());
+		assertEquals(Set.of(), h.getFileFieldNames());
+
+		assertNull(h.getContentType("file"));
+		assertNull(h.getContentType("key"));
+		assertNull(h.getContentType("notFileOrKey"));
+		assertNull(h.getContentType("parent"));
+		assertNull(h.getContentType("array"));
+		assertNull(h.getContentType("list"));
+		assertNull(h.getContentType("map"));
+
+		assertFalse(h.isWeb("file"));
+		assertFalse(h.isWeb("key"));
+		assertFalse(h.isWeb("notFileOrKey"));
+		assertFalse(h.isWeb("parent"));
+		assertFalse(h.isWeb("array"));
+		assertFalse(h.isWeb("list"));
+		assertFalse(h.isWeb("map"));
+
+		assertFalse(h.hasKey());
+		assertFalse(h.containsKey(new String[] { "file", "key", "notFileOrKey", "parent", "array", "list", "map" }));
 	}
 
 	@Test
 	void constructsAndBuildsFromChild() {
 		Handle<Child> h = newHandle(Child.class);
 		assertEquals("Children", h.getCollectionName());
+
+		assertEquals(Set.of("file", "key", "notFileOrKey", "parent", "array", "list", "map"), h.getFieldNames());
+		assertEquals(Set.of("file"), h.getFileFieldNames());
+
+		assertEquals("application/octet-stream", h.getContentType("file"));
+		assertNull(h.getContentType("key"));
+		assertNull(h.getContentType("notFileOrKey"));
+		assertNull(h.getContentType("parent"));
+		assertNull(h.getContentType("array"));
+		assertNull(h.getContentType("list"));
+		assertNull(h.getContentType("map"));
+
+		assertTrue(h.isWeb("file"));
+		assertFalse(h.isWeb("key"));
+		assertFalse(h.isWeb("notFileOrKey"));
+		assertFalse(h.isWeb("parent"));
+		assertFalse(h.isWeb("array"));
+		assertFalse(h.isWeb("list"));
+		assertFalse(h.isWeb("map"));
+
+		assertTrue(h.hasKey());
+		assertTrue(h.containsKey(new String[] { "key" }));
+		assertFalse(h.containsKey(new String[] { "file", "notFileOrKey", "parent", "array", "list", "map" }));
+		assertTrue(h.hasAutoKey());
+
+		Child instance = new Child();
+		h.setAutoKey(instance, "s");
+		assertEquals("s", h.getKey(instance));
+
+		Map<String, Object> values = new HashMap<>();
+		h.putAutoKey(values, "s");
+		assertEquals("s", values.get("key"));
 	}
 
 	@Test

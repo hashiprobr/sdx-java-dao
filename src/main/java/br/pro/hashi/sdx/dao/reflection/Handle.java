@@ -353,6 +353,10 @@ public class Handle<E> {
 		return collectionName;
 	}
 
+	Set<String> getFieldNames() {
+		return fieldTypes.keySet();
+	}
+
 	public Set<String> getFileFieldNames() {
 		return contentTypes.keySet();
 	}
