@@ -32,8 +32,8 @@ The following dependencies are ASL2.
  * google.cloud.core
  * com.google.auth
  * com.google.api
- * com.google.protobuf
  * com.google.common
+ * protobuf.java
 
 The following dependencies are MIT.
 

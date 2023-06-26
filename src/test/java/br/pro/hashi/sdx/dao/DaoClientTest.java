@@ -118,7 +118,7 @@ class DaoClientTest {
 	@Test
 	void connects() {
 		firebaseStatic.verify(() -> FirebaseApp.initializeApp(any(), any()), times(0));
-		firestoreStatic.verify(() -> FirestoreClient.getFirestore(any()), times(0));
+		firestoreStatic.verify(() -> FirestoreClient.getFirestore(any(FirebaseApp.class)), times(0));
 		storageStatic.verify(() -> StorageClient.getInstance(any()), times(0));
 		c.connect();
 		firebaseStatic.verify(() -> FirebaseApp.initializeApp(options, "id"));
@@ -126,7 +126,7 @@ class DaoClientTest {
 		storageStatic.verify(() -> StorageClient.getInstance(firebase));
 		c.connect();
 		firebaseStatic.verify(() -> FirebaseApp.initializeApp(any(), any()), times(1));
-		firestoreStatic.verify(() -> FirestoreClient.getFirestore(any()), times(1));
+		firestoreStatic.verify(() -> FirestoreClient.getFirestore(any(FirebaseApp.class)), times(1));
 		storageStatic.verify(() -> StorageClient.getInstance(any()), times(1));
 	}
 

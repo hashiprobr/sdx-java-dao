@@ -134,9 +134,6 @@ class DaoTest {
 			Map<String, Object> values = invocation.getArgument(0);
 			return Map.of("value", values.get("value"));
 		});
-		when(handle.buildDataEntryPaths(any(String[].class))).thenAnswer((invocation) -> {
-			return invocation.getArgument(0);
-		});
 		when(handle.buildInstance(any())).thenAnswer((invocation) -> {
 			Map<String, Object> data = invocation.getArgument(0);
 			return new Entity((int) data.get("value"));
@@ -144,6 +141,9 @@ class DaoTest {
 		when(handle.buildValues(any())).thenAnswer((invocation) -> {
 			Map<String, Object> data = invocation.getArgument(0);
 			return Map.of("value", data.get("value"));
+		});
+		when(handle.buildDataEntryPaths(any(String[].class))).thenAnswer((invocation) -> {
+			return invocation.getArgument(0);
 		});
 
 		d = new Dao<>(client, handle);
