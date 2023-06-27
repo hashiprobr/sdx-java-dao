@@ -126,9 +126,7 @@ class DaoTest {
 		});
 		when(handle.buildUpdateData(any(Entity.class))).thenAnswer((invocation) -> {
 			Entity instance = invocation.getArgument(0);
-			Map<String, Object> data = new HashMap<>();
-			data.put("value", instance.getValue());
-			return data;
+			return Map.of("value", instance.getValue());
 		});
 		when(handle.buildData(any())).thenAnswer((invocation) -> {
 			Map<String, Object> values = invocation.getArgument(0);
