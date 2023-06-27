@@ -953,10 +953,10 @@ public class Handle<E> {
 	private Object convertArrayFrom(Class<?> componentType, Object value) {
 		List<?> data = (List<?>) value;
 		Object array = Array.newInstance(componentType, data.size());
-		int i = 0;
+		int index = 0;
 		for (Object component : data) {
-			Array.set(array, i, convertFrom(componentType, component));
-			i++;
+			Array.set(array, index, convertFrom(componentType, component));
+			index++;
 		}
 		return array;
 	}
