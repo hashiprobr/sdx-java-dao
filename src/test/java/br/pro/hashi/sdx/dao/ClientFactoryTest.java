@@ -99,7 +99,7 @@ class ClientFactoryTest {
 	}
 
 	@Test
-	void doesNotGetFromEmptyCache() {
+	void doesNotGetFirstFromEmptyCache() {
 		assertThrows(IllegalStateException.class, () -> {
 			f.getFirst();
 		});

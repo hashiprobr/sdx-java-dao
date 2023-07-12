@@ -157,7 +157,7 @@ class DaoTest {
 	}
 
 	@Test
-	void createsFirst() {
+	void getsFirst() {
 		when(clientFactory.getFirst()).thenReturn(client);
 		try (MockedStatic<ClientFactory> factoryStatic = mockFactoryStatic()) {
 			assertSame(d, Dao.of(Entity.class));
@@ -165,7 +165,7 @@ class DaoTest {
 	}
 
 	@Test
-	void createsFromId() {
+	void getsFromId() {
 		when(clientFactory.getFromId("id")).thenReturn(client);
 		try (MockedStatic<ClientFactory> factoryStatic = mockFactoryStatic()) {
 			assertSame(d, Dao.of(Entity.class, "id"));

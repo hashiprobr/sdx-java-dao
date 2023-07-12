@@ -23,7 +23,7 @@ import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
  */
 public final class DaoClient {
 	/**
-	 * Creates a new client from the specified project id.
+	 * Gets a new client from the specified project id.
 	 * 
 	 * @param projectId the id
 	 * @return the client
@@ -36,7 +36,7 @@ public final class DaoClient {
 	}
 
 	/**
-	 * Creates a new client from the specified credentials path.
+	 * Gets a new client from the specified credentials path.
 	 * 
 	 * @param credentialsPath the path
 	 * @return the client
