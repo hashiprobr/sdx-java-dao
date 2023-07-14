@@ -12,7 +12,7 @@ module br.pro.hashi.sdx.dao {
 	requires com.google.auth.oauth2;
 	requires com.google.api.apicommon;
 	requires com.google.common;
-	requires protobuf.java;
+	requires com.google.protobuf;
 	requires org.slf4j;
 
 	exports br.pro.hashi.sdx.dao;
