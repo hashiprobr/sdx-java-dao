@@ -15,7 +15,12 @@ import java.util.Stack;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
 class Reflector {
+	private static final Reflector INSTANCE = new Reflector();
 	private static final Lookup LOOKUP = MethodHandles.lookup();
+
+	static Reflector getInstance() {
+		return INSTANCE;
+	}
 
 	Reflector() {
 	}

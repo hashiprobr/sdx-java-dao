@@ -12,6 +12,17 @@ import java.util.function.Function;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 
 class ParserFactory {
+	private static final ParserFactory INSTANCE = newInstance();
+
+	private static ParserFactory newInstance() {
+		Reflector reflector = Reflector.getInstance();
+		return new ParserFactory(reflector);
+	}
+
+	static ParserFactory getInstance() {
+		return INSTANCE;
+	}
+
 	private final Reflector reflector;
 	private final Map<Class<?>, Function<String, ?>> cache;
 

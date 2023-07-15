@@ -157,6 +157,14 @@ public class Handle<E> {
 		BLOB_COMPATIBLE_TYPES = Set.copyOf(blobTypes);
 	}
 
+	static final <E> Handle<E> newInstance(Class<E> type) {
+		Reflector reflector = Reflector.getInstance();
+		ParserFactory parserFactory = ParserFactory.getInstance();
+		ConverterFactory converterFactory = ConverterFactory.getInstance();
+		HandleFactory handleFactory = HandleFactory.getInstance();
+		return new Handle<>(reflector, parserFactory, converterFactory, handleFactory, type);
+	}
+
 	private final Reflector reflector;
 	private final ParserFactory parserFactory;
 	private final HandleFactory handleFactory;

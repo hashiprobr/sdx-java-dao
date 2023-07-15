@@ -60,6 +60,11 @@ class ParserFactoryTest {
 	}
 
 	@Test
+	void getsInstance() {
+		assertInstanceOf(ParserFactory.class, ParserFactory.getInstance());
+	}
+
+	@Test
 	void doesNotParseCharFromEmptyString() {
 		assertThrows(IllegalArgumentException.class, () -> {
 			f.parseChar("");

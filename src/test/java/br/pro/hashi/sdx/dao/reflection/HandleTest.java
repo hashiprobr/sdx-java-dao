@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
@@ -163,6 +165,14 @@ class HandleTest {
 		assertDoesNotThrow(() -> {
 			mocks.close();
 		});
+	}
+
+	@Test
+	void getsInstance() {
+		@SuppressWarnings("rawtypes")
+		MockedConstruction<Handle> construction = mockConstruction(Handle.class);
+		assertInstanceOf(Handle.class, Handle.newInstance(Default.class));
+		construction.close();
 	}
 
 	@Test

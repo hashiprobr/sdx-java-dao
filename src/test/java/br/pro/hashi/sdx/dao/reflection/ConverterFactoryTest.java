@@ -1,6 +1,7 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,6 +47,11 @@ class ConverterFactoryTest {
 		assertDoesNotThrow(() -> {
 			mocks.close();
 		});
+	}
+
+	@Test
+	void getsInstance() {
+		assertInstanceOf(ConverterFactory.class, ConverterFactory.getInstance());
 	}
 
 	@Test

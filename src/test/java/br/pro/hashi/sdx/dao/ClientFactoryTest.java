@@ -69,7 +69,10 @@ class ClientFactoryTest {
 
 	@Test
 	void getsInstance() {
-		assertInstanceOf(ClientFactory.class, ClientFactory.getInstance());
+		try (MockedStatic<HandleFactory> factoryStatic = mockStatic(HandleFactory.class)) {
+			factoryStatic.when(() -> HandleFactory.getInstance()).thenReturn(factory);
+			assertInstanceOf(ClientFactory.class, ClientFactory.getInstance());
+		}
 	}
 
 	@Test

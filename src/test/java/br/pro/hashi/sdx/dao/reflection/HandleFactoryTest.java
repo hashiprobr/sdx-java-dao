@@ -3,27 +3,24 @@ package br.pro.hashi.sdx.dao.reflection;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
 class HandleFactoryTest {
 	private AutoCloseable mocks;
-	private @Mock Reflector reflector;
-	private @Mock ParserFactory parserFactory;
-	private @Mock ConverterFactory converterFactory;
 	private HandleFactory f;
 
 	@BeforeEach
 	void setUp() {
 		mocks = MockitoAnnotations.openMocks(this);
 
-		f = new HandleFactory(reflector, parserFactory, converterFactory);
+		f = new HandleFactory();
 	}
 
 	@AfterEach
@@ -41,9 +38,10 @@ class HandleFactoryTest {
 	@Test
 	void gets() {
 		@SuppressWarnings("rawtypes")
-		MockedConstruction<Handle> handleConstruction = mockConstruction(Handle.class);
+		MockedStatic<Handle> handleStatic = mockStatic(Handle.class);
+		handleStatic.when(() -> Handle.newInstance(Object.class)).thenReturn(mock(Handle.class));
 		Handle<Object> handle = f.get(Object.class);
-		handleConstruction.close();
+		handleStatic.close();
 		assertSame(handle, f.get(Object.class));
 	}
 }
