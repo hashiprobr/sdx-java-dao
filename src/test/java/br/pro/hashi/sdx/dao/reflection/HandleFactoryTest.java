@@ -35,11 +35,7 @@ class HandleFactoryTest {
 
 	@Test
 	void getsInstance() {
-		try (MockedConstruction<Reflector> reflectorConstruction = mockConstruction(Reflector.class)) {
-			try (MockedConstruction<ConverterFactory> factoryConstruction = mockConstruction(ConverterFactory.class)) {
-				assertInstanceOf(HandleFactory.class, HandleFactory.getInstance());
-			}
-		}
+		assertInstanceOf(HandleFactory.class, HandleFactory.getInstance());
 	}
 
 	@Test

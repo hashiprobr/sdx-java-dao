@@ -1146,8 +1146,8 @@ class HandleTest {
 		Map<String, Object> values = Map.of(fieldName, stream);
 		Map<String, Object> data;
 		Blob blob = mock(Blob.class);
+		ByteString byteString = mock(ByteString.class);
 		try (MockedStatic<ByteString> byteStringStatic = mockStatic(ByteString.class)) {
-			ByteString byteString = mock(ByteString.class);
 			byteStringStatic.when(() -> ByteString.readFrom(stream)).thenReturn(byteString);
 			try (MockedStatic<Blob> blobStatic = mockStatic(Blob.class)) {
 				blobStatic.when(() -> Blob.fromByteString(byteString)).thenReturn(blob);

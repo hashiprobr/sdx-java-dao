@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.hashiprobr</groupId>
   <artifactId>sdx-dao</artifactId>
-  <version>0.4.1</version>
+  <version>0.4.2</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Simple typed DAO framework based on Google Cloud Firestore and Storage.</description>
   <url>https://github.com/hashiprobr/sdx-java-dao</url>
@@ -45,26 +45,6 @@
       <groupId>com.google.firebase</groupId>
       <artifactId>firebase-admin</artifactId>
       <version>[9.2.0, 9.99)</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-firestore</artifactId>
-      <version>[3.13.3, 3.999)</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-storage</artifactId>
-      <version>[2.24.0, 2.999)</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-core</artifactId>
-      <version>[2.21.0, 2.999)</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-core-http</artifactId>
-      <version>[2.21.0, 2.999)</version>
     </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
