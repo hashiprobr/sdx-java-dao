@@ -216,7 +216,7 @@ class DaoTest {
 		List<Entity> instances = List.of(newEntity(false, 0), newEntity(true, 1));
 		List<String> allFileNames = new ArrayList<>();
 		List<String> keyStrings;
-		try (MockedConstruction<Fao> faoConstruction = mockFaoConstruction(allFileNames)) {
+		try (MockedConstruction<Fao> construction = mockFaoConstruction(allFileNames)) {
 			keyStrings = d.create(instances);
 		}
 		assertEquals(List.of("false", "true"), keyStrings);
@@ -242,7 +242,7 @@ class DaoTest {
 		List<Entity> instances = List.of(newEntity(null, 0), newEntity(null, 1));
 		List<String> allFileNames = new ArrayList<>();
 		List<String> keyStrings;
-		try (MockedConstruction<Fao> faoConstruction = mockFaoConstruction(allFileNames)) {
+		try (MockedConstruction<Fao> construction = mockFaoConstruction(allFileNames)) {
 			keyStrings = d.create(instances);
 		}
 		assertEquals(List.of("0", "1"), keyStrings);
@@ -390,7 +390,7 @@ class DaoTest {
 		Throwable cause = mockWriteFutureThrow();
 		Entity instance = newEntity(true, 1);
 		Exception exception = assertThrows(DataException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class)) {
 				d.create(instance);
 			}
 		});
@@ -737,9 +737,9 @@ class DaoTest {
 			assertEquals(bucket, arguments.get(0));
 			assertEquals(List.of("collection/true/file0", "collection/true/file1"), arguments.get(1));
 		};
-		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+		try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 			d.delete(true);
-			fao = faoConstruction.constructed().get(0);
+			fao = construction.constructed().get(0);
 		}
 		verify(fao).remove();
 		verify(collection).document("true");
@@ -763,7 +763,7 @@ class DaoTest {
 			doThrow(FileException.class).when(mock).remove();
 		};
 		assertThrows(FileException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 				d.delete(true);
 			}
 		});
@@ -774,7 +774,7 @@ class DaoTest {
 		mockFileFieldNames();
 		Throwable cause = mockWriteFutureThrow();
 		Exception exception = assertThrows(DataException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class)) {
 				d.delete(true);
 			}
 		});
@@ -787,7 +787,7 @@ class DaoTest {
 		InputStream stream = InputStream.nullInputStream();
 		mockWriteFutureReturn();
 		String url;
-		try (MockedConstruction<Fao> faoConstruction = mockUploadFaoConstruction(stream)) {
+		try (MockedConstruction<Fao> construction = mockUploadFaoConstruction(stream)) {
 			url = d.uploadFile(true, "file", stream);
 		}
 		assertEquals("url", url);
@@ -839,7 +839,7 @@ class DaoTest {
 			when(mock.upload(stream, "application/octet-stream", true)).thenThrow(FileException.class);
 		};
 		assertThrows(FileException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 				d.uploadFile(true, "file", stream);
 			}
 		});
@@ -851,7 +851,7 @@ class DaoTest {
 		InputStream stream = InputStream.nullInputStream();
 		Throwable cause = mockWriteFutureThrow();
 		Exception exception = assertThrows(DataException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockUploadFaoConstruction(stream)) {
+			try (MockedConstruction<Fao> construction = mockUploadFaoConstruction(stream)) {
 				d.uploadFile(true, "file", stream);
 			}
 		});
@@ -874,7 +874,7 @@ class DaoTest {
 		mockFaoFileFieldNames();
 		mockWriteFutureReturn();
 		String url;
-		try (MockedConstruction<Fao> faoConstruction = mockRefreshFaoConstruction()) {
+		try (MockedConstruction<Fao> construction = mockRefreshFaoConstruction()) {
 			url = d.refreshFile(true, "file");
 		}
 		assertEquals("url", url);
@@ -915,7 +915,7 @@ class DaoTest {
 			when(mock.refresh(true)).thenThrow(FileException.class);
 		};
 		assertThrows(FileException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 				d.refreshFile(true, "file");
 			}
 		});
@@ -926,7 +926,7 @@ class DaoTest {
 		mockFaoFileFieldNames();
 		Throwable cause = mockWriteFutureThrow();
 		Exception exception = assertThrows(DataException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockRefreshFaoConstruction()) {
+			try (MockedConstruction<Fao> construction = mockRefreshFaoConstruction()) {
 				d.refreshFile(true, "file");
 			}
 		});
@@ -950,7 +950,7 @@ class DaoTest {
 		ReadChannel channel = mock(ReadChannel.class);
 		mockWriteFutureReturn();
 		DaoFile file;
-		try (MockedConstruction<Fao> faoConstruction = mockDownloadFaoConstruction(channel)) {
+		try (MockedConstruction<Fao> construction = mockDownloadFaoConstruction(channel)) {
 			file = d.downloadFile(true, "file");
 		}
 		assertSame(channel, file.getChannel());
@@ -988,7 +988,7 @@ class DaoTest {
 			when(mock.download()).thenThrow(FileException.class);
 		};
 		assertThrows(FileException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 				d.downloadFile(true, "file");
 			}
 		});
@@ -1009,9 +1009,9 @@ class DaoTest {
 		mockFaoFileFieldNames();
 		mockWriteFutureReturn();
 		Fao fao;
-		try (MockedConstruction<Fao> faoConstruction = mockRemoveFaoConstruction()) {
+		try (MockedConstruction<Fao> construction = mockRemoveFaoConstruction()) {
 			d.removeFile(true, "file");
-			fao = faoConstruction.constructed().get(0);
+			fao = construction.constructed().get(0);
 		}
 		verify(fao).remove();
 		verify(collection).document("true");
@@ -1051,7 +1051,7 @@ class DaoTest {
 			doThrow(FileException.class).when(mock).remove();
 		};
 		assertThrows(FileException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 				d.removeFile(true, "file");
 			}
 		});
@@ -1062,7 +1062,7 @@ class DaoTest {
 		mockFaoFileFieldNames();
 		Throwable cause = mockWriteFutureThrow();
 		Exception exception = assertThrows(DataException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockRemoveFaoConstruction()) {
+			try (MockedConstruction<Fao> construction = mockRemoveFaoConstruction()) {
 				d.removeFile(true, "file");
 			}
 		});
@@ -1203,10 +1203,10 @@ class DaoTest {
 		mockWriteFutureReturn();
 		Fao fao0;
 		Fao fao1;
-		try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class)) {
+		try (MockedConstruction<Fao> construction = mockConstruction(Fao.class)) {
 			c.delete();
-			fao0 = faoConstruction.constructed().get(0);
-			fao1 = faoConstruction.constructed().get(1);
+			fao0 = construction.constructed().get(0);
+			fao1 = construction.constructed().get(1);
 		}
 		verify(fao0).remove();
 		verify(fao1).remove();
@@ -1259,7 +1259,7 @@ class DaoTest {
 			doThrow(FileException.class).when(mock).remove();
 		};
 		assertThrows(FileException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class, initializer)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class, initializer)) {
 				c.delete();
 			}
 		});
@@ -1272,7 +1272,7 @@ class DaoTest {
 		mockBatchReadFutureReturn();
 		Throwable cause = mockWriteFutureThrow();
 		Exception exception = assertThrows(DataException.class, () -> {
-			try (MockedConstruction<Fao> faoConstruction = mockConstruction(Fao.class)) {
+			try (MockedConstruction<Fao> construction = mockConstruction(Fao.class)) {
 				c.delete();
 			}
 		});

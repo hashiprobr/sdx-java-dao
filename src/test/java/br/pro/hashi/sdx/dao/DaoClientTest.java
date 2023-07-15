@@ -1,6 +1,7 @@
 package br.pro.hashi.sdx.dao;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,6 +73,13 @@ class DaoClientTest {
 		assertDoesNotThrow(() -> {
 			mocks.close();
 		});
+	}
+
+	@Test
+	void getsInstance() {
+		try (MockedConstruction<DaoClient> construction = mockConstruction(DaoClient.class)) {
+			assertInstanceOf(DaoClient.class, DaoClient.newInstance(options, "id"));
+		}
 	}
 
 	@Test

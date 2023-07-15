@@ -41,7 +41,7 @@ class HandleFactoryTest {
 		MockedStatic<Handle> handleStatic = mockStatic(Handle.class);
 		handleStatic.when(() -> Handle.newInstance(Object.class)).thenReturn(mock(Handle.class));
 		Handle<Object> handle = f.get(Object.class);
-		handleStatic.close();
 		assertSame(handle, f.get(Object.class));
+		handleStatic.close();
 	}
 }

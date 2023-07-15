@@ -10,25 +10,16 @@ import java.util.Map;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.firebase.FirebaseOptions;
 
-import br.pro.hashi.sdx.dao.reflection.HandleFactory;
-
 class ClientFactory {
-	private static final ClientFactory INSTANCE = newInstance();
-
-	private static ClientFactory newInstance() {
-		HandleFactory factory = HandleFactory.getInstance();
-		return new ClientFactory(factory);
-	}
+	private static final ClientFactory INSTANCE = new ClientFactory();
 
 	static ClientFactory getInstance() {
 		return INSTANCE;
 	}
 
-	private final HandleFactory factory;
 	private final Map<String, DaoClient> cache;
 
-	ClientFactory(HandleFactory factory) {
-		this.factory = factory;
+	ClientFactory() {
 		this.cache = new LinkedHashMap<>();
 	}
 
@@ -75,7 +66,7 @@ class ClientFactory {
 			FirebaseOptions options = FirebaseOptions.builder()
 					.setCredentials(credentials)
 					.build();
-			client = new DaoClient(factory, options, projectId);
+			client = DaoClient.newInstance(options, projectId);
 			cache.put(projectId, client);
 		}
 		return client;

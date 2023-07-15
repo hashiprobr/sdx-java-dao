@@ -48,6 +48,11 @@ public final class DaoClient {
 		return ClientFactory.getInstance().getFromCredentials(credentialsPath);
 	}
 
+	static DaoClient newInstance(FirebaseOptions options, String projectId) {
+		HandleFactory factory = HandleFactory.getInstance();
+		return new DaoClient(factory, options, projectId);
+	}
+
 	private final Logger logger;
 	private final HandleFactory factory;
 	private final Map<Class<?>, Dao<?>> cache;

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -24,24 +25,21 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.FirebaseOptions.Builder;
 
-import br.pro.hashi.sdx.dao.reflection.HandleFactory;
-
 class ClientFactoryTest {
 	private AutoCloseable mocks;
-	private @Mock HandleFactory factory;
 	private ClientFactory f;
 	private @Mock ServiceAccountCredentials credentials;
 	private @Mock FirebaseOptions options;
 	private @Mock Builder builder;
 	private MockedStatic<ServiceAccountCredentials> credentialsStatic;
 	private MockedStatic<FirebaseOptions> optionsStatic;
-	private MockedConstruction<DaoClient> clientConstruction;
+	private MockedConstruction<DaoClient> construction;
 
 	@BeforeEach
 	void setUp() {
 		mocks = MockitoAnnotations.openMocks(this);
 
-		f = new ClientFactory(factory);
+		f = new ClientFactory();
 
 		when(credentials.getProjectId()).thenReturn("id");
 
@@ -54,12 +52,12 @@ class ClientFactoryTest {
 		optionsStatic = mockStatic(FirebaseOptions.class);
 		optionsStatic.when(() -> FirebaseOptions.builder()).thenReturn(builder);
 
-		clientConstruction = mockConstruction(DaoClient.class);
+		construction = mockConstruction(DaoClient.class);
 	}
 
 	@AfterEach
 	void tearDown() {
-		clientConstruction.close();
+		construction.close();
 		optionsStatic.close();
 		credentialsStatic.close();
 		assertDoesNotThrow(() -> {
@@ -69,31 +67,40 @@ class ClientFactoryTest {
 
 	@Test
 	void getsInstance() {
-		try (MockedStatic<HandleFactory> factoryStatic = mockStatic(HandleFactory.class)) {
-			factoryStatic.when(() -> HandleFactory.getInstance()).thenReturn(factory);
-			assertInstanceOf(ClientFactory.class, ClientFactory.getInstance());
-		}
+		assertInstanceOf(ClientFactory.class, ClientFactory.getInstance());
 	}
 
 	@Test
 	void getsFirst() {
 		String credentialsPath = getCredentialsPath();
-		DaoClient client = f.getFromCredentials(credentialsPath);
-		assertSame(client, f.getFirst());
+		try (MockedStatic<DaoClient> clientStatic = mockClientStatic()) {
+			DaoClient client = f.getFromCredentials(credentialsPath);
+			assertSame(client, f.getFirst());
+		}
 	}
 
 	@Test
 	void getsFromId() {
 		String credentialsPath = getCredentialsPath();
-		DaoClient client = f.getFromCredentials(credentialsPath);
-		assertSame(client, f.getFromId("id"));
+		try (MockedStatic<DaoClient> clientStatic = mockClientStatic()) {
+			DaoClient client = f.getFromCredentials(credentialsPath);
+			assertSame(client, f.getFromId("id"));
+		}
 	}
 
 	@Test
 	void getsFromCredentials() {
 		String credentialsPath = getCredentialsPath();
-		DaoClient client = f.getFromCredentials(credentialsPath);
-		assertSame(client, f.getFromCredentials(credentialsPath));
+		try (MockedStatic<DaoClient> clientStatic = mockClientStatic()) {
+			DaoClient client = f.getFromCredentials(credentialsPath);
+			assertSame(client, f.getFromCredentials(credentialsPath));
+		}
+	}
+
+	private MockedStatic<DaoClient> mockClientStatic() {
+		MockedStatic<DaoClient> clientStatic = mockStatic(DaoClient.class);
+		clientStatic.when(() -> DaoClient.newInstance(options, "id")).thenReturn(mock(DaoClient.class));
+		return clientStatic;
 	}
 
 	private String getCredentialsPath() {
