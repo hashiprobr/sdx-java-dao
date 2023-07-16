@@ -78,7 +78,6 @@ import br.pro.hashi.sdx.dao.reflection.mock.handle.SlashedCollectionName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.SlashedPropertyName;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.ThrowerConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.TwoKeyFields;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.TypeParameters;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Address;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Email;
 import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Wrapper;
@@ -496,13 +495,6 @@ class HandleTest {
 	void constructsWithPluralEntities() {
 		Handle<PluralEntities> h = newHandle(PluralEntities.class);
 		assertEquals("PluralEntities", h.getCollectionName());
-	}
-
-	@Test
-	void doesNotConstructWithTypeParameters() {
-		assertThrows(ReflectionException.class, () -> {
-			newHandle(TypeParameters.class);
-		});
 	}
 
 	@Test

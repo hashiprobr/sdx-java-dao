@@ -185,10 +185,6 @@ public class Handle<E> {
 	Handle(Reflector reflector, ParserFactory parserFactory, ConverterFactory converterFactory, HandleFactory handleFactory, Class<E> type) {
 		String typeName = type.getName();
 
-		if (type.getTypeParameters().length > 0) {
-			throw new ReflectionException("Class %s cannot be generic".formatted(typeName));
-		}
-
 		MethodHandle creator = reflector.getCreator(type, typeName);
 		try {
 			creator.invoke();

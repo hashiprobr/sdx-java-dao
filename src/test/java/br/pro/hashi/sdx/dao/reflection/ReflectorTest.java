@@ -54,6 +54,7 @@ import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.AbstractConstructor
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.ArgumentConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.DefaultConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.Fields;
+import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.GenericConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.PackageConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.PrivateConstructor;
 import br.pro.hashi.sdx.dao.reflection.mock.reflector.handle.ProtectedConstructor;
@@ -89,6 +90,13 @@ class ReflectorTest {
 	void doesNotGetAbstractCreator() {
 		assertThrows(ReflectionException.class, () -> {
 			getCreator(AbstractConstructor.class);
+		});
+	}
+
+	@Test
+	void doesNotGetGenericCreator() {
+		assertThrows(ReflectionException.class, () -> {
+			getCreator(GenericConstructor.class);
 		});
 	}
 

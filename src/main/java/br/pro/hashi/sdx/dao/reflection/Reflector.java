@@ -29,6 +29,9 @@ class Reflector {
 		if (Modifier.isAbstract(type.getModifiers())) {
 			throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
 		}
+		if (type.getTypeParameters().length > 0) {
+			throw new ReflectionException("Class %s cannot be generic".formatted(typeName));
+		}
 		Constructor<E> constructor;
 		try {
 			constructor = type.getDeclaredConstructor();
