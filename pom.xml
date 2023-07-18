@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.hashiprobr</groupId>
   <artifactId>sdx-dao</artifactId>
-  <version>0.4.6</version>
+  <version>0.4.7</version>
   <name>${project.groupId}:${project.artifactId}</name>
   <description>Simple typed DAO framework based on Google Cloud Firestore and Storage.</description>
   <url>https://github.com/hashiprobr/sdx-java-dao</url>

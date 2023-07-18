@@ -1811,14 +1811,13 @@ class HandleTest {
 
 	private <E> void assertDoesNotConvertStreamTo(Handle<E> handle, String fieldName, InputStream value) {
 		Map<String, Object> values = Map.of(fieldName, value);
-		Throwable cause = new IOException();
 		Exception exception = assertThrows(UncheckedIOException.class, () -> {
 			try (MockedStatic<ByteString> byteStringStatic = mockStatic(ByteString.class)) {
-				byteStringStatic.when(() -> ByteString.readFrom(value)).thenThrow(cause);
+				byteStringStatic.when(() -> ByteString.readFrom(value)).thenThrow(IOException.class);
 				handle.buildData(values);
 			}
 		});
-		assertSame(cause, exception.getCause());
+		assertInstanceOf(IOException.class, exception.getCause());
 	}
 
 	@Test
