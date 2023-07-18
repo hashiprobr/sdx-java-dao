@@ -1749,7 +1749,7 @@ class DaoTest {
 
 	@Test
 	void doesNotSyncInterruptedFuture() {
-		InterruptedException cause = new InterruptedException();
+		Throwable cause = new InterruptedException();
 		assertDoesNotThrow(() -> {
 			when(readFuture.get()).thenThrow(cause);
 		});
