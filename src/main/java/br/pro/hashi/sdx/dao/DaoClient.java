@@ -24,7 +24,7 @@ import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 public final class DaoClient {
 	/**
 	 * Gets a new client from the specified project id.
-	 * 
+	 *
 	 * @param projectId the id
 	 * @return the client
 	 * @throws NullPointerException     if the id is null
@@ -37,7 +37,7 @@ public final class DaoClient {
 
 	/**
 	 * Gets a new client from the specified credentials path.
-	 * 
+	 *
 	 * @param credentialsPath the path
 	 * @return the client
 	 * @throws NullPointerException     if the path is null
@@ -115,7 +115,7 @@ public final class DaoClient {
 
 	/**
 	 * Obtains the data access object of the specified entity type.
-	 * 
+	 *
 	 * @param <E>  the type
 	 * @param type a {@link Class} representing {@code E}
 	 * @return the object

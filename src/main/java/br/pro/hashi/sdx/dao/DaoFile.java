@@ -20,7 +20,7 @@ public final class DaoFile {
 
 	/**
 	 * Obtains a channel to read this file.
-	 * 
+	 *
 	 * @return the channel
 	 */
 	public ReadableByteChannel getChannel() {
@@ -29,7 +29,7 @@ public final class DaoFile {
 
 	/**
 	 * Obtains the content type of this file.
-	 * 
+	 *
 	 * @return the type
 	 */
 	public String getContentType() {
@@ -38,7 +38,7 @@ public final class DaoFile {
 
 	/**
 	 * Obtains the content length of this file.
-	 * 
+	 *
 	 * @return the length
 	 */
 	public long getContentLength() {

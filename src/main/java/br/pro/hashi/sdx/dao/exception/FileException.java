@@ -9,7 +9,7 @@ public class FileException extends DaoException {
 
 	/**
 	 * Constructs a {@code FileException} with the specified detail message.
-	 * 
+	 *
 	 * @param message the detail message
 	 */
 	public FileException(String message) {
@@ -19,7 +19,7 @@ public class FileException extends DaoException {
 	/**
 	 * Constructs a new exception with the specified cause and a detail message of
 	 * {@code (cause == null ? null : cause.toString())}.
-	 * 
+	 *
 	 * @param cause the cause
 	 */
 	public FileException(Throwable cause) {

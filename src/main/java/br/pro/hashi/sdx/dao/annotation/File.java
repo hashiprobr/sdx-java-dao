@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 public @interface File {
 	/**
 	 * The content type of the file.
-	 * 
+	 *
 	 * @return a string representing the content type
 	 */
 	String value() default "application/octet-stream";

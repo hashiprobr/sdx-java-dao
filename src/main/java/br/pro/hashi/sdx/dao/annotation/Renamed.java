@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 public @interface Renamed {
 	/**
 	 * The name of the collection or property.
-	 * 
+	 *
 	 * @return a string representing the name
 	 */
 	String value();

@@ -17,7 +17,7 @@ import br.pro.hashi.sdx.dao.DaoConverter;
 public @interface Converted {
 	/**
 	 * The type of the converter.
-	 * 
+	 *
 	 * @return a subclass of {@link DaoConverter}
 	 */
 	Class<? extends DaoConverter<?, ?>> value();

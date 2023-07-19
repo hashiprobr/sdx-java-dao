@@ -41,7 +41,7 @@ public final class Dao<E> {
 	/**
 	 * Gets a new data access object of the specified entity type from the first
 	 * {@link DaoClient} created.
-	 * 
+	 *
 	 * @param <E>  the type
 	 * @param type a {@link Class} representing {@code E}
 	 * @return the object
@@ -55,7 +55,7 @@ public final class Dao<E> {
 	/**
 	 * Gets a new data access object of the specified entity type from the
 	 * {@link DaoClient} created for the specified project id.
-	 * 
+	 *
 	 * @param <E>       the type
 	 * @param type      a {@link Class} representing {@code E}
 	 * @param projectId the id
@@ -85,7 +85,7 @@ public final class Dao<E> {
 	 * automatically generated key. Otherwise, returns the result of
 	 * {@link Object#toString()} for the key specified in the instance.
 	 * </p>
-	 * 
+	 *
 	 * @param instance the instance
 	 * @return the key
 	 * @throws NullPointerException     if the instance is null or if the key field
@@ -130,7 +130,7 @@ public final class Dao<E> {
 	 * automatically generated keys. Otherwise, returns the result of
 	 * {@link Object#toString()} for the keys specified in the instances.
 	 * </p>
-	 * 
+	 *
 	 * @param instances the instances
 	 * @return the keys
 	 * @throws NullPointerException     if the instance list is null, if an instance
@@ -189,7 +189,7 @@ public final class Dao<E> {
 	 * <p>
 	 * If the instance does not exist, returns {@code null}.
 	 * </p>
-	 * 
+	 *
 	 * @param key the key
 	 * @return the instance
 	 * @throws NullPointerException if the key is null
@@ -220,7 +220,7 @@ public final class Dao<E> {
 	 * {@link File} fields are ignored and the {@link Key} field cannot be updated
 	 * because it is used to identify the instance.
 	 * </p>
-	 * 
+	 *
 	 * @param instance the instance
 	 * @throws NullPointerException if the instance is null or the key value is null
 	 * @throws DataException        if the Firestore operation could not be
@@ -239,7 +239,7 @@ public final class Dao<E> {
 	 * <p>
 	 * {@link File} fields and the {@link Key} field cannot be updated.
 	 * </p>
-	 * 
+	 *
 	 * @param key    the key
 	 * @param values the values
 	 * @throws NullPointerException     if the value map is null or the key value is
@@ -266,7 +266,7 @@ public final class Dao<E> {
 	 * {@link File} fields are ignored and the {@link Key} field cannot be updated
 	 * because it is used to identify the instances.
 	 * </p>
-	 * 
+	 *
 	 * @param instances the instances
 	 * @throws NullPointerException     if the instance list is null, an instance is
 	 *                                  null, or a key value is null
@@ -293,7 +293,7 @@ public final class Dao<E> {
 	 * <p>
 	 * {@link File} fields and the {@link Key} field cannot be updated.
 	 * </p>
-	 * 
+	 *
 	 * @param map the map
 	 * @throws NullPointerException     if the map is null, a value map is null, or
 	 *                                  a key value is null
@@ -357,7 +357,7 @@ public final class Dao<E> {
 	 * {@link DataException} can leave the entity in an inconsistent state that must
 	 * be fixed with another call to this method.
 	 * </p>
-	 * 
+	 *
 	 * @param key the key
 	 * @throws NullPointerException if the key is null
 	 * @throws FileException        if a Storage operation could not be performed
@@ -385,7 +385,7 @@ public final class Dao<E> {
 	 * {@link DataException} can leave the entity in an inconsistent state that must
 	 * be fixed with {@link #refreshFile(Object, String)}.
 	 * </p>
-	 * 
+	 *
 	 * @param key       the entity key
 	 * @param fieldName the field name
 	 * @param stream    the file content
@@ -428,7 +428,7 @@ public final class Dao<E> {
 	 * <p>
 	 * The operation is guaranteed to be atomic.
 	 * </p>
-	 * 
+	 *
 	 * @param key       the entity key
 	 * @param fieldName the field name
 	 * @return the link
@@ -455,7 +455,7 @@ public final class Dao<E> {
 	/**
 	 * Obtains the content of the specified {@link File} field of the specified
 	 * entity.
-	 * 
+	 *
 	 * @param key       the entity key
 	 * @param fieldName the field name
 	 * @return the file content
@@ -484,7 +484,7 @@ public final class Dao<E> {
 	 * {@link DataException} can leave the entity in an inconsistent state that must
 	 * be fixed with {@link #refreshFile(Object, String)}.
 	 * </p>
-	 * 
+	 *
 	 * @param key       the entity key
 	 * @param fieldName the field name
 	 * @throws NullPointerException     if the key is null or the field name is null
@@ -527,7 +527,7 @@ public final class Dao<E> {
 
 	/**
 	 * Creates a collection of entity instances.
-	 * 
+	 *
 	 * @return the collection
 	 */
 	public Collection collect() {
@@ -547,7 +547,7 @@ public final class Dao<E> {
 
 		/**
 		 * Retrieves the entity instances corresponding to the query.
-		 * 
+		 *
 		 * @return the instances
 		 * @throws DataException if the Firestore operation could not be performed
 		 */
@@ -572,7 +572,7 @@ public final class Dao<E> {
 		 * <p>
 		 * {@link File} fields and the {@link Key} field are ignored.
 		 * </p>
-		 * 
+		 *
 		 * @param instance the instance
 		 * @throws NullPointerException if the instance is null
 		 * @throws DataException        if the Firestore operation could not be
@@ -594,7 +594,7 @@ public final class Dao<E> {
 		 * If {@code E} has {@link File} fields, simply calls {@link Dao#delete(Object)}
 		 * for each instance key. Otherwise, performs a single batch operation.
 		 * </p>
-		 * 
+		 *
 		 * @throws FileException if a Storage operation could not be performed
 		 * @throws DataException if a Firestore operation could not be performed
 		 */
@@ -649,7 +649,7 @@ public final class Dao<E> {
 
 	/**
 	 * Creates a selection of entity fields with the specified names.
-	 * 
+	 *
 	 * @param names the names
 	 * @return the selection
 	 * @throws NullPointerException     if the name array is null
@@ -680,7 +680,7 @@ public final class Dao<E> {
 
 		/**
 		 * Retrieves a list of value maps corresponding to the query.
-		 * 
+		 *
 		 * @return the list
 		 * @throws DataException if the Firestore operation could not be performed
 		 */
@@ -705,7 +705,7 @@ public final class Dao<E> {
 		 * <p>
 		 * {@link File} fields and the {@link Key} field cannot be updated.
 		 * </p>
-		 * 
+		 *
 		 * @param fieldValues the values
 		 * @throws IllegalArgumentException if the number of selected fields and the
 		 *                                  number of specified values are different
@@ -734,7 +734,7 @@ public final class Dao<E> {
 		 * <p>
 		 * {@link File} fields and the {@link Key} field cannot be deleted.
 		 * </p>
-		 * 
+		 *
 		 * @throws DataException if the Firestore operation could not be performed
 		 */
 		public void delete() {
@@ -778,7 +778,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is equal to the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -791,7 +791,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is not equal to the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -804,7 +804,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is less than the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -817,7 +817,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is less than or equal to the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -830,7 +830,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is greater than the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -843,7 +843,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is greater than or equal to the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -856,7 +856,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is represented by an array and contains the specified value.
-		 * 
+		 *
 		 * @param name       the name
 		 * @param fieldValue the value
 		 * @return this filter, for chaining
@@ -870,7 +870,7 @@ public final class Dao<E> {
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is represented by an array and contains at least one of the
 		 * specified values.
-		 * 
+		 *
 		 * @param name        the name
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
@@ -883,7 +883,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is equal to one of the specified values.
-		 * 
+		 *
 		 * @param name        the name
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
@@ -896,7 +896,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the entity instances where the value of the field with the
 		 * specified name is not equal to any of the specified values.
-		 * 
+		 *
 		 * @param name        the name
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
@@ -909,7 +909,7 @@ public final class Dao<E> {
 		/**
 		 * Orders the entity instances by ascending values of the field with the
 		 * specified name.
-		 * 
+		 *
 		 * @param name the name
 		 * @return this filter, for chaining
 		 */
@@ -921,7 +921,7 @@ public final class Dao<E> {
 		/**
 		 * Orders the entity instances by descending values of the field with the
 		 * specified name.
-		 * 
+		 *
 		 * @param name the name
 		 * @return this filter, for chaining
 		 */
@@ -932,7 +932,7 @@ public final class Dao<E> {
 
 		/**
 		 * Ignores the first <em>n</em> entity instances.
-		 * 
+		 *
 		 * @param offset the value of <em>n</em>
 		 * @return this filter, for chaining
 		 */
@@ -944,7 +944,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the first <em>n</em> entity instances, not counting the offset if
 		 * specified.
-		 * 
+		 *
 		 * @param limit the value of <em>n</em>
 		 * @return this filter, for chaining
 		 */
@@ -956,7 +956,7 @@ public final class Dao<E> {
 		/**
 		 * Considers the last <em>n</em> entity instances, but only if an order has been
 		 * specified.
-		 * 
+		 *
 		 * @param limit the value of <em>n</em>
 		 * @return this filter, for chaining
 		 * @throws IllegalStateException if an order has not been specified
@@ -972,7 +972,7 @@ public final class Dao<E> {
 		 * {@link #orderByDescending(String)}. The order of the values must match the
 		 * order of the calls to {@link #orderByAscending(String)} and
 		 * {@link #orderByDescending(String)}.
-		 * 
+		 *
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
@@ -987,7 +987,7 @@ public final class Dao<E> {
 		 * {@link #orderByDescending(String)}. The order of the values must match the
 		 * order of the calls to {@link #orderByAscending(String)} and
 		 * {@link #orderByDescending(String)}.
-		 * 
+		 *
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
@@ -1002,7 +1002,7 @@ public final class Dao<E> {
 		 * {@link #orderByDescending(String)}. The order of the values must match the
 		 * order of the calls to {@link #orderByAscending(String)} and
 		 * {@link #orderByDescending(String)}.
-		 * 
+		 *
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
@@ -1017,7 +1017,7 @@ public final class Dao<E> {
 		 * {@link #orderByDescending(String)}. The order of the values must match the
 		 * order of the calls to {@link #orderByAscending(String)} and
 		 * {@link #orderByDescending(String)}.
-		 * 
+		 *
 		 * @param fieldValues the values
 		 * @return this filter, for chaining
 		 */
@@ -1028,7 +1028,7 @@ public final class Dao<E> {
 
 		/**
 		 * Counts the number of entity instances corresponding to the query.
-		 * 
+		 *
 		 * @return the number
 		 * @throws DataException if the Firestore operation could not be performed
 		 */
