@@ -33,7 +33,7 @@ The following dependencies are ASL2.
  * com.google.auth
  * com.google.api
  * com.google.common
- * com.google.protobuf
+ * protobuf.java
 
 The following dependencies are MIT.
 
