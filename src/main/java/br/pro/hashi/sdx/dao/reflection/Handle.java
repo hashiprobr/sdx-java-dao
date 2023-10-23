@@ -770,7 +770,11 @@ public class Handle<E> {
 					rawType = (Class<?>) fieldType;
 					componentTypes = null;
 				}
-				if (valueType.isArray()) {
+				if (valueType.isEnum()) {
+					if (rawType.equals(valueType)) {
+						return value.toString();
+					}
+				} else if (valueType.isArray()) {
 					if (rawType.isArray()) {
 						return convertArrayTo(objectPath, rawType.getComponentType(), value);
 					}
@@ -928,7 +932,12 @@ public class Handle<E> {
 				rawType = (Class<?>) fieldType;
 				componentTypes = null;
 			}
-			if (rawType.isArray()) {
+			if (rawType.isEnum()) {
+				if (value instanceof String) {
+					Function<String, ?> parser = parserFactory.get(rawType);
+					return parser.apply((String) value);
+				}
+			} else if (rawType.isArray()) {
 				if (value instanceof List) {
 					return convertArrayFrom(rawType.getComponentType(), value);
 				}
