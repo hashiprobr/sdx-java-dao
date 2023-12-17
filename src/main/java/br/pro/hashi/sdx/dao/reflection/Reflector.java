@@ -58,6 +58,7 @@ class Reflector {
         return creator;
     }
 
+    @SuppressWarnings("unchecked")
     <E> E invokeCreator(MethodHandle creator) {
         E instance;
         try {
@@ -88,6 +89,7 @@ class Reflector {
         return setter;
     }
 
+    @SuppressWarnings("unchecked")
     <E, F> F invokeGetter(MethodHandle getter, E instance) {
         F value;
         try {
@@ -164,7 +166,7 @@ class Reflector {
         throw new ReflectionException("Class %s must specify type %s of %s".formatted(type.getName(), typeVariableName, rootType.getName()));
     }
 
-    private class Node {
+    private static class Node {
         private final Node subNode;
         private final Class<?> type;
         private final Class<?>[] interfaces;
