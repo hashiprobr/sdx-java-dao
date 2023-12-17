@@ -180,10 +180,9 @@ class ReflectorTest {
     }
 
     private Field getDeclaredField(String fieldName) {
-        Field field = assertDoesNotThrow(() -> {
+        return assertDoesNotThrow(() -> {
             return Fields.class.getDeclaredField(fieldName);
         });
-        return field;
     }
 
     @Test
@@ -207,10 +206,9 @@ class ReflectorTest {
     }
 
     private Method getDeclaredMethod(String methodName) {
-        Method method = assertDoesNotThrow(() -> {
+        return assertDoesNotThrow(() -> {
             return Methods.class.getDeclaredMethod(methodName);
         });
-        return method;
     }
 
     @Test
