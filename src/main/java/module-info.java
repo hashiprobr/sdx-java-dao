@@ -20,6 +20,7 @@ module br.pro.hashi.sdx.dao {
     requires com.google.auth.oauth2;
     requires com.google.api.apicommon;
     requires protobuf.java;
+    requires org.objenesis;
     requires org.slf4j;
 
     exports br.pro.hashi.sdx.dao;

@@ -11,31 +11,42 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisStd;
+import org.objenesis.instantiator.ObjectInstantiator;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.*;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 class Reflector {
     private static final Reflector INSTANCE = new Reflector();
+    private static final Objenesis OBJENESIS = new ObjenesisStd();
     private static final Lookup LOOKUP = MethodHandles.lookup();
 
     static Reflector getInstance() {
         return INSTANCE;
     }
 
+    private final ConcurrentMap<Class<?>, ObjectInstantiator<?>> cache;
+
     Reflector() {
+        this.cache = new ConcurrentHashMap<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    <E> E create(Class<E> type, String typeName) {
+        checkCreatable(type, typeName);
+        ObjectInstantiator<?> instantiator = cache.computeIfAbsent(type, OBJENESIS::getInstantiatorOf);
+        return (E) instantiator.newInstance();
     }
 
     <E> MethodHandle getCreator(Class<E> type, String typeName) {
-        if (Modifier.isAbstract(type.getModifiers())) {
-            throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
-        }
-        if (type.getTypeParameters().length > 0) {
-            throw new ReflectionException("Class %s cannot be generic".formatted(typeName));
-        }
+        checkCreatable(type, typeName);
         Constructor<E> constructor;
         try {
             constructor = type.getDeclaredConstructor();
@@ -46,6 +57,15 @@ class Reflector {
             constructor.setAccessible(true);
         }
         return unreflectConstructor(constructor);
+    }
+
+    private <E> void checkCreatable(Class<E> type, String typeName) {
+        if (Modifier.isAbstract(type.getModifiers())) {
+            throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
+        }
+        if (type.getTypeParameters().length > 0) {
+            throw new ReflectionException("Class %s cannot be generic".formatted(typeName));
+        }
     }
 
     <E> MethodHandle unreflectConstructor(Constructor<E> constructor) {
