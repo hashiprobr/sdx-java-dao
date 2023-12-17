@@ -51,9 +51,7 @@ class ParserFactoryTest {
 
     @AfterEach
     void tearDown() {
-        assertDoesNotThrow(() -> {
-            mocks.close();
-        });
+        assertDoesNotThrow(() -> mocks.close());
     }
 
     @Test
@@ -63,16 +61,12 @@ class ParserFactoryTest {
 
     @Test
     void doesNotParseCharFromEmptyString() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            f.parseChar("");
-        });
+        assertThrows(IllegalArgumentException.class, () -> f.parseChar(""));
     }
 
     @Test
     void doesNotParseCharFromLargeString() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            f.parseChar("cc");
-        });
+        assertThrows(IllegalArgumentException.class, () -> f.parseChar("cc"));
     }
 
     @Test
@@ -144,45 +138,33 @@ class ParserFactoryTest {
 
     @Test
     void doesNotGetMissingParser() {
-        assertThrows(ReflectionException.class, () -> {
-            f.get(MissingMethod.class);
-        });
+        assertThrows(ReflectionException.class, () -> f.get(MissingMethod.class));
     }
 
     @Test
     void doesNotGetNonInstanceParser() {
-        assertThrows(ReflectionException.class, () -> {
-            f.get(NonInstanceMethod.class);
-        });
+        assertThrows(ReflectionException.class, () -> f.get(NonInstanceMethod.class));
     }
 
     @Test
     void doesNotGetNonPublicParser() {
-        assertThrows(ReflectionException.class, () -> {
-            f.get(NonPublicMethod.class);
-        });
+        assertThrows(ReflectionException.class, () -> f.get(NonPublicMethod.class));
     }
 
     @Test
     void doesNotGetNonStaticParser() {
-        assertThrows(ReflectionException.class, () -> {
-            f.get(NonStaticMethod.class);
-        });
+        assertThrows(ReflectionException.class, () -> f.get(NonStaticMethod.class));
     }
 
     @Test
     void doesNotGetCheckedParser() {
-        assertThrows(ReflectionException.class, () -> {
-            f.get(CheckedMethod.class);
-        });
+        assertThrows(ReflectionException.class, () -> f.get(CheckedMethod.class));
     }
 
     @Test
     void doesNotApplyUncheckedParser() {
         Function<String, UncheckedMethod> parser = f.get(UncheckedMethod.class);
-        assertThrows(RuntimeException.class, () -> {
-            parser.apply("s");
-        });
+        assertThrows(RuntimeException.class, () -> parser.apply("s"));
     }
 
     @Test
@@ -191,8 +173,6 @@ class ParserFactoryTest {
             Method method = CheckedMethod.class.getDeclaredMethod("valueOf", String.class);
             return LOOKUP.unreflect(method);
         });
-        assertThrows(AssertionError.class, () -> {
-            f.invoke(handle, "s");
-        });
+        assertThrows(AssertionError.class, () -> f.invoke(handle, "s"));
     }
 }
