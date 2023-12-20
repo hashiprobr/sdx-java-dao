@@ -62,7 +62,7 @@ class ParserFactory {
     }
 
     @SuppressWarnings("unchecked")
-    public <K> Function<String, K> get(Class<K> type) {
+    <K> Function<String, K> get(Class<K> type) {
         return (Function<String, K>) cache.computeIfAbsent(type, this::compute);
     }
 
