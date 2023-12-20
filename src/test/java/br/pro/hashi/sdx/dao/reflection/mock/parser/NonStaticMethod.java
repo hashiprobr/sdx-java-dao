@@ -11,6 +11,8 @@
 package br.pro.hashi.sdx.dao.reflection.mock.parser;
 
 public class NonStaticMethod {
+    private boolean value;
+
     public NonStaticMethod valueOf(String s) {
         return new NonStaticMethod();
     }

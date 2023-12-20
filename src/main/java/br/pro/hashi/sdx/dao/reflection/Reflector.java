@@ -41,8 +41,8 @@ class Reflector {
     @SuppressWarnings("unchecked")
     <E> E create(Class<E> type, String typeName) {
         checkCreatable(type, typeName);
-        ObjectInstantiator<?> instantiator = cache.computeIfAbsent(type, OBJENESIS::getInstantiatorOf);
-        return (E) instantiator.newInstance();
+        ObjectInstantiator<E> instantiator = (ObjectInstantiator<E>) cache.computeIfAbsent(type, OBJENESIS::getInstantiatorOf);
+        return instantiator.newInstance();
     }
 
     <E> MethodHandle getCreator(Class<E> type, String typeName) {
@@ -59,7 +59,7 @@ class Reflector {
         return unreflectConstructor(constructor);
     }
 
-    private <E> void checkCreatable(Class<E> type, String typeName) {
+    private void checkCreatable(Class<?> type, String typeName) {
         if (Modifier.isAbstract(type.getModifiers())) {
             throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
         }
@@ -68,7 +68,7 @@ class Reflector {
         }
     }
 
-    <E> MethodHandle unreflectConstructor(Constructor<E> constructor) {
+    MethodHandle unreflectConstructor(Constructor<?> constructor) {
         MethodHandle creator;
         try {
             creator = LOOKUP.unreflectConstructor(constructor);
@@ -110,7 +110,7 @@ class Reflector {
     }
 
     @SuppressWarnings("unchecked")
-    <E, F> F invokeGetter(MethodHandle getter, E instance) {
+    <F> F invokeGetter(MethodHandle getter, Object instance) {
         F value;
         try {
             value = (F) getter.invoke(instance);
@@ -120,7 +120,7 @@ class Reflector {
         return value;
     }
 
-    <E, F> void invokeSetter(MethodHandle setter, E instance, F value) {
+    void invokeSetter(MethodHandle setter, Object instance, Object value) {
         try {
             setter.invoke(instance, value);
         } catch (Throwable throwable) {

@@ -11,6 +11,8 @@
 package br.pro.hashi.sdx.dao.reflection.mock.parser;
 
 public class NonInstanceMethod {
+    private boolean value;
+
     public static Object valueOf(String s) {
         return new NonInstanceMethod();
     }

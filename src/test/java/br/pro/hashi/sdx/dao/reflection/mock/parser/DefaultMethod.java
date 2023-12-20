@@ -11,6 +11,8 @@
 package br.pro.hashi.sdx.dao.reflection.mock.parser;
 
 public class DefaultMethod {
+    private boolean value;
+
     public static DefaultMethod valueOf(String s) {
         return new DefaultMethod();
     }

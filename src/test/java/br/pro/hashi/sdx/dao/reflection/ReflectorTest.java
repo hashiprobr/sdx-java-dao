@@ -45,22 +45,22 @@ class ReflectorTest {
             PublicConstructor.class,
             ProtectedConstructor.class,
             PackageConstructor.class,
-            PrivateConstructor.class})
+            PrivateConstructor.class,
+            ArgumentConstructor.class,
+            ThrowConstructor.class})
     void creates(Class<?> type) {
         assertInstanceOf(type, create(type));
     }
 
-    @Test
-    void doesNotCreateAbstract() {
-        assertThrows(ReflectionException.class, () -> create(AbstractConstructor.class));
+    @ParameterizedTest
+    @ValueSource(classes = {
+            AbstractConstructor.class,
+            GenericConstructor.class})
+    void doesNotCreate(Class<?> type) {
+        assertThrows(ReflectionException.class, () -> create(type));
     }
 
-    @Test
-    void doesNotCreateGeneric() {
-        assertThrows(ReflectionException.class, () -> create(GenericConstructor.class));
-    }
-
-    private <E> E create(Class<E> type) {
+    private Object create(Class<?> type) {
         return r.create(type, type.getName());
     }
 
@@ -76,19 +76,13 @@ class ReflectorTest {
         assertInstanceOf(type, r.invokeCreator(creator));
     }
 
-    @Test
-    void doesNotGetAbstractCreator() {
-        assertThrows(ReflectionException.class, () -> getCreator(AbstractConstructor.class));
-    }
-
-    @Test
-    void doesNotGetGenericCreator() {
-        assertThrows(ReflectionException.class, () -> getCreator(GenericConstructor.class));
-    }
-
-    @Test
-    void doesNotGetArgumentCreator() {
-        assertThrows(ReflectionException.class, () -> getCreator(ArgumentConstructor.class));
+    @ParameterizedTest
+    @ValueSource(classes = {
+            AbstractConstructor.class,
+            GenericConstructor.class,
+            ArgumentConstructor.class})
+    void doesNotGetCreator(Class<?> type) {
+        assertThrows(ReflectionException.class, () -> getCreator(type));
     }
 
     @ParameterizedTest
@@ -96,18 +90,18 @@ class ReflectorTest {
             ProtectedConstructor.class,
             PackageConstructor.class,
             PrivateConstructor.class})
-    <E> void doesNotUnreflectIllegalConstructor(Class<E> type) {
+    <E> void doesNotUnreflectConstructor(Class<E> type) {
         Constructor<E> constructor = assertDoesNotThrow(() -> type.getDeclaredConstructor());
         assertThrows(AssertionError.class, () -> r.unreflectConstructor(constructor));
     }
 
     @Test
-    void doesNotInvokeThrowerCreator() {
-        MethodHandle creator = getCreator(ThrowerConstructor.class);
+    void doesNotInvokeThrowCreator() {
+        MethodHandle creator = getCreator(ThrowConstructor.class);
         assertThrows(AssertionError.class, () -> r.invokeCreator(creator));
     }
 
-    private <E> MethodHandle getCreator(Class<E> type) {
+    private MethodHandle getCreator(Class<?> type) {
         return r.getCreator(type, type.getName());
     }
 
@@ -153,7 +147,7 @@ class ReflectorTest {
             "protectedValue",
             "packageValue",
             "privateValue"})
-    void doesNotUnreflectIllegalGetter(String fieldName) {
+    void doesNotUnreflectGetter(String fieldName) {
         Field field = getDeclaredField(fieldName);
         assertThrows(AssertionError.class, () -> r.unreflectGetter(field));
     }
@@ -163,7 +157,7 @@ class ReflectorTest {
             "protectedValue",
             "packageValue",
             "privateValue"})
-    void doesNotUnreflectIllegalSetter(String fieldName) {
+    void doesNotUnreflectSetter(String fieldName) {
         Field field = getDeclaredField(fieldName);
         assertThrows(AssertionError.class, () -> r.unreflectSetter(field));
     }
@@ -197,7 +191,7 @@ class ReflectorTest {
             "illegalProtected",
             "illegalPackage",
             "illegalPrivate"})
-    void doesNotUnreflectIllegal(String methodName) {
+    void doesNotUnreflect(String methodName) {
         Method method = getDeclaredMethod(methodName);
         assertThrows(AssertionError.class, () -> r.unreflect(method));
     }

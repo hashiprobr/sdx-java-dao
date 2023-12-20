@@ -11,6 +11,8 @@
 package br.pro.hashi.sdx.dao.reflection.mock.parser;
 
 public class NonPublicMethod {
+    private boolean value;
+
     static NonPublicMethod valueOf(String s) {
         return new NonPublicMethod();
     }

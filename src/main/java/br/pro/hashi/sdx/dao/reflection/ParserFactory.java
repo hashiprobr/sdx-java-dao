@@ -17,8 +17,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 class ParserFactory {
@@ -34,10 +34,10 @@ class ParserFactory {
     }
 
     private final Reflector reflector;
-    private final Map<Class<?>, Function<String, ?>> cache;
+    private final ConcurrentMap<Class<?>, Function<String, ?>> cache;
 
     ParserFactory(Reflector reflector) {
-        Map<Class<?>, Function<String, ?>> cache = new HashMap<>();
+        ConcurrentMap<Class<?>, Function<String, ?>> cache = new ConcurrentHashMap<>();
         cache.put(boolean.class, Boolean::parseBoolean);
         cache.put(byte.class, Byte::parseByte);
         cache.put(short.class, Short::parseShort);
@@ -55,43 +55,39 @@ class ParserFactory {
     }
 
     char parseChar(String valueString) {
-        if (valueString.isEmpty()) {
-            throw new IllegalArgumentException("Value string cannot be empty");
-        }
-        if (valueString.length() > 1) {
-            throw new IllegalArgumentException("Value string can only have one character");
+        if (valueString.length() != 1) {
+            throw new IllegalArgumentException("Value string must have exactly one character");
         }
         return valueString.charAt(0);
     }
 
-    public synchronized <K> Function<String, K> get(Class<K> type) {
-        @SuppressWarnings("unchecked")
-        Function<String, K> parser = (Function<String, K>) cache.get(type);
-        if (parser == null) {
-            String typeName = type.getName();
-            Method method;
-            try {
-                method = type.getDeclaredMethod("valueOf", String.class);
-            } catch (NoSuchMethodException exception) {
-                throw new ReflectionException("Class %s must have a valueOf(String) method".formatted(typeName));
-            }
-            if (!method.getReturnType().equals(type)) {
-                throw new ReflectionException("Method valueOf(String) of class %s must return an instance of this class".formatted(typeName));
-            }
-            int modifiers = method.getModifiers();
-            if (!(Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers))) {
-                throw new ReflectionException("Method valueOf(String) of class %s must be public and static".formatted(typeName));
-            }
-            for (Class<?> exceptionType : method.getExceptionTypes()) {
-                if (!RuntimeException.class.isAssignableFrom(exceptionType)) {
-                    throw new ReflectionException("Method valueOf(String) of class %s can only throw unchecked exceptions".formatted(typeName));
-                }
-            }
-            MethodHandle handle = reflector.unreflect(method);
-            parser = (valueString) -> invoke(handle, valueString);
-            cache.put(type, parser);
+    @SuppressWarnings("unchecked")
+    public <K> Function<String, K> get(Class<K> type) {
+        return (Function<String, K>) cache.computeIfAbsent(type, this::compute);
+    }
+
+    private <K> Function<String, K> compute(Class<K> type) {
+        String typeName = type.getName();
+        Method method;
+        try {
+            method = type.getDeclaredMethod("valueOf", String.class);
+        } catch (NoSuchMethodException exception) {
+            throw new ReflectionException("Class %s must have a valueOf(String) method".formatted(typeName));
         }
-        return parser;
+        if (!method.getReturnType().equals(type)) {
+            throw new ReflectionException("Method valueOf(String) of class %s must return an instance of this class".formatted(typeName));
+        }
+        int modifiers = method.getModifiers();
+        if (!(Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers))) {
+            throw new ReflectionException("Method valueOf(String) of class %s must be public and static".formatted(typeName));
+        }
+        for (Class<?> exceptionType : method.getExceptionTypes()) {
+            if (!RuntimeException.class.isAssignableFrom(exceptionType)) {
+                throw new ReflectionException("Method valueOf(String) of class %s can only throw unchecked exceptions".formatted(typeName));
+            }
+        }
+        MethodHandle handle = reflector.unreflect(method);
+        return (valueString) -> invoke(handle, valueString);
     }
 
     @SuppressWarnings("unchecked")
@@ -100,8 +96,8 @@ class ParserFactory {
         try {
             value = (K) handle.invoke(valueString);
         } catch (Throwable throwable) {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
+            if (throwable instanceof RuntimeException exception) {
+                throw exception;
             }
             throw new AssertionError(throwable);
         }

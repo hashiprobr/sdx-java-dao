@@ -10,8 +10,8 @@
 
 package br.pro.hashi.sdx.dao.reflection.mock.reflector.invoke;
 
-public class ThrowerConstructor {
-    public ThrowerConstructor() throws Throwable {
+public class ThrowConstructor {
+    public ThrowConstructor() throws Throwable {
         throw new Throwable();
     }
 }

@@ -15,6 +15,8 @@ import br.pro.hashi.sdx.dao.reflection.mock.parser.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -60,7 +62,7 @@ class ParserFactoryTest {
     }
 
     @Test
-    void doesNotParseCharFromEmptyString() {
+    void doesNotParseCharFromSmallString() {
         assertThrows(IllegalArgumentException.class, () -> f.parseChar(""));
     }
 
@@ -132,43 +134,29 @@ class ParserFactoryTest {
     @Test
     void getsAndApplies() {
         Function<String, DefaultMethod> parser = f.get(DefaultMethod.class);
-        assertInstanceOf(DefaultMethod.class, parser.apply("s"));
         assertSame(parser, f.get(DefaultMethod.class));
+        assertInstanceOf(DefaultMethod.class, parser.apply("s"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = {
+            MissingMethod.class,
+            NonInstanceMethod.class,
+            NonPublicMethod.class,
+            NonStaticMethod.class,
+            CheckedMethod.class})
+    void doesNotGet(Class<?> type) {
+        assertThrows(ReflectionException.class, () -> f.get(type));
     }
 
     @Test
-    void doesNotGetMissingParser() {
-        assertThrows(ReflectionException.class, () -> f.get(MissingMethod.class));
-    }
-
-    @Test
-    void doesNotGetNonInstanceParser() {
-        assertThrows(ReflectionException.class, () -> f.get(NonInstanceMethod.class));
-    }
-
-    @Test
-    void doesNotGetNonPublicParser() {
-        assertThrows(ReflectionException.class, () -> f.get(NonPublicMethod.class));
-    }
-
-    @Test
-    void doesNotGetNonStaticParser() {
-        assertThrows(ReflectionException.class, () -> f.get(NonStaticMethod.class));
-    }
-
-    @Test
-    void doesNotGetCheckedParser() {
-        assertThrows(ReflectionException.class, () -> f.get(CheckedMethod.class));
-    }
-
-    @Test
-    void doesNotApplyUncheckedParser() {
+    void doesNotApplyUnchecked() {
         Function<String, UncheckedMethod> parser = f.get(UncheckedMethod.class);
         assertThrows(RuntimeException.class, () -> parser.apply("s"));
     }
 
     @Test
-    void doesNotInvokeCheckedHandle() {
+    void doesNotInvokeChecked() {
         MethodHandle handle = assertDoesNotThrow(() -> {
             Method method = CheckedMethod.class.getDeclaredMethod("valueOf", String.class);
             return LOOKUP.unreflect(method);
