@@ -32,90 +32,90 @@ import java.util.*;
 import java.util.function.Function;
 
 public class Handle<E> {
-    private static final Map<Class<?>, Function<Long, ?>> LONG_FUNCTIONS;
-    private static final Map<Class<?>, Function<Double, ?>> DOUBLE_FUNCTIONS;
-    private static final Set<Class<?>> TEXT_TYPES;
-    private static final Set<Class<?>> NUMBER_TYPES;
-    private static final Set<Class<?>> BOOLEAN_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> CHARACTER_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> BYTE_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> SHORT_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> INTEGER_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> LONG_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> FLOAT_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> DOUBLE_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> STRING_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> TIMESTAMP_COMPATIBLE_TYPES;
-    private static final Set<Class<?>> BLOB_COMPATIBLE_TYPES;
+    private static final Map<Type, Function<Long, ?>> LONG_FUNCTIONS;
+    private static final Map<Type, Function<Double, ?>> DOUBLE_FUNCTIONS;
+    private static final Set<Type> TEXT_TYPES;
+    private static final Set<Type> NUMBER_TYPES;
+    private static final Set<Type> BOOLEAN_COMPATIBLE_TYPES;
+    private static final Set<Type> CHARACTER_COMPATIBLE_TYPES;
+    private static final Set<Type> BYTE_COMPATIBLE_TYPES;
+    private static final Set<Type> SHORT_COMPATIBLE_TYPES;
+    private static final Set<Type> INTEGER_COMPATIBLE_TYPES;
+    private static final Set<Type> LONG_COMPATIBLE_TYPES;
+    private static final Set<Type> FLOAT_COMPATIBLE_TYPES;
+    private static final Set<Type> DOUBLE_COMPATIBLE_TYPES;
+    private static final Set<Type> STRING_COMPATIBLE_TYPES;
+    private static final Set<Type> TIMESTAMP_COMPATIBLE_TYPES;
+    private static final Set<Type> BLOB_COMPATIBLE_TYPES;
 
-    private static final Set<Class<?>> BOOLEAN_TYPES = Set.of(
+    private static final Set<Type> BOOLEAN_TYPES = Set.of(
             boolean.class,
             Boolean.class);
 
-    private static final Set<Class<?>> CHARACTER_TYPES = Set.of(
+    private static final Set<Type> CHARACTER_TYPES = Set.of(
             char.class,
             Character.class);
 
-    private static final Set<Class<?>> TIMESTAMP_TYPES = Set.of(
+    private static final Set<Type> TIMESTAMP_TYPES = Set.of(
             Timestamp.class,
             Instant.class);
 
-    private static final Set<Class<?>> BLOB_TYPES = Set.of(
+    private static final Set<Type> BLOB_TYPES = Set.of(
             Blob.class,
             InputStream.class);
 
-    private static final Set<Class<?>> POINT_COMPATIBLE_TYPES = Set.of(
+    private static final Set<Type> POINT_COMPATIBLE_TYPES = Set.of(
             GeoPoint.class,
             Object.class);
 
-    private static final Set<Class<?>> REFERENCE_COMPATIBLE_TYPES = Set.of(
+    private static final Set<Type> REFERENCE_COMPATIBLE_TYPES = Set.of(
             DocumentReference.class,
             Object.class);
 
-    private static final Set<Class<?>> LIST_COMPATIBLE_TYPES = Set.of(
+    private static final Set<Type> LIST_COMPATIBLE_TYPES = Set.of(
             List.class,
             Object.class);
 
-    private static final Set<Class<?>> MAP_COMPATIBLE_TYPES = Set.of(
+    private static final Set<Type> MAP_COMPATIBLE_TYPES = Set.of(
             Map.class,
             Object.class);
 
     static {
         Map<Class<?>, Function<Long, ?>> longFunctions = new HashMap<>();
-        longFunctions.put(byte.class, (l) -> l.byteValue());
-        longFunctions.put(Byte.class, (l) -> Byte.valueOf(l.byteValue()));
-        longFunctions.put(short.class, (l) -> l.shortValue());
-        longFunctions.put(Short.class, (l) -> Short.valueOf(l.shortValue()));
-        longFunctions.put(int.class, (l) -> l.intValue());
-        longFunctions.put(Integer.class, (l) -> Integer.valueOf(l.intValue()));
-        longFunctions.put(long.class, (l) -> l.longValue());
+        longFunctions.put(byte.class, Long::byteValue);
+        longFunctions.put(Byte.class, Long::byteValue);
+        longFunctions.put(short.class, Long::shortValue);
+        longFunctions.put(Short.class, Long::shortValue);
+        longFunctions.put(int.class, Long::intValue);
+        longFunctions.put(Integer.class, Long::intValue);
+        longFunctions.put(long.class, (l) -> l);
         longFunctions.put(Long.class, (l) -> l);
-        longFunctions.put(float.class, (l) -> l.floatValue());
-        longFunctions.put(Float.class, (l) -> Float.valueOf(l.floatValue()));
-        longFunctions.put(double.class, (l) -> l.doubleValue());
-        longFunctions.put(Double.class, (l) -> Double.valueOf(l.doubleValue()));
+        longFunctions.put(float.class, Long::floatValue);
+        longFunctions.put(Float.class, Long::floatValue);
+        longFunctions.put(double.class, Long::doubleValue);
+        longFunctions.put(Double.class, Long::doubleValue);
         LONG_FUNCTIONS = Map.copyOf(longFunctions);
 
         Map<Class<?>, Function<Double, ?>> doubleFunctions = new HashMap<>();
-        doubleFunctions.put(byte.class, (d) -> d.byteValue());
-        doubleFunctions.put(Byte.class, (d) -> Byte.valueOf(d.byteValue()));
-        doubleFunctions.put(short.class, (d) -> d.shortValue());
-        doubleFunctions.put(Short.class, (d) -> Short.valueOf(d.shortValue()));
-        doubleFunctions.put(int.class, (d) -> d.intValue());
-        doubleFunctions.put(Integer.class, (d) -> Integer.valueOf(d.intValue()));
-        doubleFunctions.put(long.class, (d) -> d.longValue());
-        doubleFunctions.put(Long.class, (d) -> Long.valueOf(d.longValue()));
-        doubleFunctions.put(float.class, (d) -> d.floatValue());
-        doubleFunctions.put(Float.class, (d) -> Float.valueOf(d.floatValue()));
-        doubleFunctions.put(double.class, (d) -> d.doubleValue());
+        doubleFunctions.put(byte.class, Double::byteValue);
+        doubleFunctions.put(Byte.class, Double::byteValue);
+        doubleFunctions.put(short.class, Double::shortValue);
+        doubleFunctions.put(Short.class, Double::shortValue);
+        doubleFunctions.put(int.class, Double::intValue);
+        doubleFunctions.put(Integer.class, Double::intValue);
+        doubleFunctions.put(long.class, Double::longValue);
+        doubleFunctions.put(Long.class, Double::longValue);
+        doubleFunctions.put(float.class, Double::floatValue);
+        doubleFunctions.put(Float.class, Double::floatValue);
+        doubleFunctions.put(double.class, (d) -> d);
         doubleFunctions.put(Double.class, (d) -> d);
         DOUBLE_FUNCTIONS = Map.copyOf(doubleFunctions);
 
-        Set<Class<?>> booleanTypes = new HashSet<>(BOOLEAN_TYPES);
+        Set<Type> booleanTypes = new HashSet<>(BOOLEAN_TYPES);
         booleanTypes.add(Object.class);
         BOOLEAN_COMPATIBLE_TYPES = Set.copyOf(booleanTypes);
 
-        Set<Class<?>> textTypes = new HashSet<>(CHARACTER_TYPES);
+        Set<Type> textTypes = new HashSet<>(CHARACTER_TYPES);
         textTypes.add(String.class);
         TEXT_TYPES = Set.copyOf(textTypes);
         textTypes.add(Object.class);
@@ -125,7 +125,7 @@ public class Handle<E> {
         STRING_COMPATIBLE_TYPES = Set.copyOf(textTypes);
 
         NUMBER_TYPES = Set.copyOf(LONG_FUNCTIONS.keySet());
-        Set<Class<?>> numberTypes = new HashSet<>(DOUBLE_FUNCTIONS.keySet());
+        Set<Type> numberTypes = new HashSet<>(DOUBLE_FUNCTIONS.keySet());
         numberTypes.add(Object.class);
         BYTE_COMPATIBLE_TYPES = Set.copyOf(numberTypes);
         numberTypes.remove(byte.class);
@@ -142,16 +142,16 @@ public class Handle<E> {
         LONG_COMPATIBLE_TYPES = Set.copyOf(numberTypes);
         DOUBLE_COMPATIBLE_TYPES = Set.copyOf(numberTypes);
 
-        Set<Class<?>> timestampTypes = new HashSet<>(TIMESTAMP_TYPES);
+        Set<Type> timestampTypes = new HashSet<>(TIMESTAMP_TYPES);
         timestampTypes.add(Object.class);
         TIMESTAMP_COMPATIBLE_TYPES = Set.copyOf(timestampTypes);
 
-        Set<Class<?>> blobTypes = new HashSet<>(BLOB_TYPES);
+        Set<Type> blobTypes = new HashSet<>(BLOB_TYPES);
         blobTypes.add(Object.class);
         BLOB_COMPATIBLE_TYPES = Set.copyOf(blobTypes);
     }
 
-    static final <E> Handle<E> newInstance(Class<E> type) {
+    static <E> Handle<E> newInstance(Class<E> type) {
         Reflector reflector = Reflector.getInstance();
         ParserFactory parserFactory = ParserFactory.getInstance();
         ConverterFactory converterFactory = ConverterFactory.getInstance();
@@ -634,8 +634,7 @@ public class Handle<E> {
         }
         Class<?> rawType;
         Type[] componentTypes;
-        if (fieldType instanceof ParameterizedType) {
-            ParameterizedType genericType = (ParameterizedType) fieldType;
+        if (fieldType instanceof ParameterizedType genericType) {
             rawType = (Class<?>) genericType.getRawType();
             componentTypes = genericType.getActualTypeArguments();
         } else {
@@ -756,8 +755,7 @@ public class Handle<E> {
             } else {
                 Class<?> rawType;
                 Type[] componentTypes;
-                if (fieldType instanceof ParameterizedType) {
-                    ParameterizedType genericType = (ParameterizedType) fieldType;
+                if (fieldType instanceof ParameterizedType genericType) {
                     rawType = (Class<?>) genericType.getRawType();
                     componentTypes = genericType.getActualTypeArguments();
                 } else {
@@ -873,8 +871,7 @@ public class Handle<E> {
                 return value;
             }
         } else if (CHARACTER_TYPES.contains(fieldType)) {
-            if (value instanceof String) {
-                String s = (String) value;
+            if (value instanceof String s) {
                 if (s.isEmpty()) {
                     return '\0';
                 }
@@ -900,16 +897,14 @@ public class Handle<E> {
                 return value;
             }
         } else if (TIMESTAMP_TYPES.contains(fieldType)) {
-            if (value instanceof Timestamp) {
-                Timestamp timestamp = (Timestamp) value;
+            if (value instanceof Timestamp timestamp) {
                 if (fieldType.equals(Instant.class)) {
                     return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
                 }
                 return timestamp;
             }
         } else if (BLOB_TYPES.contains(fieldType)) {
-            if (value instanceof Blob) {
-                Blob blob = (Blob) value;
+            if (value instanceof Blob blob) {
                 if (fieldType.equals(InputStream.class)) {
                     return blob.toByteString().newInput();
                 }
@@ -918,8 +913,7 @@ public class Handle<E> {
         } else {
             Class<?> rawType;
             Type[] componentTypes;
-            if (fieldType instanceof ParameterizedType) {
-                ParameterizedType genericType = (ParameterizedType) fieldType;
+            if (fieldType instanceof ParameterizedType genericType) {
                 rawType = (Class<?>) genericType.getRawType();
                 componentTypes = genericType.getActualTypeArguments();
             } else {
@@ -1026,8 +1020,7 @@ public class Handle<E> {
     }
 
     private Class<?> downcast(Type keyType) {
-        if (keyType instanceof ParameterizedType) {
-            ParameterizedType genericType = (ParameterizedType) keyType;
+        if (keyType instanceof ParameterizedType genericType) {
             return (Class<?>) genericType.getRawType();
         }
         return (Class<?>) keyType;

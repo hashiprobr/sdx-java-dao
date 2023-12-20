@@ -38,9 +38,9 @@ class Reflector {
         this.cache = new ConcurrentHashMap<>();
     }
 
-    @SuppressWarnings("unchecked")
     <E> E create(Class<E> type, String typeName) {
         checkCreatable(type, typeName);
+        @SuppressWarnings("unchecked")
         ObjectInstantiator<E> instantiator = (ObjectInstantiator<E>) cache.computeIfAbsent(type, OBJENESIS::getInstantiatorOf);
         return instantiator.newInstance();
     }

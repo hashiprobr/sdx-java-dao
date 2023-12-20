@@ -14,13 +14,13 @@ import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
 import br.pro.hashi.sdx.dao.reflection.exception.ConversionException;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.*;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Address;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Email;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.converter.Wrapper;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.path.FieldNames;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.path.PropertyNames;
-import br.pro.hashi.sdx.dao.reflection.mock.handle.type.*;
+import br.pro.hashi.sdx.dao.reflection.example.handle.*;
+import br.pro.hashi.sdx.dao.reflection.example.handle.converter.Address;
+import br.pro.hashi.sdx.dao.reflection.example.handle.converter.Email;
+import br.pro.hashi.sdx.dao.reflection.example.handle.converter.Wrapper;
+import br.pro.hashi.sdx.dao.reflection.example.handle.path.FieldNames;
+import br.pro.hashi.sdx.dao.reflection.example.handle.path.PropertyNames;
+import br.pro.hashi.sdx.dao.reflection.example.handle.type.*;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.Blob;
 import com.google.cloud.firestore.DocumentReference;
@@ -124,9 +124,7 @@ class HandleTest {
 
     @AfterEach
     void tearDown() {
-        assertDoesNotThrow(() -> {
-            mocks.close();
-        });
+        assertDoesNotThrow(() -> mocks.close());
     }
 
     @Test
@@ -262,7 +260,7 @@ class HandleTest {
         Parent instance = new Parent();
 
         instance.setFile("f");
-        instance.setBoxedKey(Integer.valueOf(3));
+        instance.setBoxedKey(3);
         instance.setNotFileOrKey(5.5F);
         instance.parent = new Parent();
         instance.array = new Parent[]{new Parent()};
@@ -462,144 +460,104 @@ class HandleTest {
 
     @Test
     void doesNotConstructWithThrowerConstructor() {
-        assertThrows(ReflectionException.class, () -> {
-            newHandle(ThrowerConstructor.class);
-        });
+        assertThrows(ReflectionException.class, () -> newHandle(ThrowerConstructor.class));
     }
 
     @Test
     void doesNotConstructWithBlankCollectionName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(BlankCollectionName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(BlankCollectionName.class));
     }
 
     @Test
     void doesNotConstructWithDottedCollectionName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(DottedCollectionName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(DottedCollectionName.class));
     }
 
     @Test
     void doesNotConstructWithSlashedCollectionName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(SlashedCollectionName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(SlashedCollectionName.class));
     }
 
     @Test
     void doesNotConstructWithClashingFieldName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(ClashingFieldName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(ClashingFieldName.class));
     }
 
     @Test
     void doesNotConstructWithFieldValueField() {
-        assertThrows(ReflectionException.class, () -> {
-            newHandle(FieldValueField.class);
-        });
+        assertThrows(ReflectionException.class, () -> newHandle(FieldValueField.class));
     }
 
     @Test
     void doesNotConstructWithNonConvertableField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(NonConvertableField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(NonConvertableField.class));
     }
 
     @Test
     void doesNotConstructWithBlankPropertyName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(BlankPropertyName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(BlankPropertyName.class));
     }
 
     @Test
     void doesNotConstructWithDottedPropertyName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(DottedPropertyName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(DottedPropertyName.class));
     }
 
     @Test
     void doesNotConstructWithSlashedPropertyName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(SlashedPropertyName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(SlashedPropertyName.class));
     }
 
     @Test
     void doesNotConstructWithClashingPropertyName() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(ClashingPropertyName.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(ClashingPropertyName.class));
     }
 
     @Test
     void doesNotConstructWithNonFileWebField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(NonFileWebField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(NonFileWebField.class));
     }
 
     @Test
     void doesNotConstructWithConvertedFileField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(ConvertedFileField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(ConvertedFileField.class));
     }
 
     @Test
     void doesNotConstructWithNonStringFileField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(NonStringFileField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(NonStringFileField.class));
     }
 
     @Test
     void doesNotConstructWithNonKeyAutoField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(NonKeyAutoField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(NonKeyAutoField.class));
     }
 
     @Test
     void doesNotConstructWithConvertedKeyField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(ConvertedKeyField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(ConvertedKeyField.class));
     }
 
     @Test
     void doesNotConstructWithFileKeyField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(FileKeyField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(FileKeyField.class));
     }
 
     @Test
     void doesNotConstructWithTwoKeyFields() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(TwoKeyFields.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(TwoKeyFields.class));
     }
 
     @Test
     void doesNotConstructWithNonStringAutoField() {
-        assertThrows(AnnotationException.class, () -> {
-            newHandle(NonStringAutoField.class);
-        });
+        assertThrows(AnnotationException.class, () -> newHandle(NonStringAutoField.class));
     }
 
     @Test
     void doesNotBuildCreateData() {
         Handle<Default> h = newHandle(Default.class);
         Default instance = new Default();
-        assertThrows(IllegalArgumentException.class, () -> {
-            h.buildCreateData(instance);
-        });
+        assertThrows(IllegalArgumentException.class, () -> h.buildCreateData(instance));
     }
 
     @Test
@@ -607,9 +565,7 @@ class HandleTest {
         Handle<Default> h = newHandle(Default.class);
         Map<String, Object> values = new HashMap<>();
         values.put(null, "");
-        assertThrows(NullPointerException.class, () -> {
-            h.buildData(values);
-        });
+        assertThrows(NullPointerException.class, () -> h.buildData(values));
     }
 
     @Test
@@ -832,7 +788,7 @@ class HandleTest {
     @Test
     void convertsBoxedBooleanTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Boolean value = Boolean.valueOf(true);
+        Boolean value = true;
         assertConvertsSameTo(h, "booleanValue", value);
         assertConvertsSameTo(h, "boxedBooleanValue", value);
         assertConvertsSameTo(h, "objectValue", value);
@@ -852,7 +808,7 @@ class HandleTest {
     @Test
     void convertsBoxedCharTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Character value = Character.valueOf('c');
+        Character value = 'c';
         String expected = "c";
         assertConvertsTo(expected, h, "charValue", value);
         assertConvertsTo(expected, h, "boxedCharValue", value);
@@ -882,7 +838,7 @@ class HandleTest {
     @Test
     void convertsBoxedByteTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Byte value = Byte.valueOf((byte) 1);
+        Byte value = 1;
         assertConvertsSameTo(h, "byteValue", value);
         assertConvertsSameTo(h, "boxedByteValue", value);
         assertConvertsSameTo(h, "shortValue", value);
@@ -918,7 +874,7 @@ class HandleTest {
     @Test
     void convertsBoxedShortTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Short value = Short.valueOf((short) 2);
+        Short value = 2;
         assertConvertsSameTo(h, "shortValue", value);
         assertConvertsSameTo(h, "boxedShortValue", value);
         assertConvertsSameTo(h, "intValue", value);
@@ -950,7 +906,7 @@ class HandleTest {
     @Test
     void convertsBoxedIntegerTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Integer value = Integer.valueOf(3);
+        Integer value = 3;
         assertConvertsSameTo(h, "intValue", value);
         assertConvertsSameTo(h, "boxedIntValue", value);
         assertConvertsSameTo(h, "longValue", value);
@@ -976,7 +932,7 @@ class HandleTest {
     @Test
     void convertsBoxedLongTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Long value = Long.valueOf(4);
+        Long value = 4L;
         assertConvertsSameTo(h, "longValue", value);
         assertConvertsSameTo(h, "boxedLongValue", value);
         assertConvertsSameTo(h, "doubleValue", value);
@@ -1002,7 +958,7 @@ class HandleTest {
     @Test
     void convertsBoxedFloatTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Float value = Float.valueOf(5.5F);
+        Float value = 5.5F;
         assertConvertsSameTo(h, "intValue", value);
         assertConvertsSameTo(h, "boxedIntValue", value);
         assertConvertsSameTo(h, "longValue", value);
@@ -1028,7 +984,7 @@ class HandleTest {
     @Test
     void convertsBoxedDoubleTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Double value = Double.valueOf(6.6);
+        Double value = 6.6;
         assertConvertsSameTo(h, "longValue", value);
         assertConvertsSameTo(h, "boxedLongValue", value);
         assertConvertsSameTo(h, "doubleValue", value);
@@ -1444,7 +1400,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedBooleanTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Boolean value = Boolean.valueOf(true);
+        Boolean value = true;
         assertDoesNotConvertTo(h, "charValue", value);
         assertDoesNotConvertTo(h, "boxedCharValue", value);
         assertDoesNotConvertTo(h, "byteValue", value);
@@ -1485,7 +1441,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedCharTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Character value = Character.valueOf('c');
+        Character value = 'c';
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "byteValue", value);
@@ -1516,7 +1472,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedByteTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Byte value = Byte.valueOf((byte) 1);
+        Byte value = 1;
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "charValue", value);
@@ -1540,7 +1496,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedShortTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Short value = Short.valueOf((short) 2);
+        Short value = 2;
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "charValue", value);
@@ -1568,7 +1524,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedIntTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Integer value = Integer.valueOf(3);
+        Integer value = 3;
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "charValue", value);
@@ -1602,7 +1558,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedLongTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Long value = Long.valueOf(4);
+        Long value = 4L;
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "charValue", value);
@@ -1636,7 +1592,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedFloatTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Float value = Float.valueOf(5.5F);
+        Float value = 5.5F;
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "charValue", value);
@@ -1670,7 +1626,7 @@ class HandleTest {
     @Test
     void doesNotConvertBoxedDoubleTo() {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
-        Double value = Double.valueOf(6.6);
+        Double value = 6.6;
         assertDoesNotConvertTo(h, "booleanValue", value);
         assertDoesNotConvertTo(h, "boxedBooleanValue", value);
         assertDoesNotConvertTo(h, "charValue", value);
@@ -2027,7 +1983,7 @@ class HandleTest {
         assertDoesNotConvertCycleTo(parent);
     }
 
-    private <E> void assertDoesNotConvertCycleTo(Recursive value) {
+    private void assertDoesNotConvertCycleTo(Recursive value) {
         Handle<Recursive> h = newHandle(Recursive.class);
         assertDoesNotConvertIllegalTo(h, "value", value);
         Recursive[] array = new Recursive[]{value};
@@ -2132,9 +2088,7 @@ class HandleTest {
 
     private <E> void assertDoesNotConvertTo(Class<? extends RuntimeException> exceptionType, Handle<E> handle, String fieldName, Object value) {
         Map<String, Object> values = Map.of(fieldName, value);
-        assertThrows(exceptionType, () -> {
-            handle.buildData(values);
-        });
+        assertThrows(exceptionType, () -> handle.buildData(values));
     }
 
     @Test
@@ -2213,17 +2167,17 @@ class HandleTest {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
         long value = 4L;
         assertConvertsFrom((byte) 4, h, "byteValue", value);
-        assertConvertsFrom(Byte.valueOf((byte) 4), h, "boxedByteValue", value);
+        assertConvertsFrom((byte) 4, h, "boxedByteValue", value);
         assertConvertsFrom((short) 4, h, "shortValue", value);
-        assertConvertsFrom(Short.valueOf((short) 4), h, "boxedShortValue", value);
+        assertConvertsFrom((short) 4, h, "boxedShortValue", value);
         assertConvertsFrom(4, h, "intValue", value);
-        assertConvertsFrom(Integer.valueOf(4), h, "boxedIntValue", value);
+        assertConvertsFrom(4, h, "boxedIntValue", value);
         assertConvertsFrom(4L, h, "longValue", value);
-        assertConvertsFrom(Long.valueOf(4L), h, "boxedLongValue", value);
+        assertConvertsFrom(4L, h, "boxedLongValue", value);
         assertConvertsFrom(4.0F, h, "floatValue", value);
-        assertConvertsFrom(Float.valueOf(4.0F), h, "boxedFloatValue", value);
+        assertConvertsFrom(4.0F, h, "boxedFloatValue", value);
         assertConvertsFrom(4.0, h, "doubleValue", value);
-        assertConvertsFrom(Double.valueOf(4.0), h, "boxedDoubleValue", value);
+        assertConvertsFrom(4.0, h, "boxedDoubleValue", value);
     }
 
     @Test
@@ -2231,17 +2185,17 @@ class HandleTest {
         Handle<SimpleFields> h = newHandle(SimpleFields.class);
         double value = 6.6;
         assertConvertsFrom((byte) 6, h, "byteValue", value);
-        assertConvertsFrom(Byte.valueOf((byte) 6), h, "boxedByteValue", value);
+        assertConvertsFrom((byte) 6, h, "boxedByteValue", value);
         assertConvertsFrom((short) 6, h, "shortValue", value);
-        assertConvertsFrom(Short.valueOf((short) 6), h, "boxedShortValue", value);
+        assertConvertsFrom((short) 6, h, "boxedShortValue", value);
         assertConvertsFrom(6, h, "intValue", value);
-        assertConvertsFrom(Integer.valueOf(6), h, "boxedIntValue", value);
+        assertConvertsFrom(6, h, "boxedIntValue", value);
         assertConvertsFrom(6L, h, "longValue", value);
-        assertConvertsFrom(Long.valueOf(6L), h, "boxedLongValue", value);
+        assertConvertsFrom(6L, h, "boxedLongValue", value);
         assertConvertsFrom(6.6F, h, "floatValue", value);
-        assertConvertsFrom(Float.valueOf(6.6F), h, "boxedFloatValue", value);
+        assertConvertsFrom(6.6F, h, "boxedFloatValue", value);
         assertConvertsFrom(6.6, h, "doubleValue", value);
-        assertConvertsFrom(Double.valueOf(6.6), h, "boxedDoubleValue", value);
+        assertConvertsFrom(6.6, h, "boxedDoubleValue", value);
     }
 
     @Test
@@ -2788,9 +2742,7 @@ class HandleTest {
 
     private <E> void assertDoesNotConvertFrom(Handle<E> handle, String fieldName, Object value, Class<? extends RuntimeException> exceptionType) {
         Map<String, Object> data = Map.of(fieldName, value);
-        assertThrows(exceptionType, () -> {
-            handle.buildValues(data);
-        });
+        assertThrows(exceptionType, () -> handle.buildValues(data));
     }
 
     private <E> Handle<E> newHandle(Class<E> type) {

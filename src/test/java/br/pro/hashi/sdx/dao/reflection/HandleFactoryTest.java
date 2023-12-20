@@ -43,11 +43,11 @@ class HandleFactoryTest {
 
     @Test
     void gets() {
-        @SuppressWarnings("rawtypes")
-        MockedStatic<Handle> handleStatic = mockStatic(Handle.class);
-        handleStatic.when(() -> Handle.newInstance(Object.class)).thenReturn(mock(Handle.class));
-        Handle<Object> handle = f.get(Object.class);
-        handleStatic.close();
+        Handle<Object> handle;
+        try (@SuppressWarnings("rawtypes") MockedStatic<Handle> handleStatic = mockStatic(Handle.class)) {
+            handleStatic.when(() -> Handle.newInstance(Object.class)).thenAnswer((invocation) -> mock(Handle.class));
+            handle = f.get(Object.class);
+        }
         assertSame(handle, f.get(Object.class));
     }
 }

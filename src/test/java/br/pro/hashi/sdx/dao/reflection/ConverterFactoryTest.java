@@ -12,8 +12,8 @@ package br.pro.hashi.sdx.dao.reflection;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
-import br.pro.hashi.sdx.dao.reflection.mock.converter.DefaultImplementation;
-import br.pro.hashi.sdx.dao.reflection.mock.converter.ThrowImplementation;
+import br.pro.hashi.sdx.dao.reflection.example.converter.DefaultImplementation;
+import br.pro.hashi.sdx.dao.reflection.example.converter.ThrowImplementation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

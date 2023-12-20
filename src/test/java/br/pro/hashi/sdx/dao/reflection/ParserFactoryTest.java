@@ -11,7 +11,7 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
-import br.pro.hashi.sdx.dao.reflection.mock.parser.*;
+import br.pro.hashi.sdx.dao.reflection.example.parser.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
