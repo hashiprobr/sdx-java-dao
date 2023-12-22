@@ -10,5 +10,5 @@
 
 package br.pro.hashi.sdx.dao.reflection.example.reflector.specific;
 
-public class FinalMixedWithNeither extends MixedWithNeither<Double, Integer> {
+public final class FinalMixedWithNeither extends MixedWithNeither<Double, Integer> {
 }

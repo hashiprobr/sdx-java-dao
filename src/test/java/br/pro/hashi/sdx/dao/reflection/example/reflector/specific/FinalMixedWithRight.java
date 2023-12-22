@@ -10,5 +10,5 @@
 
 package br.pro.hashi.sdx.dao.reflection.example.reflector.specific;
 
-public class FinalMixedWithRight extends MixedWithRight<Integer> {
+public final class FinalMixedWithRight extends MixedWithRight<Integer> {
 }

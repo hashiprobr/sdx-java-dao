@@ -10,13 +10,14 @@
 
 package br.pro.hashi.sdx.dao.reflection;
 
-import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.example.reflector.invoke.*;
 import br.pro.hashi.sdx.dao.reflection.example.reflector.specific.*;
+import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.objenesis.instantiator.ObjectInstantiator;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
@@ -48,20 +49,21 @@ class ReflectorTest {
             PrivateConstructor.class,
             ArgumentConstructor.class,
             ThrowConstructor.class})
-    void creates(Class<?> type) {
-        assertInstanceOf(type, create(type));
+    <E> void getsAndInvokesInstantiator(Class<E> type) {
+        ObjectInstantiator<E> instantiator = getInstantiator(type);
+        assertInstanceOf(type, instantiator.newInstance());
     }
 
     @ParameterizedTest
     @ValueSource(classes = {
             AbstractConstructor.class,
             GenericConstructor.class})
-    void doesNotCreate(Class<?> type) {
-        assertThrows(ReflectionException.class, () -> create(type));
+    void doesNotGetInstantiator(Class<?> type) {
+        assertThrows(ReflectionException.class, () -> getInstantiator(type));
     }
 
-    private Object create(Class<?> type) {
-        return r.create(type, type.getName());
+    private <E> ObjectInstantiator<E> getInstantiator(Class<E> type) {
+        return r.getInstantiator(type, type.getName());
     }
 
     @ParameterizedTest

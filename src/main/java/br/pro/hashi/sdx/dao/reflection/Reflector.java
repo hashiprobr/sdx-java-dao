@@ -38,15 +38,15 @@ class Reflector {
         this.cache = new ConcurrentHashMap<>();
     }
 
-    <E> E create(Class<E> type, String typeName) {
-        checkCreatable(type, typeName);
+    <E> ObjectInstantiator<E> getInstantiator(Class<E> type, String typeName) {
+        checkConstructable(type, typeName);
         @SuppressWarnings("unchecked")
         ObjectInstantiator<E> instantiator = (ObjectInstantiator<E>) cache.computeIfAbsent(type, OBJENESIS::getInstantiatorOf);
-        return instantiator.newInstance();
+        return instantiator;
     }
 
     <E> MethodHandle getCreator(Class<E> type, String typeName) {
-        checkCreatable(type, typeName);
+        checkConstructable(type, typeName);
         Constructor<E> constructor;
         try {
             constructor = type.getDeclaredConstructor();
@@ -59,7 +59,7 @@ class Reflector {
         return unreflectConstructor(constructor);
     }
 
-    private void checkCreatable(Class<?> type, String typeName) {
+    private void checkConstructable(Class<?> type, String typeName) {
         if (Modifier.isAbstract(type.getModifiers())) {
             throw new ReflectionException("Class %s cannot be abstract".formatted(typeName));
         }
@@ -78,15 +78,14 @@ class Reflector {
         return creator;
     }
 
-    @SuppressWarnings("unchecked")
     <E> E invokeCreator(MethodHandle creator) {
-        E instance;
         try {
-            instance = (E) creator.invoke();
+            @SuppressWarnings("unchecked")
+            E instance = (E) creator.invoke();
+            return instance;
         } catch (Throwable throwable) {
             throw new AssertionError(throwable);
         }
-        return instance;
     }
 
     MethodHandle unreflectGetter(Field field) {
@@ -109,15 +108,14 @@ class Reflector {
         return setter;
     }
 
-    @SuppressWarnings("unchecked")
     <F> F invokeGetter(MethodHandle getter, Object instance) {
-        F value;
         try {
-            value = (F) getter.invoke(instance);
+            @SuppressWarnings("unchecked")
+            F value = (F) getter.invoke(instance);
+            return value;
         } catch (Throwable throwable) {
             throw new AssertionError(throwable);
         }
-        return value;
     }
 
     void invokeSetter(MethodHandle setter, Object instance, Object value) {
@@ -227,13 +225,13 @@ class Reflector {
         }
 
         private ParameterizedType getGenericSuperType() {
-            Type genericType;
+            Type genericSuperType;
             if (index == -1) {
-                genericType = type.getGenericSuperclass();
+                genericSuperType = type.getGenericSuperclass();
             } else {
-                genericType = genericInterfaces[index];
+                genericSuperType = genericInterfaces[index];
             }
-            return (ParameterizedType) genericType;
+            return (ParameterizedType) genericSuperType;
         }
     }
 }

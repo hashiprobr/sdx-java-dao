@@ -10,5 +10,5 @@
 
 package br.pro.hashi.sdx.dao.reflection.example.reflector.specific;
 
-public class FinalMixedWithLeft extends MixedWithLeft<Double> {
+public final class FinalMixedWithLeft extends MixedWithLeft<Double> {
 }
