@@ -43,11 +43,12 @@ class ConverterFactory {
 
     private DaoConverter<?, ?> compute(Class<? extends DaoConverter<?, ?>> type) {
         DaoConverter<?, ?> converter;
-        MethodHandle creator = reflector.getCreator(type, type.getName());
+        String typeName = type.getName();
+        MethodHandle creator = reflector.getCreator(type, typeName);
         try {
             converter = (DaoConverter<?, ?>) creator.invoke();
         } catch (Throwable throwable) {
-            throw new ReflectionException(throwable);
+            throw new ReflectionException("Class %s could not be instantiated".formatted(typeName), throwable);
         }
         return converter;
     }

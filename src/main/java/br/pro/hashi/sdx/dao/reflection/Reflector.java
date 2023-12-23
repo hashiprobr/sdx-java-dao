@@ -78,16 +78,6 @@ class Reflector {
         return creator;
     }
 
-    <E> E invokeCreator(MethodHandle creator) {
-        try {
-            @SuppressWarnings("unchecked")
-            E instance = (E) creator.invoke();
-            return instance;
-        } catch (Throwable throwable) {
-            throw new AssertionError(throwable);
-        }
-    }
-
     MethodHandle unreflectGetter(Field field) {
         MethodHandle getter;
         try {
@@ -126,7 +116,7 @@ class Reflector {
         }
     }
 
-    public MethodHandle unreflect(Method method) {
+    MethodHandle unreflect(Method method) {
         MethodHandle handle;
         try {
             handle = LOOKUP.unreflect(method);

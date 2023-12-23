@@ -11,9 +11,6 @@
 package br.pro.hashi.sdx.dao.reflection;
 
 import br.pro.hashi.sdx.dao.DaoConverter;
-import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
-import br.pro.hashi.sdx.dao.reflection.exception.ConversionException;
-import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.example.handle.*;
 import br.pro.hashi.sdx.dao.reflection.example.handle.converter.Address;
 import br.pro.hashi.sdx.dao.reflection.example.handle.converter.Email;
@@ -21,6 +18,9 @@ import br.pro.hashi.sdx.dao.reflection.example.handle.converter.Wrapper;
 import br.pro.hashi.sdx.dao.reflection.example.handle.path.FieldNames;
 import br.pro.hashi.sdx.dao.reflection.example.handle.path.PropertyNames;
 import br.pro.hashi.sdx.dao.reflection.example.handle.type.*;
+import br.pro.hashi.sdx.dao.reflection.exception.AnnotationException;
+import br.pro.hashi.sdx.dao.reflection.exception.ConversionException;
+import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.Blob;
 import com.google.cloud.firestore.DocumentReference;
@@ -34,6 +34,8 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisStd;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +56,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class HandleTest {
+    private static final Objenesis OBJENESIS = new ObjenesisStd();
     private static final Lookup LOOKUP = MethodHandles.lookup();
 
     private AutoCloseable mocks;
@@ -66,14 +69,14 @@ class HandleTest {
     <E, F> void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
 
+        when(reflector.getInstantiator(any(), any(String.class))).thenAnswer((invocation) -> {
+            Class<E> type = invocation.getArgument(0);
+            return OBJENESIS.getInstantiatorOf(type);
+        });
         when(reflector.getCreator(any(), any(String.class))).thenAnswer((invocation) -> {
             Class<E> type = invocation.getArgument(0);
             Constructor<E> constructor = type.getDeclaredConstructor();
             return LOOKUP.unreflectConstructor(constructor);
-        });
-        when(reflector.invokeCreator(any(MethodHandle.class))).thenAnswer((invocation) -> {
-            MethodHandle creator = invocation.getArgument(0);
-            return creator.invoke();
         });
         when(reflector.unreflectGetter(any(Field.class))).thenAnswer((invocation) -> {
             Field field = invocation.getArgument(0);
@@ -456,11 +459,6 @@ class HandleTest {
     void constructsWithPluralEntities() {
         Handle<PluralEntities> h = newHandle(PluralEntities.class);
         assertEquals("PluralEntities", h.getCollectionName());
-    }
-
-    @Test
-    void doesNotConstructWithThrowerConstructor() {
-        assertThrows(ReflectionException.class, () -> newHandle(ThrowerConstructor.class));
     }
 
     @Test

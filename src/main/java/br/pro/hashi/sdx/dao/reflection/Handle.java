@@ -21,6 +21,7 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.GeoPoint;
 import com.google.protobuf.ByteString;
+import org.objenesis.instantiator.ObjectInstantiator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -162,7 +163,7 @@ public class Handle<E> {
     private final Reflector reflector;
     private final ParserFactory parserFactory;
     private final HandleFactory handleFactory;
-    private final MethodHandle creator;
+    private final ObjectInstantiator<E> instantiator;
     private final String collectionName;
     private final Map<String, DaoConverter<?, ?>> converters;
     private final Map<String, MethodHandle> getters;
@@ -179,12 +180,7 @@ public class Handle<E> {
     Handle(Reflector reflector, ParserFactory parserFactory, ConverterFactory converterFactory, HandleFactory handleFactory, Class<E> type) {
         String typeName = type.getName();
 
-        MethodHandle creator = reflector.getCreator(type, typeName);
-        try {
-            creator.invoke();
-        } catch (Throwable throwable) {
-            throw new ReflectionException(throwable);
-        }
+        ObjectInstantiator<E> instantiator = reflector.getInstantiator(type, typeName);
 
         Renamed typeNamedAnnotation = type.getDeclaredAnnotation(Renamed.class);
         String collectionName;
@@ -332,7 +328,7 @@ public class Handle<E> {
         this.reflector = reflector;
         this.parserFactory = parserFactory;
         this.handleFactory = handleFactory;
-        this.creator = creator;
+        this.instantiator = instantiator;
         this.collectionName = collectionName;
         this.converters = converters;
         this.getters = getters;
@@ -447,7 +443,7 @@ public class Handle<E> {
     }
 
     public E buildInstance(Map<String, Object> data) {
-        E instance = reflector.invokeCreator(creator);
+        E instance = instantiator.newInstance();
         for (String fieldName : fieldTypes.keySet()) {
             String propertyName = rename(fieldName);
             Object value = data.get(propertyName);

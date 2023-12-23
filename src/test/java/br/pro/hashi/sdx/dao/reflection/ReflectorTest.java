@@ -47,8 +47,7 @@ class ReflectorTest {
             ProtectedConstructor.class,
             PackageConstructor.class,
             PrivateConstructor.class,
-            ArgumentConstructor.class,
-            ThrowConstructor.class})
+            ArgumentConstructor.class})
     <E> void getsAndInvokesInstantiator(Class<E> type) {
         ObjectInstantiator<E> instantiator = getInstantiator(type);
         assertInstanceOf(type, instantiator.newInstance());
@@ -73,9 +72,10 @@ class ReflectorTest {
             ProtectedConstructor.class,
             PackageConstructor.class,
             PrivateConstructor.class})
-    void getsAndInvokesCreator(Class<?> type) {
+    void getsCreator(Class<?> type) {
         MethodHandle creator = getCreator(type);
-        assertInstanceOf(type, r.invokeCreator(creator));
+        Object instance = assertDoesNotThrow(() -> creator.invoke());
+        assertInstanceOf(type, instance);
     }
 
     @ParameterizedTest
@@ -95,12 +95,6 @@ class ReflectorTest {
     <E> void doesNotUnreflectConstructor(Class<E> type) {
         Constructor<E> constructor = assertDoesNotThrow(() -> type.getDeclaredConstructor());
         assertThrows(AssertionError.class, () -> r.unreflectConstructor(constructor));
-    }
-
-    @Test
-    void doesNotInvokeThrowCreator() {
-        MethodHandle creator = getCreator(ThrowConstructor.class);
-        assertThrows(AssertionError.class, () -> r.invokeCreator(creator));
     }
 
     private MethodHandle getCreator(Class<?> type) {
