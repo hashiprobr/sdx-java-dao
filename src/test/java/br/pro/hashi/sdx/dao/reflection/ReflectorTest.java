@@ -49,9 +49,10 @@ class ReflectorTest {
             PrivateConstructor.class,
             ArgumentConstructor.class})
     <E> void getsAndInvokesInstantiator(Class<E> type) {
-        ObjectInstantiator<E> instantiator = getInstantiator(type);
-        E instance = instantiator.newInstance();
-        assertInstanceOf(type, instance);
+        String typeName = type.getName();
+        ObjectInstantiator<E> instantiator = r.getInstantiator(type, typeName);
+        assertSame(instantiator, r.getInstantiator(type, typeName));
+        assertInstanceOf(type, instantiator.newInstance());
     }
 
     @ParameterizedTest
@@ -59,11 +60,7 @@ class ReflectorTest {
             AbstractConstructor.class,
             GenericConstructor.class})
     void doesNotGetInstantiator(Class<?> type) {
-        assertThrows(ReflectionException.class, () -> getInstantiator(type));
-    }
-
-    private <E> ObjectInstantiator<E> getInstantiator(Class<E> type) {
-        return r.getInstantiator(type, type.getName());
+        assertThrows(ReflectionException.class, () -> r.getInstantiator(type, type.getName()));
     }
 
     @ParameterizedTest

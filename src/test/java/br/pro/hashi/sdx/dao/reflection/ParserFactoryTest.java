@@ -10,8 +10,8 @@
 
 package br.pro.hashi.sdx.dao.reflection;
 
-import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import br.pro.hashi.sdx.dao.reflection.example.parser.*;
+import br.pro.hashi.sdx.dao.reflection.exception.ReflectionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ class ParserFactoryTest {
     }
 
     @Test
-    void doesNotParseCharFromSmallString() {
+    void doesNotParseCharFromEmptyString() {
         assertThrows(IllegalArgumentException.class, () -> f.parseChar(""));
     }
 
@@ -78,12 +78,12 @@ class ParserFactoryTest {
 
     @Test
     void getsAndAppliesByteParser() {
-        assertEquals(1, (byte) f.get(byte.class).apply("1"));
+        assertEquals((byte) 1, f.get(byte.class).apply("1"));
     }
 
     @Test
     void getsAndAppliesShortParser() {
-        assertEquals(2, (short) f.get(short.class).apply("2"));
+        assertEquals((short) 2, f.get(short.class).apply("2"));
     }
 
     @Test
@@ -93,7 +93,7 @@ class ParserFactoryTest {
 
     @Test
     void getsAndAppliesLongParser() {
-        assertEquals(4, f.get(long.class).apply("4"));
+        assertEquals(4L, f.get(long.class).apply("4"));
     }
 
     @Test

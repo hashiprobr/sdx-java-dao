@@ -26,8 +26,9 @@ public class HandleFactory {
         this.cache = new ConcurrentHashMap<>();
     }
 
-    @SuppressWarnings("unchecked")
     public <E> Handle<E> get(Class<E> type) {
-        return (Handle<E>) cache.computeIfAbsent(type, Handle::newInstance);
+        @SuppressWarnings("unchecked")
+        Handle<E> handle = (Handle<E>) cache.computeIfAbsent(type, Handle::newInstance);
+        return handle;
     }
 }

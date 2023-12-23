@@ -55,15 +55,19 @@ class ParserFactory {
     }
 
     char parseChar(String valueString) {
-        if (valueString.length() != 1) {
-            throw new IllegalArgumentException("Value string must have exactly one character");
+        if (valueString.isEmpty()) {
+            throw new IllegalArgumentException("Value string cannot be empty");
+        }
+        if (valueString.length() > 1) {
+            throw new IllegalArgumentException("Value string must have only one character");
         }
         return valueString.charAt(0);
     }
 
-    @SuppressWarnings("unchecked")
     <K> Function<String, K> get(Class<K> type) {
-        return (Function<String, K>) cache.computeIfAbsent(type, this::compute);
+        @SuppressWarnings("unchecked")
+        Function<String, K> parser = (Function<String, K>) cache.computeIfAbsent(type, this::compute);
+        return parser;
     }
 
     private <K> Function<String, K> compute(Class<K> type) {
@@ -90,17 +94,16 @@ class ParserFactory {
         return (valueString) -> invoke(handle, valueString);
     }
 
-    @SuppressWarnings("unchecked")
     <K> K invoke(MethodHandle handle, String valueString) {
-        K value;
         try {
-            value = (K) handle.invoke(valueString);
+            @SuppressWarnings("unchecked")
+            K value = (K) handle.invoke(valueString);
+            return value;
         } catch (Throwable throwable) {
             if (throwable instanceof RuntimeException exception) {
                 throw exception;
             }
             throw new AssertionError(throwable);
         }
-        return value;
     }
 }
