@@ -50,7 +50,8 @@ class ReflectorTest {
             ArgumentConstructor.class})
     <E> void getsAndInvokesInstantiator(Class<E> type) {
         ObjectInstantiator<E> instantiator = getInstantiator(type);
-        assertInstanceOf(type, instantiator.newInstance());
+        E instance = instantiator.newInstance();
+        assertInstanceOf(type, instance);
     }
 
     @ParameterizedTest
